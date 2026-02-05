@@ -1,0 +1,42 @@
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import api from "../../service/api";
+
+// export const fetchCustomers = createAsyncThunk(
+//   "customers/fetch",
+//   async () => (await api.get("/api/customer")).data
+// );
+
+export const fetchCustomers = createAsyncThunk(
+  'customers/fetch',
+  async () => { 
+    const res = await api.get('/customers');
+    return res.data; // 🔥 MUST return array
+  }
+);
+
+
+export const addCustomer = createAsyncThunk(
+  "customers/add",
+  async (data) => (await api.post("/api/customer", data)).data
+);
+
+const slice = createSlice({
+  name: 'customers',
+  initialState: {
+    list: [],
+    loading: false,
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCustomers.fulfilled, (state, action) => {
+        state.list = action.payload; // 🔥 THIS
+      })
+      .addCase(addCustomer.fulfilled, (state, action) => {
+        state.list.push(action.payload); // 🔥 OR THIS
+      });
+  },
+});
+
+
+export default slice.reducer;
