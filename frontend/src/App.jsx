@@ -1,4 +1,6 @@
-import { Routes, Route } from 'react-router-dom';
+// 
+import "@ant-design/v5-patch-for-react-19"
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
 import {
   UserOutlined,
@@ -14,6 +16,7 @@ import { Link } from "react-router-dom"
 const { Header, Content } = Layout;
 
 export default function App() {
+  const { pathname } = useLocation();
   const menuItems = [
     {
       key: '1',
@@ -32,10 +35,21 @@ export default function App() {
     },
   ];
 
+  const selectedKey = (() => {
+    if (pathname === '/' || pathname === '/customers') {
+      return ['1'];
+    } else if (pathname === '/create-invoice') {
+      return ['2'];
+    } else if (pathname === '/invoices' || pathname.startsWith('/invoices/')) {
+      return ['3'];
+    }
+    return [];
+  })();
+
   return (
-    <Layout style={{ minHeight: '100vh',minWidth: "200vh" }}>
+    <Layout style={{ minHeight: '100vh', minWidth: "100vh" }}>
       <Header>
-        <Menu theme="dark" mode="horizontal" items={menuItems} />
+        <Menu theme="dark" mode="horizontal" items={menuItems} selectedKeys={selectedKey} />
       </Header>
 
       <Content style={{ padding: 24 }}>
@@ -44,6 +58,7 @@ export default function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/create-invoice" element={<CreateInvoice />} />
           <Route path="/invoices" element={<InvoiceList />} />
+          <Route path="/invoices/:id" element={<CreateInvoice />} />
         </Routes>
       </Content>
     </Layout>

@@ -1,77 +1,122 @@
-import { Table, Select, Spin, Typography } from 'antd';
-import { useEffect, useState } from 'react';
+import "@ant-design/v5-patch-for-react-19"
+import {
+  Table,
+  Button,
+  Space,
+  Popconfirm,
+  notification,
+  Select,
+  Spin,
+  message,
+} from 'antd';
+import axios from 'axios';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useEffect,useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchInvoices } from '../features/invoice/invoice.slice';
-import { fetchCustomers } from '../features/customer/customer.slice';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { fetchCustomers } from "../features/customer/customer.slice";
 
 const { Option } = Select;
-const { Title } = Typography;
+
 
 export default function InvoiceList() {
   const dispatch = useDispatch();
-  const { list: invoices, loading } = useSelector(state => state.invoices);
+  const navigate = useNavigate();
+  // const invoices = useSelector(state => state.invoices.list);
   const customers = useSelector(state => state.customers.list);
-
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const { list: invoices, loading } = useSelector(state => state.invoices);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     dispatch(fetchInvoices());
-    dispatch(fetchCustomers());
+    dispatch(fetchCustomers())
   }, [dispatch]);
 
-
-  // Filter invoices by customer
   const filteredInvoices = selectedCustomer
     ? invoices.filter(inv => inv.customer?._id === selectedCustomer)
     : invoices;
+    
+  const handleEdit = (invoice) => {
+    navigate(`/invoices/${invoice._id}`);
+  };
+
+  const handleDelete = async (id) => {
+    await axios.delete(`/api/invoices/${id}`);
+    //message.success('Invoice deleted');
+    notification.success({
+          message: 'Success',
+          description: 'Invoice deleted successfully',
+        })
+    dispatch(fetchInvoices());
+  };
 
   const columns = [
     {
       title: 'Invoice No',
       dataIndex: 'invoiceNumber',
-      key: 'invoiceNumber',
     },
     {
       title: 'Customer',
-      dataIndex: ['customer', 'name'],
-      key: 'customer',
+      // dataIndex: ['customer', 'name'],
+      render: (_, r) => r.customer?.name,
     },
     {
-      title: 'Invoice Date',
+      title: 'Date',
       dataIndex: 'invoiceDate',
-      key: 'invoiceDate',
-      render: date => dayjs(date).format('DD MMM YYYY'),
-    },
-    // {
-    //   title: 'items',
-    //   dataIndex: 'items',
-    //   key: 'item'
-    // },
-    {
-      title: 'Subtotal (₹)',
-      dataIndex: 'subtotal',
-      key: 'subtotal',
-      render: val => `₹${val}`,
+      render: d => dayjs(d).format('DD MMM YYYY'),
     },
     {
-      title: 'Tax (18%)',
-      dataIndex: 'tax',
-      key: 'tax',
-      render: val => `₹${val}`
+      title: "subTotal",
+      dataIndex: "subtotal",
+      render: v => `₹${v}`,
+    },
+     {
+      title: "Tax",
+      dataIndex: "tax",
+      render: v => `₹${v}`,
     },
     {
-      title: 'Total Amount (₹)',
+      title: 'Total',
       dataIndex: 'totalAmount',
-      key: 'totalAmount',
-      render:  val => `₹${val}`
+      render: v => `₹${v}`,
     },
+    
+    {
+      title: 'Action',
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          >
+            Edit
+          </Button>
+
+          <Popconfirm
+            title="Are You Sure You Want Delete invoice?"
+            onConfirm={() => handleDelete(record._id)}
+          >
+            <Button danger icon={<DeleteOutlined />}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    }
   ];
 
   return (
     <>
-      <Title level={3}>Invoice List</Title>
+      <Button
+        type="primary"
+        onClick={() => navigate('/create-invoice')}
+        style={{ marginBottom: 16 }}
+      >
+        Create Invoice
+      </Button>
 
       <Select
         placeholder="Filter by customer"
@@ -93,7 +138,7 @@ export default function InvoiceList() {
           rowKey="_id"
           pagination={{
             current: page,
-            pageSize: 5,
+            pageSize: 10,
             onChange: p => setPage(p),
           }}
         />

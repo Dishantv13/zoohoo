@@ -3,13 +3,13 @@ import mongoose, { Schema } from "mongoose";
 const itemSchema = new Schema(
   {
     name: {
-      String,
+      type: String,
     },
     quantity: {
-      Number,
+      type: Number,
     },
     rate: {
-      Number,
+      type: Number,
     },
   },
   { timestamps: true },
