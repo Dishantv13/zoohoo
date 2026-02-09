@@ -8,7 +8,6 @@ import {
   Space,
   Popconfirm,
   notification,
-  message,
 } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
@@ -175,6 +174,16 @@ export default function Customers() {
           >
             <Input />
           </Form.Item>
+
+          {!editingCustomer && (
+            <Form.Item
+              name="password"
+              label="Password"
+              rules={[{ required: true }]}
+            >
+              <Input.Password />
+            </Form.Item>
+          )}
 
           <Form.Item
             name="phonenumber"

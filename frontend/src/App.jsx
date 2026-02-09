@@ -1,22 +1,28 @@
 // 
 import "@ant-design/v5-patch-for-react-19"
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { Layout, Menu } from 'antd';
-import {
-  UserOutlined,
-  FileAddOutlined,
-  UnorderedListOutlined,
-} from '@ant-design/icons';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Layout, Menu, Button, Dropdown } from 'antd';
+import { UserOutlined, FileAddOutlined, UnorderedListOutlined, LogoutOutlined } from '@ant-design/icons';
+import { useSelector, useDispatch } from 'react-redux';
+import { Link } from "react-router-dom"
 
 import Customers from './pages/Customer.jsx';
 import CreateInvoice from './pages/CreateInvoice.jsx';
 import InvoiceList from './pages/invoiceList.jsx';
-import { Link } from "react-router-dom"
+import Login from "./pages/Login.jsx";
+import Register from './pages/Register.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import { logout } from './features/auth/authSlice.js';
 
 const { Header, Content } = Layout;
 
 export default function App() {
   const { pathname } = useLocation();
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  const showLayout = isAuthenticated && !['/login', '/register'].includes(pathname);
+
   const menuItems = [
     {
       key: '1',
@@ -35,6 +41,25 @@ export default function App() {
     },
   ];
 
+  const userMenuItems = [
+    {
+      key: 'profile',
+      label: `Hello, ${user?.name || 'User'}`,
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: <LogoutOutlined />,
+      onClick: () => {
+        dispatch(logout());
+      },
+    },
+  ];
+
   const selectedKey = (() => {
     if (pathname === '/' || pathname === '/customers') {
       return ['1'];
@@ -46,19 +71,37 @@ export default function App() {
     return [];
   })();
 
+  if (!showLayout) {
+   
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+    );
+  }
+
+  
   return (
     <Layout style={{ minHeight: '100vh', minWidth: "100vh" }}>
-      <Header>
-        <Menu theme="dark" mode="horizontal" items={menuItems} selectedKeys={selectedKey} />
+      <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Menu theme="dark" mode="horizontal" items={menuItems} selectedKeys={selectedKey} style={{ flex: 1 }} />
+        <Dropdown menu={{ items: userMenuItems }}>
+          <Button type="text" style={{ color: 'white' }}>
+            <UserOutlined /> Account
+          </Button>
+        </Dropdown>
       </Header>
 
       <Content style={{ padding: 24 }}>
         <Routes>
-          <Route path="/" element={<Customers />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/create-invoice" element={<CreateInvoice />} />
-          <Route path="/invoices" element={<InvoiceList />} />
-          <Route path="/invoices/:id" element={<CreateInvoice />} />
+          <Route path="/" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+          <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+          <Route path="/create-invoice" element={<ProtectedRoute><CreateInvoice /></ProtectedRoute>} />
+          <Route path="/invoices" element={<ProtectedRoute><InvoiceList /></ProtectedRoute>} />
+          <Route path="/invoices/:id" element={<ProtectedRoute><CreateInvoice /></ProtectedRoute>} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Content>
     </Layout>

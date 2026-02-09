@@ -1,11 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../service/api";
 
-// export const fetchCustomers = createAsyncThunk(
-//   "customers/fetch",
-//   async () => (await api.get("/api/customer")).data
-// );
-
 export const fetchCustomers = createAsyncThunk(
   'customers/fetch',
   async () => { 
@@ -30,10 +25,10 @@ const slice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchCustomers.fulfilled, (state, action) => {
-        state.list = action.payload; // 🔥 THIS
+        state.list = action.payload; 
       })
       .addCase(addCustomer.fulfilled, (state, action) => {
-        state.list.push(action.payload); // 🔥 OR THIS
+        state.list.push(action.payload);
       });
   },
 });

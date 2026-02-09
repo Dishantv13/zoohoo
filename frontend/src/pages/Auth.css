@@ -1,0 +1,54 @@
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.auth-card :where(.ant-card) {
+    background: white;
+}
+
+.auth-card .ant-card-head {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: none;
+}
+
+.auth-card .ant-card-head-title {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.auth-card .ant-form {
+    margin-top: 20px;
+}
+
+.auth-card .ant-input,
+.auth-card .ant-input-password {
+    border-radius: 4px;
+}
+
+.auth-card p {
+    margin-top: 16px;
+    font-size: 14px;
+    color: #666;
+}
+
+.auth-card a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.auth-card a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
