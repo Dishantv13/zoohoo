@@ -1,7 +1,8 @@
+import "@ant-design/v5-patch-for-react-19"
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Input, Button, Card, message, Spin,notification } from 'antd';
+import { Form, Input, Button, Card, Spin, notification } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { register } from '../features/auth/authSlice';
 import './Auth.css';
@@ -11,14 +12,11 @@ export default function Register() {
     const navigate = useNavigate();
     const { loading, error } = useSelector((state) => state.auth);
     const [form] = Form.useForm();
-    const [phone,setPhone] = useState('')
+    const [phone, setPhone] = useState('')
 
     const onFinish = async (values) => {
         const { confirmPassword, ...dataToSend } = values;
-        
-        console.log('Sending data:', dataToSend);
         const result = await dispatch(register(dataToSend));
-        console.log('Result:', result);
         
         if (result.type === 'auth/register/fulfilled') {
             notification.success({

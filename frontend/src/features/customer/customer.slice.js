@@ -5,14 +5,8 @@ export const fetchCustomers = createAsyncThunk(
   'customers/fetch',
   async () => { 
     const res = await api.get('/customers');
-    return res.data; // 🔥 MUST return array
+    return res.data; 
   }
-);
-
-
-export const addCustomer = createAsyncThunk(
-  "customers/add",
-  async (data) => (await api.post("/api/customer", data)).data
 );
 
 const slice = createSlice({
@@ -24,14 +18,17 @@ const slice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchCustomers.fulfilled, (state, action) => {
-        state.list = action.payload; 
+      .addCase(fetchCustomers.pending, (state) => {
+        state.loading = true;
       })
-      .addCase(addCustomer.fulfilled, (state, action) => {
-        state.list.push(action.payload);
+      .addCase(fetchCustomers.fulfilled, (state, action) => {
+        state.list = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchCustomers.rejected, (state) => {
+        state.loading = false;
       });
   },
 });
-
 
 export default slice.reducer;

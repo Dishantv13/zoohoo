@@ -1,4 +1,3 @@
-// 
 import "@ant-design/v5-patch-for-react-19"
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Layout, Menu, Button, Dropdown } from 'antd';
@@ -72,7 +71,6 @@ export default function App() {
   })();
 
   if (!showLayout) {
-   
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -82,7 +80,6 @@ export default function App() {
     );
   }
 
-  
   return (
     <Layout style={{ minHeight: '100vh', minWidth: "100vh" }}>
       <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

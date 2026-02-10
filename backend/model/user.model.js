@@ -3,11 +3,6 @@ import bcryptjs from "bcryptjs";
 
 const userSchema = new Schema(
     {
-        user:{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            require: true
-        },
         name:{
             type : String,
             required : [true, "name is required"],
@@ -21,7 +16,7 @@ const userSchema = new Schema(
             unique: true,
             lowercase: true,
             trim: true,
-         },
+        },
         phonenumber:{
             type: Number,
         },
@@ -30,11 +25,6 @@ const userSchema = new Schema(
             required: [true, "password is required"],
             minlength: [6, "password must be at least 6 characters"],
             select: false 
-        },
-        fullName: {
-            type: String,
-            trim: true,
-            index: true
         },
         role: {
             type: String,

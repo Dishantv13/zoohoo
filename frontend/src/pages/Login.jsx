@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import "@ant-design/v5-patch-for-react-19"
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Input, Button, Card, message, Spin, notification } from 'antd';
+import { Form, Input, Button, Card, Spin, notification } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { login } from '../features/auth/authSlice';
 import './Auth.css';
@@ -13,9 +13,7 @@ export default function Login() {
     const [form] = Form.useForm();
 
     const onFinish = async (values) => {
-        // console.log('Login attempt:', values);
         const result = await dispatch(login(values));
-        // console.log('Login result:', result);
         
         if (result.type === 'auth/login/fulfilled') {
             notification.success({

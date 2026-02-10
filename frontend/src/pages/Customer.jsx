@@ -1,199 +1,176 @@
-import "@ant-design/v5-patch-for-react-19"
+
+import "@ant-design/v5-patch-for-react-19";
 import {
   Button,
-  Modal,
   Form,
   Input,
-  Table,
+  Card,
   Space,
-  Popconfirm,
   notification,
+  Spin,
+  Modal,
 } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';  
 import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
-import { fetchCustomers } from '../features/customer/customer.slice';
+import { useNavigate } from 'react-router-dom';
+import api from '../service/api';
 
 export default function Customers() {
-  const dispatch = useDispatch();
-  const customers = useSelector(state => state.customers.list);
-
-  const [open, setOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState(null);
   const [form] = Form.useForm();
-  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
+   const [phone, setPhone] = useState('')
 
   useEffect(() => {
-    dispatch(fetchCustomers());
-  }, [dispatch]);
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/customers/profile');
+      form.setFieldsValue(res.data);
+    } catch (error) {
+      notification.error({
+        message: 'Failed',
+        description: 'Unable to load profile',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onFinish = async (values) => {
     try {
-      if (editingCustomer) {
-        await axios.put(
-          `/api/customers/${editingCustomer._id}`,
-          values
-        );
-        //message.success('Customer updated');
-        notification.success({
-          message: 'Success',
-          description: 'customer updated successfully',
-        })
-      } else {
-        await axios.post('/api/customers', values);
-        //message.success('Customer added');
-        notification.success({
-          message: 'Success',
-          description: 'customer added successfully',
-        })
-      }
-
-      dispatch(fetchCustomers());
-      form.resetFields();
-      setEditingCustomer(null);
-      setOpen(false);
-    } catch (error) {
-      //message.error('Something went wrong');
-      notification.error({
-            message: ' Failed',
-            description: 'Failed To create customer'
-          });
-    }
-  };
-
-  const handleEdit = (customer) => {
-    setEditingCustomer(customer);
-    form.setFieldsValue(customer);
-    setOpen(true);
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`/api/customers/${id}`);
-      //message.success('Customer deleted');
+      setLoading(true);
+      await api.put('/customers/profile', values);
       notification.success({
-          message: 'Success',
-          description: 'customer deleted successfully',
-        })
-      dispatch(fetchCustomers());
+        message: 'Success',
+        description: 'Profile updated successfully',
+      });
+      setIsEditing(false);
+      fetchUserProfile();
     } catch (error) {
-      //message.error('Delete failed');
-        notification.error({
-            message: ' Failed',
-            description:'Failed To Delete Customer'
-          });
+      notification.error({
+        message: 'Failed',
+        description: 'Profile update failed',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const columns = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-    },
-    {
-      title: 'Phone Number',
-      dataIndex: 'phonenumber',
-    },
-    {
-      title: 'Actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+  const handleDeleteAccount = () => {
+    Modal.confirm({
+      title: 'Delete Account',
+      content: 'Are you sure? This action cannot be undone.',
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          await api.delete('/customers/profile');
 
-          <Popconfirm
-            title="Are you sure you want to delete this customer?"
-            onConfirm={() => handleDelete(record._id)}
-          >
-            <Button danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+          notification.success({
+            message: 'Account Deleted',
+            description: 'Your account has been deleted',
+          });
+
+          localStorage.removeItem('token');
+          navigate('/login');
+        } catch (error) {
+          notification.error({
+            message: 'Failed',
+            description: 'Account deletion failed',
+          });
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
 
   return (
-    <>
-      <Button
-        type="primary"
-        onClick={() => {
-          setEditingCustomer(null);
-          form.resetFields();
-          setOpen(true);
-        }}
+    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+      <Card
+        title="My Profile"
+        extra={
+          <Space>
+            {isEditing ? (
+              <>
+                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button type="primary" onClick={() => form.submit()}>
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button type="primary" onClick={() => setIsEditing(true)}>
+                  Edit
+                </Button>
+                <Button danger onClick={handleDeleteAccount}>
+                  Delete Account
+                </Button>
+              </>
+            )}
+          </Space>
+        }
       >
-        Add Customer
-      </Button>
-
-      <Table
-        columns={columns}
-        dataSource={customers}
-        rowKey="_id"
-        pagination={{
-            current: page,
-            pageSize: 10,
-            onChange: p => setPage(p),
-          }}
-        style={{ marginTop: 16 }}
-      />
-
-      <Modal
-        title={editingCustomer ? 'Edit Customer' : 'Add Customer'}
-        open={open}
-        onCancel={() => {
-          setOpen(false);
-          setEditingCustomer(null);
-          form.resetFields();
-        }}
-        onOk={() => form.submit()}
-      >
-        <Form layout="vertical" form={form} onFinish={onFinish}>
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[{ required: true }]}
+        <Spin spinning={loading}>
+          <Form
+            layout="vertical"
+            form={form}
+            onFinish={onFinish}
+            disabled={!isEditing}
           >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[{ required: true, type: 'email' }]}
-          >
-            <Input />
-          </Form.Item>
-
-          {!editingCustomer && (
             <Form.Item
-              name="password"
-              label="Password"
+              name="name"
+              label="Name"
               rules={[{ required: true }]}
             >
-              <Input.Password />
+              <Input 
+                prefix={<UserOutlined/>}
+              />
             </Form.Item>
-          )}
 
-          <Form.Item
-            name="phonenumber"
-            label="Phone Number"
-            rules={[{ required: true, len: 10 }]}
-          >
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </>
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { required: true },
+                { type: 'email' },
+              ]}
+            >
+              <Input 
+                 prefix={<MailOutlined />}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="phonenumber"
+              label="Phone Number"
+              rules={[
+                { required: true, message: 'Please enter your phonenumber' },
+                { pattern: /^[0-9]{10}$/, message: 'Phone number must be exactly 10 digits' },
+                // { type: "number", message: 'Invalid phonenumber format' },
+            ]}
+        >
+            <Input
+                prefix={<PhoneOutlined />}
+                value={phone}
+                maxLength={10}
+                placeholder="Enter your phone number"
+                size="large"
+                onChange={(e) => {
+                    const digitsOnly = e.target.value.replace(/\D/g, '');
+                    setPhone(digitsOnly);
+                }}
+            />
+            </Form.Item>
+          </Form>
+        </Spin>
+      </Card>
+    </div>
   );
 }

@@ -7,50 +7,51 @@ import {
   DatePicker,
   InputNumber,
   notification,
-  message,
   Spin,
 } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { fetchCustomers } from '../features/customer/customer.slice';
+import api from '../service/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 export default function CreateInvoice() {
   const [form] = Form.useForm();
-  const dispatch = useDispatch();
-  const customers = useSelector(state => state.customers.list);
+  const currentUser = useSelector(state => state.auth.user);
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const isEditing = !!id;
 
   useEffect(() => {
-    dispatch(fetchCustomers());
-  }, [dispatch]);
+    if (currentUser && !isEditing) {
+      form.setFieldsValue({
+        customer: currentUser.id
+      });
+    }
+  }, [currentUser, isEditing, form]);
 
   useEffect(() => {
     if (isEditing) {
       setLoading(true);
-      axios
-        .get(`/api/invoices/${id}`)
+      api
+        .get(`/invoices/${id}`)
         .then(response => {
           const data = response.data;
           form.setFieldsValue({
             customer: data.customer._id,
             invoiceDate: dayjs(data.invoiceDate),
+            dueDate: dayjs(data.dueDate),
+            status: data.status,
             items: data.items,
           });
         })
         .catch(error => {
-          //message.error('Failed to load invoice');
           notification.error({
-            message: ' Failed',
+            message: 'Failed',
             description: 'Failed To Load Invoice'
           });
-          console.error(error);
         })
         .finally(() => setLoading(false));
     }
@@ -61,18 +62,17 @@ export default function CreateInvoice() {
       const payload = {
         ...values,
         invoiceDate: values.invoiceDate.format('YYYY-MM-DD'),
+        dueDate: values.dueDate.format("YYYY-MM-DD")
       };
 
       if (isEditing) {
-        await axios.put(`/api/invoices/${id}`, payload);
-        // message.success('Invoice updated successfully');
+        await api.put(`/invoices/${id}`, payload);
         notification.success({
           message: 'Success',
           description: 'Invoice updated successfully',
         })
       } else {
-        await axios.post('/api/invoices', payload);
-        //message.success('Invoice created successfully');
+        await api.post('/invoices', payload);
         notification.success({
           message: 'Success',
           description: 'Invoice created successfully',
@@ -82,12 +82,10 @@ export default function CreateInvoice() {
       form.resetFields();
       navigate('/invoices');
     } catch (error) {
-      //message.error(error.response?.data?.message || 'Something went wrong');
       notification.error({
-            message: ' Failed',
-            description: 'Something went wrong'
-          });
-      console.error(error);
+        message: 'Failed',
+        description: 'Something went wrong'
+      });
     }
   };
 
@@ -104,14 +102,14 @@ export default function CreateInvoice() {
       <Form.Item
         name="customer"
         label="Customer"
-        rules={[{ required: true }]}
+        // rules={[{ required: true }]}
       >
-        <Select placeholder="Select customer">
-          {customers.map(c => (
-            <Select.Option key={c._id} value={c._id}>
-              {c.name}
+        <Select placeholder="Select customer" disabled={!isEditing}>
+          {currentUser && (
+            <Select.Option key={currentUser.id} value={currentUser.id}>
+              {currentUser.name}
             </Select.Option>
-          ))}
+          )}
         </Select>
       </Form.Item>
 
@@ -121,6 +119,27 @@ export default function CreateInvoice() {
         rules={[{ required: true }]}
       >
         <DatePicker />
+      </Form.Item>
+
+      <Form.Item 
+        name="dueDate"
+        label="Due Date"
+        rules={[{required: true}]}
+      >
+         <DatePicker />
+      </Form.Item>
+
+      <Form.Item
+        name="status"
+        label="Status"
+        initialValue="PENDING"
+      >
+        <Select placeholder="Select status">
+          <Select.Option value="PENDING">Pending</Select.Option>
+          <Select.Option value="CONFIRMED">Confirmed</Select.Option>
+          <Select.Option value="PAID">Paid</Select.Option>
+          <Select.Option value="CANCELLED">Cancelled</Select.Option>
+        </Select>
       </Form.Item>
 
       <Form.List name="items" initialValue={[{}]}>

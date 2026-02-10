@@ -91,64 +91,85 @@
 
 
     const createCustomer = async (req, res) => {
-        console.log('REQ BODY:', req.body); 
-        const customer = await User.create(req.body);
-        res.status(201).json(customer);
-    }
+        try {
+            const { name, email, password, phonenumber } = req.body;
 
-    const getCustomer = async (req,res) => {
-        const customers = await User.find();
-        res.json(customers);
-    }
+            if (!name || !email || !password) {
+                return res.status(400).json({ message: 'Please provide name, email and password' });
+            }
 
+            const userExists = await User.findOne({ email });
+            if (userExists) {
+                return res.status(400).json({ message: 'Email already registered' });
+            }
 
-    const getCustomerById = async (req, res) => {
-    try {
-        const customer = await User.findById(req.params.id);
+            const user = await User.create({
+                name,
+                email,
+                password,
+                phonenumber
+            });
 
-        if (!customer) {
-        return res.status(404).json({ message: 'Customer not found' });
+            res.status(201).json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
         }
-
-        res.json(customer);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
     }
+
+    const getCurrentUserProfile = async (req, res) => {
+        try {
+            const user = await User.findById(req.user._id).select('-password');
+            
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    const getCustomer = async (req, res) => {
+        try {
+            const customers = await User.find().select('-password');
+            res.json(customers);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+
+    const updateUserProfile = async (req, res) => {
+        try {
+            const { name, email, phonenumber } = req.body;
+
+            const user = await User.findByIdAndUpdate(
+                req.user._id,
+                { name, email, phonenumber },
+                { new: true, runValidators: true }
+            );
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
     };
 
-    const updateCustomer = async (req, res) => {
-    try {
-        const { name, email, phonenumber } = req.body;
 
-        const customer = await User.findByIdAndUpdate(
-        req.params.id,
-        { name, email, phonenumber },
-        { new: true, runValidators: true }
-        );
-
-        if (!customer) {
-        return res.status(404).json({ message: 'Customer not found' });
+    const deleteProfile = async (req, res) => {
+        try {
+            await User.findByIdAndDelete(req.user.id);
+            res.json({ message: 'Account deleted' });
+        } catch (err) {
+            res.status(500).json({ message: 'Delete failed' });
         }
+        };
 
-        res.json(customer);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-    };
-
-    const deleteCustomer = async (req, res) => {
-    try {
-        const customer = await User.findByIdAndDelete(req.params.id);
-
-        if (!customer) {
-        return res.status(404).json({ message: 'Customer not found' });
-        }
-
-        res.json({ message: 'Customer deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-    };
 
 
     export {
@@ -156,7 +177,7 @@
         login,
         createCustomer,
         getCustomer,
-        getCustomerById,
-        deleteCustomer,
-        updateCustomer
+        getCurrentUserProfile,
+        updateUserProfile,
+        deleteProfile
     }

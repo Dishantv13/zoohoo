@@ -20,12 +20,26 @@ const invoiceSchema = new Schema(
     invoiceNumber: {
       type: String,
     },
+    status:{
+     type: String,
+      enum: ['PENDING', 'CONFIRMED', 'PAID', 'CANCELLED'],
+      default: 'PENDING',
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
     invoiceDate: {
-      Date,
+      type: Date,
+    },
+    dueDate:{
+      type: Date,
+      require:true
     },
     items: [itemSchema],
     subtotal: {
@@ -33,11 +47,9 @@ const invoiceSchema = new Schema(
     },
     tax: {
       type: Number,
-      // required : [true,"tax is required"]
     },
     totalAmount: {
       type: Number,
-      // required : [true]
     },
   },
   { timestamps: true },

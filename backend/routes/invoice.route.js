@@ -3,15 +3,18 @@ import {createInvoice,
         getInvoices,
         getInvoiceById,
         updateInvoice,
+        updateInvoiceStatus,
         deleteInvoice
 } from "../controller/invoice.controller.js"
+import { protect } from "../middleware/auth.js";
 
 const router = Router()
 
-router.route("/").post(createInvoice)
-router.route("/").get(getInvoices)
-router.route("/:id").get(getInvoiceById)
-router.route("/:id").put(updateInvoice)
-router.route("/:id").delete(deleteInvoice)
+router.route("/").post(protect, createInvoice)
+router.route("/").get(protect, getInvoices)
+router.route("/:id").get(protect, getInvoiceById)
+router.route("/:id").put(protect, updateInvoice)
+router.route("/:id/status").patch(protect, updateInvoiceStatus)
+router.route("/:id").delete(protect, deleteInvoice)
 
 export default router
