@@ -16,13 +16,14 @@ import {
   Modal,
   Select,
 } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, CreditCardOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchInvoices } from '../features/invoice/invoice.slice';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import api from '../service/api';
+import PaymentModal from '../components/PaymentModal';
 
 
 export default function InvoiceList() {
@@ -31,6 +32,8 @@ export default function InvoiceList() {
   const { list: invoices, loading } = useSelector(state => state.invoices);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState(null);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState(null);
 
   useEffect(() => {
     dispatch(fetchInvoices());
@@ -42,12 +45,32 @@ export default function InvoiceList() {
 
   const handleDelete = async (id) => {
     await api.delete(`/invoices/${id}`);
-    //message.success('Invoice deleted');
     notification.success({
           message: 'Success',
           description: 'Invoice deleted successfully',
         })
     dispatch(fetchInvoices());
+  };
+
+  const handlePaymentClick = (invoice) => {
+    if (invoice.status === 'PAID') {
+      notification.warning({
+        message: 'Already Paid',
+        description: 'This invoice has already been paid',
+      });
+      return;
+    }
+    setSelectedInvoiceForPayment(invoice);
+    setPaymentModalVisible(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    notification.success({
+      message: 'Success',
+      description: 'Invoice marked as PAID',
+    });
+    dispatch(fetchInvoices());
+    setPaymentModalVisible(false);
   };
 
   const handleStatusChange = async (invoiceId, newStatus) => {
@@ -93,8 +116,8 @@ export default function InvoiceList() {
   };
 
   const totalAmount = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-  const totalSubtotal = invoices.reduce((sum, invoice) => sum + (invoice.subtotal || 0), 0);
-  const totalTax = invoices.reduce((sum, invoice) => sum + (invoice.tax || 0), 0);
+  // const totalSubtotal = invoices.reduce((sum, invoice) => sum + (invoice.subtotal || 0), 0);
+  // const totalTax = invoices.reduce((sum, invoice) => sum + (invoice.tax || 0), 0);
 
   const paidAmount = invoices
     .filter(invoice => invoice.status === 'PAID')
@@ -131,7 +154,7 @@ export default function InvoiceList() {
           return <Tag color="default">UNKNOWN</Tag>;
         }
         return (
-          <Tag color="">
+          <Tag color="pink">
             {name.toUpperCase()}
           </Tag>
         );
@@ -141,12 +164,26 @@ export default function InvoiceList() {
     {
       title: 'Date',
       dataIndex: 'invoiceDate',
-      render: d => dayjs(d).format('DD MMM YYYY'),
+      render: d => {
+        const date = dayjs(d).format('DD MMM YYYY')
+        return (
+        <Flex align="center" gap="small">
+          <Tag color="cyan">{date}</Tag>
+        </Flex>
+        )
+      }
     },
     {
     title: 'Due Date',
     dataIndex: 'dueDate',
-    render: (date) => dayjs(date).format('DD MMM YYYY')
+    render: d => {
+        const date = dayjs(d).format('DD MMM YYYY')
+        return (
+         <Flex align="center" gap="small">
+          <Tag color="red">{date}</Tag>
+        </Flex>
+        )
+      }
     },
     {      
       title: 'Status',
@@ -192,7 +229,16 @@ export default function InvoiceList() {
     
     {
       title: 'Action',
+      width: 350,
       render: (_, record) => {
+        if (record.status === 'PAID') {
+          return (
+            <Tag color="green" style={{ padding: '8px 16px', fontSize: '14px', fontWeight: 'bold' }}>
+              ✓ PAID
+            </Tag>
+          );
+        }
+
         const statusMenuItems = [
           {
             key: 'PENDING',
@@ -205,11 +251,6 @@ export default function InvoiceList() {
             onClick: () => handleStatusChange(record._id, 'CONFIRMED'),
           },
           {
-            key: 'PAID',
-            label: 'Paid',
-            onClick: () => handleStatusChange(record._id, 'PAID'),
-          },
-          {
             key: 'CANCELLED',
             label: '🗑️ Cancel & Delete',
             danger: true,
@@ -218,12 +259,22 @@ export default function InvoiceList() {
         ];
 
         return (
-          <Space>
+          <Space wrap>
+            <Button
+              type="primary"
+              size="small"
+              icon={<CreditCardOutlined />}
+              onClick={() => handlePaymentClick(record)}
+            >
+              Pay Now
+            </Button>
+
             <Dropdown menu={{ items: statusMenuItems }} placement="bottomLeft">
-              <Button>Change Status</Button>
+              <Button size="small">Status</Button>
             </Dropdown>
 
             <Button
+              size="small"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
             >
@@ -231,10 +282,10 @@ export default function InvoiceList() {
             </Button>
 
             <Popconfirm
-              title="Are You Sure You Want Delete invoice?"
+              title="Delete this invoice?"
               onConfirm={() => handleDelete(record._id)}
             >
-              <Button danger icon={<DeleteOutlined />}>
+              <Button danger size="small" icon={<DeleteOutlined />}>
                 Delete
               </Button>
             </Popconfirm>
@@ -257,6 +308,7 @@ export default function InvoiceList() {
             />
           </Card>
         </Col>
+        
         <Col span={6}>
           <Card>
             <Statistic
@@ -328,6 +380,13 @@ export default function InvoiceList() {
           }}
         />
       </Spin>
+
+      <PaymentModal
+        invoice={selectedInvoiceForPayment}
+        visible={paymentModalVisible}
+        onClose={() => setPaymentModalVisible(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </>
   );
 }

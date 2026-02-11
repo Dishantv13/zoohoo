@@ -39,7 +39,7 @@ const invoiceSchema = new Schema(
     },
     dueDate:{
       type: Date,
-      require:true
+      required:true
     },
     items: [itemSchema],
     subtotal: {
@@ -50,6 +50,15 @@ const invoiceSchema = new Schema(
     },
     totalAmount: {
       type: Number,
+    },
+    paymentDetails: {
+      paymentMethod: {
+        type: String,
+        enum: ["CARD", "QR_CODE"],
+      },
+      transactionId: String,
+      paidAt: Date,
+      amountPaid: Number,
     },
   },
   { timestamps: true },

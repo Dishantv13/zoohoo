@@ -25,17 +25,31 @@ const createInvoice = async (req, res) => {
     totalAmount
   });
 
+  console.log("invoice",invoice)
+
   res.status(201).json(invoice);
 };
 
 
-
 const getInvoices = async (req, res) => {
-  const invoices = await Invoice.find({ createdBy: req.user._id })
-    .sort({dueDate:1})
-    .populate("customer", "name email");
-    res.status(200).json(invoices);
+  try {
+    const invoices = await Invoice.find({ createdBy: req.user._id })
+      .populate("customer", "name email")
+      .sort({ dueDate: 1 });
+
+    const sortedInvoices = invoices.sort((a, b) => {
+      if (a.status === "PAID" && b.status !== "PAID") return 1;
+      if (a.status !== "PAID" && b.status === "PAID") return -1;
+      return 0;
+    });
+
+    res.status(200).json(sortedInvoices);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
+
 
 const getInvoiceById = async (req, res) => {
   try {
@@ -93,6 +107,7 @@ const updateInvoice = async (req, res) => {
 
     await invoice.save();
 
+   
     res.status(200).json(invoice);
   } catch (error) {
     res.status(500).json({ message: error.message });
