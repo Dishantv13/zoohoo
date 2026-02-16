@@ -1,9 +1,10 @@
 import "@ant-design/v5-patch-for-react-19"
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { Layout, Menu, Button, Dropdown } from 'antd';
+import { Layout, Menu, Button, Dropdown, Spin } from 'antd';
 import { UserOutlined, FileAddOutlined, UnorderedListOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from "react-router-dom"
+import { useEffect } from 'react';
 
 import Customers from './pages/Customer.jsx';
 import CreateInvoice from './pages/CreateInvoice.jsx';
@@ -11,22 +12,28 @@ import InvoiceList from './pages/invoiceList.jsx';
 import Login from "./pages/Login.jsx";
 import Register from './pages/Register.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import { logout } from './features/auth/authSlice.js';
+import { logout, getCurrentUser } from './features/auth/authSlice.js';
 
 const { Header, Content } = Layout;
 
 export default function App() {
   const { pathname } = useLocation();
   const dispatch = useDispatch();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, loading, token } = useSelector((state) => state.auth);
 
+  useEffect(() => {
+    if (token && !user && !loading) {
+      dispatch(getCurrentUser());
+    }
+  }, [token, user, loading, dispatch]);
+ 
   const showLayout = isAuthenticated && !['/login', '/register'].includes(pathname);
 
   const menuItems = [
     {
       key: '1',
       icon: <UserOutlined />,
-      label: <Link to="/customers">Customers</Link>
+      label: <Link to="/customers">Customer Profile</Link>
     },
     {
       key: '2',
@@ -77,6 +84,14 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+    );
+  }
+
+  if (loading && token && !user) {
+    return (
+      <Layout style={{ minHeight: '100vh', minWidth: "100vh", display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Spin size="large" />
+      </Layout>
     );
   }
 

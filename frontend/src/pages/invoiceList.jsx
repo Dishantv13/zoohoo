@@ -135,6 +135,11 @@ export default function InvoiceList() {
     ? invoices.filter(invoice => invoice.status === statusFilter)
     : invoices;
 
+  const handleTableChange = (paginationInfo) => {
+    setPage(paginationInfo.current);
+    setPageSize(paginationInfo.pageSize);
+  };
+
   const columns = [
     {
       title: 'Invoice No',
@@ -209,7 +214,44 @@ export default function InvoiceList() {
     },
 
     {
-      title: "Tax (18%)",
+      title: "Discount Rate (%)",
+      dataIndex: "parseDiscount",
+      render: (v = 0) => (
+      <Flex align="center" gap="small">
+        <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
+      </Flex>
+      ),
+    },
+    {
+      title: "Discount",
+      dataIndex: "discount",
+      render: (v = 0) => (
+      <Flex align="center" gap="small">
+        <Tag color="red">₹{Number(v).toFixed(2)}</Tag>
+      </Flex>
+    ),
+    },
+    {
+      title: "Amount After Discount",
+      dataIndex: "amountAfterDiscount",
+      render: (v = 0) => (
+      <Flex align="center" gap="small">
+        <Tag color="purple">₹{Number(v).toFixed(2)}</Tag>
+      </Flex>
+    ),
+    },
+    {
+      title: "Tax Rate (%)",
+      dataIndex: "parseTaxRate",
+      render: (v = 0) => (
+      <Flex align="center" gap="small">
+        <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
+      </Flex>
+     ),
+    },
+
+    {
+      title: "Tax",
       dataIndex: "tax",
       render: (v = 0) => (
       <Flex align="center" gap="small">
@@ -374,9 +416,9 @@ export default function InvoiceList() {
           dataSource={filteredInvoices}
           rowKey="_id"
           pagination={{
-            current: page,
-            pageSize: 10,
-            onChange: p => setPage(p),
+            showQuickJumper: true,
+            showSizeChanger: true,
+            pageSizeOptions: [5, 10, 20, 50],
           }}
         />
       </Spin>

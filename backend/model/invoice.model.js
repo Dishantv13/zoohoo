@@ -45,12 +45,25 @@ const invoiceSchema = new Schema(
     subtotal: {
       type: Number,
     },
+    parseTaxRate: {
+      type: Number,
+    },
     tax: {
+      type: Number,
+    },
+    parseDiscount: {
+      type: Number,
+    },
+    discount : {
+      type: Number,
+    },
+    amountAfterDiscount: {
       type: Number,
     },
     totalAmount: {
       type: Number,
     },
+
     paymentDetails: {
       paymentMethod: {
         type: String,
