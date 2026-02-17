@@ -20,15 +20,15 @@ const invoiceSchema = new Schema(
     invoiceNumber: {
       type: String,
     },
-    status:{
-     type: String,
-      enum: ['PENDING', 'CONFIRMED', 'PAID', 'CANCELLED'],
-      default: 'PENDING',
+    status: {
+      type: String,
+      enum: ["PENDING", "CONFIRMED", "PAID", "CANCELLED"],
+      default: "PENDING",
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
@@ -37,9 +37,9 @@ const invoiceSchema = new Schema(
     invoiceDate: {
       type: Date,
     },
-    dueDate:{
+    dueDate: {
       type: Date,
-      required:true
+      required: true,
     },
     items: [itemSchema],
     subtotal: {
@@ -54,7 +54,7 @@ const invoiceSchema = new Schema(
     parseDiscount: {
       type: Number,
     },
-    discount : {
+    discount: {
       type: Number,
     },
     amountAfterDiscount: {

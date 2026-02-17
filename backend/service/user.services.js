@@ -9,13 +9,13 @@ const loginService = async (userData) => {
   }).select("+password");
 
   if (!user) {
-    return { success: false, message: "Invalid email or password" };
+    throw new Error("Invalid email or password");
   }
 
   const isMatch = await user.matchPassword(password);
 
   if (!isMatch) {
-    return { success: false, message: "Invalid email or password" };
+    throw new Error("Invalid email or password");
   }
 
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -24,6 +24,7 @@ const loginService = async (userData) => {
 
   return {
     success: true,
+    message: "User Login successful",
     token,
     user: {
       id: user._id,
@@ -37,15 +38,12 @@ const registerService = async (userData) => {
   const { name, email, password, phonenumber } = userData;
 
   if (!name || !email || !password) {
-    return {
-      success: false,
-      message: "Please provide name, email and password",
-    };
+    throw new Error("Please provide name, email and password");
   }
   const userExists = await User.findOne({ email: email.toLowerCase() });
 
   if (userExists) {
-    return { success: false, message: "User already exists" };
+    throw new Error("User already exists");
   }
 
   const user = await User.create({
@@ -61,6 +59,7 @@ const registerService = async (userData) => {
 
   return {
     success: true,
+    message: "User registered successfully",
     token,
     user: {
       id: user._id,
@@ -70,27 +69,27 @@ const registerService = async (userData) => {
   };
 };
 
-const createCustomerService = async (userData) => {
-  const { name, email, password, phonenumber } = userData;
+// const createCustomerService = async (userData) => {
+//   const { name, email, password, phonenumber } = userData;
 
-  if (!name || !email || !password) {
-    throw new Error("Please provide name, email and password");
-  }
+//   if (!name || !email || !password) {
+//     throw new Error("Please provide name, email and password");
+//   }
 
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    throw new Error("Email already registered");
-  }
+//   const userExists = await User.findOne({ email });
+//   if (userExists) {
+//     throw new Error("Email already registered");
+//   }
 
-  const user = await User.create({
-    name,
-    email,
-    password,
-    phonenumber,
-  });
+//   const user = await User.create({
+//     name,
+//     email,
+//     password,
+//     phonenumber,
+//   });
 
-  return user;
-};
+//   return user;
+// };
 
 const getCurrentUserProfileService = async (userId) => {
   const user = await User.findById(userId).select("-password");
@@ -102,10 +101,10 @@ const getCurrentUserProfileService = async (userId) => {
   return user;
 };
 
-const getCustomerService = async (data) => {
-  const customers = await User.find().select("-password");
-  return customers;
-};
+// const getCustomerService = async (data) => {
+//   const customers = await User.find().select("-password");
+//   return customers;
+// };
 
 const updateUserProfileService = async (userId, updateData) => {
   const { name, email, phonenumber } = updateData;
@@ -137,50 +136,44 @@ const changePasswordService = async (userId, data) => {
   const { currentPassword, newPassword } = data;
 
   if (!currentPassword || !newPassword) {
-    return {
-      success: false,
-      message: "Current password and new password are required",
-    };
+    throw new Error("Please provide current and new password");
   }
 
   if (newPassword.length < 6) {
-    return {
-      success: false,
-      message: "New password must be at least 6 characters",
-    };
+    throw new Error("New password must be at least 6 characters");
   }
 
   if (currentPassword === newPassword) {
-    return {
-      success: false,
-      message: "New password cannot be the same as current password",
-    };
+    throw new Error("New password cannot be the same as current password");
   }
 
   const user = await User.findById(userId).select("+password");
 
   if (!user) {
-    return { success: false, message: "User not found" };
+    throw new Error("User not found");
   }
 
   const isPasswordMatch = await user.matchPassword(currentPassword);
 
   if (!isPasswordMatch) {
-    return { success: false, message: "Current password is incorrect" };
+    throw new Error("Current password is incorrect");
   }
 
   user.password = newPassword;
   await user.save();
 
-  return { success: true, message: "Password updated successfully" };
+  return { 
+    success: true, 
+    message: "Password updated successfully" 
+  };
 };
 
 export {
-  registerService,
   loginService,
-  createCustomerService,
+  registerService,
+  // createCustomerService,
   getCurrentUserProfileService,
-  getCustomerService,
+  // getCustomerService,
   updateUserProfileService,
   deleteProfileService,
   changePasswordService,

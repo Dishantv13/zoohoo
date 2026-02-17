@@ -1,9 +1,9 @@
 import {
   loginService,
   registerService,
-  createCustomerService,
+  // createCustomerService,
   getCurrentUserProfileService,
-  getCustomerService,
+  // getCustomerService,
   updateUserProfileService,
   deleteProfileService,
   changePasswordService,
@@ -27,7 +27,11 @@ const login = async (req, res) => {
   try {
     const result = await loginService(req.body);
     if (result.success) {
-      res.status(200).json(result);
+      res.status(200).json({
+        message: result.message,
+        token: result.token,
+        user: result.user
+      });
     } else {
       res.status(401).json({ message: result.message });
     }
@@ -37,14 +41,14 @@ const login = async (req, res) => {
   }
 };
 
-const createCustomer = async (req, res) => {
-  try {
-    const customer = await createCustomerService(req.body);
-    res.status(201).json(customer);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+// const createCustomer = async (req, res) => {
+//   try {
+//     const customer = await createCustomerService(req.body);
+//     res.status(201).json(customer);
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// };
 
 const getCurrentUserProfile = async (req, res) => {
   try {
@@ -55,14 +59,14 @@ const getCurrentUserProfile = async (req, res) => {
   }
 };
 
-const getCustomer = async (req, res) => {
-  try {
-    const customers = await getCustomerService();
-    res.json(customers);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+// const getCustomer = async (req, res) => {
+//   try {
+//     const customers = await getCustomerService();
+//     res.json(customers);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 const updateUserProfile = async (req, res) => {
   try {
@@ -96,12 +100,9 @@ const changePassword = async (req, res) => {
   }
 };
 
-
 export {
   register,
   login,
-  createCustomer,
-  getCustomer,
   getCurrentUserProfile,
   updateUserProfile,
   deleteProfile,

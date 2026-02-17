@@ -46,7 +46,6 @@ export default function Customers() {
     }
   };
 
-
   const onFinish = async (values) => {
     try {
       setLoading(true);
@@ -91,8 +90,7 @@ export default function Customers() {
     } catch (error) {
       notification.error({
         message: "Failed",
-        description:
-          error.response?.data?.message || "Password change failed",
+        description: error.response?.data?.message || "Password change failed",
       });
     } finally {
       setLoading(false);
@@ -141,19 +139,14 @@ export default function Customers() {
 
             {isEditing ? (
               <>
-                <Button onClick={() => setIsEditing(false)}>
-                  Cancel
-                </Button>
+                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
                 <Button type="primary" onClick={() => form.submit()}>
                   Save
                 </Button>
               </>
             ) : (
               <>
-                <Button
-                  type="primary"
-                  onClick={() => setIsEditing(true)}
-                >
+                <Button type="primary" onClick={() => setIsEditing(true)}>
                   Edit
                 </Button>
                 <Button danger onClick={handleDeleteAccount}>
@@ -171,21 +164,14 @@ export default function Customers() {
             onFinish={onFinish}
             disabled={!isEditing}
           >
-            <Form.Item
-              name="name"
-              label="Name"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="name" label="Name" rules={[{ required: true }]}>
               <Input prefix={<UserOutlined />} />
             </Form.Item>
 
             <Form.Item
               name="email"
               label="Email"
-              rules={[
-                { required: true },
-                { type: "email" },
-              ]}
+              rules={[{ required: true }, { type: "email" }]}
             >
               <Input prefix={<MailOutlined />} />
             </Form.Item>
@@ -200,7 +186,7 @@ export default function Customers() {
                 },
                 {
                   pattern: /^[0-9]{10}$/,
-                  message:"Phone number must be exactly 10 digits",
+                  message: "Phone number must be exactly 10 digits",
                 },
               ]}
             >
@@ -210,7 +196,7 @@ export default function Customers() {
                 placeholder="Enter your phone number"
                 onChange={(e) =>
                   form.setFieldsValue({
-                    phonenumber: e.target.value.replace(/\D/g,""),
+                    phonenumber: e.target.value.replace(/\D/g, ""),
                   })
                 }
               />
@@ -229,17 +215,11 @@ export default function Customers() {
         onOk={() => passwordForm.submit()}
         confirmLoading={loading}
       >
-        <Form
-          layout="vertical"
-          form={passwordForm}
-          onFinish={onChangePassword}
-        >
+        <Form layout="vertical" form={passwordForm} onFinish={onChangePassword}>
           <Form.Item
             name="currentPassword"
             label="Current Password"
-            rules={[
-              { required: true, message: "Enter current password" },
-            ]}
+            rules={[{ required: true, message: "Enter current password" }]}
           >
             <Input.Password prefix={<LockOutlined />} />
           </Form.Item>
@@ -263,15 +243,10 @@ export default function Customers() {
               { required: true },
               ({ getFieldValue }) => ({
                 validator(_, value) {
-                  if (
-                    !value ||
-                    getFieldValue("newPassword") === value
-                  ) {
+                  if (!value || getFieldValue("newPassword") === value) {
                     return Promise.resolve();
                   }
-                  return Promise.reject(
-                    new Error("Passwords do not match")
-                  );
+                  return Promise.reject(new Error("Passwords do not match"));
                 },
               }),
             ]}
@@ -283,4 +258,3 @@ export default function Customers() {
     </div>
   );
 }
-

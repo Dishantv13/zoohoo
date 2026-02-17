@@ -21,18 +21,19 @@ import dayjs from "dayjs";
 export default function CreateInvoice() {
   const [form] = Form.useForm();
   const currentUser = useSelector((state) => state.auth.user);
+  const currentUserId = currentUser?._id || currentUser?.id || null;
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const isEditing = !!id;
 
   useEffect(() => {
-    if (currentUser && !isEditing) {
+    if (currentUserId && !isEditing) {
       form.setFieldsValue({
-        customer: currentUser._id,
+        customer: currentUserId,
       });
     }
-  }, [currentUser, isEditing, form]);
+  }, [currentUserId, isEditing, form]);
 
   useEffect(() => {
     if (isEditing) {
@@ -40,7 +41,8 @@ export default function CreateInvoice() {
       api
         .get(`/invoices/${id}`)
         .then((response) => {
-          const data = response.data;
+          const data = response.data.invoice;
+          // console.log("Fetched invoice data:", data);
           form.setFieldsValue({
             customer: data.customer._id,
             invoiceDate: dayjs(data.invoiceDate),
@@ -54,7 +56,8 @@ export default function CreateInvoice() {
         .catch((error) => {
           notification.error({
             message: "Failed",
-            description: error.response?.data?.message || "Failed To Load Invoice",
+            description:
+              error.response?.data?.message || "Failed To Load Invoice",
           });
           navigate("/invoices");
         })
@@ -100,22 +103,18 @@ export default function CreateInvoice() {
 
   return (
     <Form form={form} layout="vertical" onFinish={onFinish}>
-      <Form.Item
-        name="customer"
-        label="Customer"
-      >
-        <Select placeholder="Select customer" disabled>
-          {currentUser && (
-            <Select.Option key={currentUser._id} value={currentUser._id}>
-              {currentUser.name}
-            </Select.Option>
-          )}
-        </Select>
+      <Form.Item name="customer" initialValue={currentUserId} hidden>
+        <Input />
+      </Form.Item>
+
+      <Form.Item label="Customer">
+        <Input value={currentUser?.name} disabled />
       </Form.Item>
 
       <Row gutter={20}>
         <Col xs={24} sm={8}>
           <Form.Item
+          
             name="invoiceDate"
             label="Invoice Date"
             rules={[{ required: true }]}
@@ -124,7 +123,11 @@ export default function CreateInvoice() {
           </Form.Item>
         </Col>
         <Col xs={24} sm={8}>
-          <Form.Item name="dueDate" label="Due Date" rules={[{ required: true }]}>
+          <Form.Item
+            name="dueDate"
+            label="Due Date"
+            rules={[{ required: true }]}
+          >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>
         </Col>

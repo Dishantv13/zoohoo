@@ -1,4 +1,4 @@
-import "@ant-design/v5-patch-for-react-19"
+import "@ant-design/v5-patch-for-react-19";
 import {
   Table,
   Button,
@@ -15,30 +15,41 @@ import {
   Dropdown,
   Modal,
   Select,
-} from 'antd';
-import { EditOutlined, DeleteOutlined, CreditCardOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchInvoices } from '../features/invoice/invoice.slice';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import api from '../service/api';
-import PaymentModal from '../components/PaymentModal';
-
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  CreditCardOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchInvoices } from "../features/invoice/invoice.slice";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import api from "../service/api";
+import PaymentModal from "../components/PaymentModal";
 
 export default function InvoiceList() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { list: invoices, loading } = useSelector(state => state.invoices);
+  const {
+    list: invoices,
+    loading,
+    pagination,
+    summary,
+  } = useSelector((state) => state.invoices);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(pagination?.limit || 5);
   const [statusFilter, setStatusFilter] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
-  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState(null);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
+    useState(null);
 
   useEffect(() => {
-    dispatch(fetchInvoices());
-  }, [dispatch]);
-    
+    dispatch(fetchInvoices({ page, limit: pageSize }));
+  }, [dispatch, page, pageSize]);
+
   const handleEdit = (invoice) => {
     navigate(`/invoices/${invoice._id}`);
   };
@@ -46,17 +57,17 @@ export default function InvoiceList() {
   const handleDelete = async (id) => {
     await api.delete(`/invoices/${id}`);
     notification.success({
-          message: 'Success',
-          description: 'Invoice deleted successfully',
-        })
-    dispatch(fetchInvoices());
+      message: "Success",
+      description: "Invoice deleted successfully",
+    });
+    dispatch(fetchInvoices({ page, limit: pageSize }));
   };
 
   const handlePaymentClick = (invoice) => {
-    if (invoice.status === 'PAID') {
+    if (invoice.status === "PAID") {
       notification.warning({
-        message: 'Already Paid',
-        description: 'This invoice has already been paid',
+        message: "Already Paid",
+        description: "This invoice has already been paid",
       });
       return;
     }
@@ -66,33 +77,38 @@ export default function InvoiceList() {
 
   const handlePaymentSuccess = () => {
     notification.success({
-      message: 'Success',
-      description: 'Invoice marked as PAID',
+      message: "Success",
+      description: "Invoice marked as PAID",
     });
-    dispatch(fetchInvoices());
+    dispatch(fetchInvoices({ page, limit: pageSize }));
     setPaymentModalVisible(false);
   };
 
+  const handleTableChange = (paginationInfo) => {
+    setPage(paginationInfo.current);
+    setPageSize(paginationInfo.pageSize);
+  };
+
   const handleStatusChange = async (invoiceId, newStatus) => {
-    if (newStatus === 'CANCELLED') {
+    if (newStatus === "CANCELLED") {
       Modal.confirm({
-        title: 'Cancel Invoice?',
-        content: 'This will permanently delete the invoice. Are you sure?',
-        okText: 'Yes, Delete',
-        okType: 'danger',
-        cancelText: 'No',
+        title: "Cancel Invoice?",
+        content: "This will permanently delete the invoice. Are you sure?",
+        okText: "Yes, Delete",
+        okType: "danger",
+        cancelText: "No",
         onOk: async () => {
           try {
             await api.delete(`/invoices/${invoiceId}`);
             notification.success({
-              message: 'Success',
-              description: 'Invoice cancelled and deleted successfully',
+              message: "Success",
+              description: "Invoice cancelled and deleted successfully",
             });
-            dispatch(fetchInvoices());
+            dispatch(fetchInvoices({ page, limit: pageSize }));
           } catch (error) {
             notification.error({
-              message: 'Failed',
-              description: 'Failed to delete invoice',
+              message: "Failed",
+              description: "Failed to delete invoice",
             });
           }
         },
@@ -103,47 +119,35 @@ export default function InvoiceList() {
     try {
       await api.patch(`/invoices/${invoiceId}/status`, { status: newStatus });
       notification.success({
-        message: 'Success',
+        message: "Success",
         description: `Invoice status updated to ${newStatus}`,
       });
-      dispatch(fetchInvoices());
+      dispatch(fetchInvoices({ page, limit: pageSize }));
     } catch (error) {
       notification.error({
-        message: 'Failed',
-        description: 'Failed to update invoice status',
+        message: "Failed",
+        description: "Failed to update invoice status",
       });
     }
   };
 
-  const totalAmount = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-  // const totalSubtotal = invoices.reduce((sum, invoice) => sum + (invoice.subtotal || 0), 0);
-  // const totalTax = invoices.reduce((sum, invoice) => sum + (invoice.tax || 0), 0);
+  const summaryData = summary || {};
 
-  const paidAmount = invoices
-    .filter(invoice => invoice.status === 'PAID')
-    .reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-  
-  const pendingAmount = invoices
-    .filter(invoice => invoice.status === 'PENDING')
-    .reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-  
-  const confirmedAmount = invoices
-    .filter(invoice => invoice.status === 'CONFIRMED')
-    .reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+  const totalAmount = summaryData.totalAmount || 0;
+  const paidAmount = summaryData.paidAmount || 0;
+  const pendingAmount = summaryData.pendingAmount || 0;
+  const confirmedAmount = summaryData.confirmedAmount || 0;
+  const overdueCount = summaryData.overdueCount || 0;
 
   const filteredInvoices = statusFilter
-    ? invoices.filter(invoice => invoice.status === statusFilter)
+    ? invoices.filter((invoice) => invoice.status === statusFilter)
     : invoices;
-
-  const handleTableChange = (paginationInfo) => {
-    setPage(paginationInfo.current);
-    setPageSize(paginationInfo.pageSize);
-  };
 
   const columns = [
     {
-      title: 'Invoice No',
-      dataIndex: 'invoiceNumber',
+      title: "Invoice No",
+      dataIndex: "invoiceNumber",
+      width: 100,
       render: (val) => (
         <Flex align="center" gap="small">
           <Tag color="red">{val}</Tag>
@@ -151,131 +155,171 @@ export default function InvoiceList() {
       ),
     },
     {
-      title: 'Customer',
+      title: "Customer",
+      width: 100,
       render: (_, r) => {
         const name = r.customer?.name;
 
         if (!name) {
           return <Tag color="default">UNKNOWN</Tag>;
         }
+        return <Tag color="pink">{name.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: "Date",
+      dataIndex: "invoiceDate",
+      width: 100,
+      render: (d) => {
+        const date = dayjs(d).format("DD MMM YYYY");
         return (
-          <Tag color="pink">
-            {name.toUpperCase()}
-          </Tag>
+          <Flex align="center" gap="small">
+            <Tag color="cyan">{date}</Tag>
+          </Flex>
         );
-      }
-
+      },
     },
     {
-      title: 'Date',
-      dataIndex: 'invoiceDate',
-      render: d => {
-        const date = dayjs(d).format('DD MMM YYYY')
+      title: "Due Date",
+      dataIndex: "dueDate",
+      width: 100,
+      render: (d, record) => {
+        const date = dayjs(d).format("DD MMM YYYY");
+        const isPastDue = dayjs(d).isBefore(dayjs(), "day");
+        const isUnpaid =
+          record.status !== "PAID" && record.status !== "CANCELLED";
         return (
-        <Flex align="center" gap="small">
-          <Tag color="cyan">{date}</Tag>
-        </Flex>
-        )
-      }
+          <Flex vertical align="flex-start" gap="small">
+            <Tag color="red">{date}</Tag>
+            {isPastDue && isUnpaid && (
+              <Tag color="volcano" icon={<WarningOutlined />}>
+                Overdue
+              </Tag>
+            )}
+          </Flex>
+        );
+      },
     },
     {
-    title: 'Due Date',
-    dataIndex: 'dueDate',
-    render: d => {
-        const date = dayjs(d).format('DD MMM YYYY')
-        return (
-         <Flex align="center" gap="small">
-          <Tag color="red">{date}</Tag>
-        </Flex>
-        )
-      }
-    },
-    {      
-      title: 'Status',
-      dataIndex: 'status',
+      title: "Status",
+      dataIndex: "status",
+      width: 100,
       render: (status) => {
         const statusColors = {
-          PENDING: 'orange',
-          CONFIRMED: 'blue',
-          PAID: 'green',
-          CANCELLED: 'red'
+          PENDING: "orange",
+          CONFIRMED: "blue",
+          PAID: "green",
+          CANCELLED: "red",
         };
-        return <Tag color={statusColors[status] || 'default'}>{status || 'PENDING'}</Tag>;
-      }
+        return (
+          <Tag color={statusColors[status] || "default"}>
+            {status || "PENDING"}
+          </Tag>
+        );
+      },
     },
     {
-    title: "Sub Total",
-    dataIndex: "subtotal",
-    render: (v = 0) => (
-      <Flex align="center" gap="small">
-        <Tag color="blue">₹{Number(v).toFixed(2)}</Tag>
-      </Flex>
-    ),
+      title: "Sub Total",
+      dataIndex: "subtotal",
+      width: 120,
+      render: (v = 0) => (
+        <Flex align="center" gap="small">
+          <Tag color="blue">₹{Number(v).toFixed(2)}</Tag>
+        </Flex>
+      ),
     },
 
     {
-      title: "Discount Rate (%)",
+      title: (
+        <div style={{ lineHeight: "1.2" }}>
+          <div>Discount</div>
+          <div>Rate (%)</div>
+        </div>
+      ),
       dataIndex: "parseDiscount",
+      width: 100,
       render: (v = 0) => (
-      <Flex align="center" gap="small">
-        <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
-      </Flex>
+        <Flex align="center" gap="small">
+          <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
+        </Flex>
       ),
     },
     {
       title: "Discount",
       dataIndex: "discount",
+      width: 120,
       render: (v = 0) => (
-      <Flex align="center" gap="small">
-        <Tag color="red">₹{Number(v).toFixed(2)}</Tag>
-      </Flex>
-    ),
+        <Flex align="center" gap="small">
+          <Tag color="red">₹{Number(v).toFixed(2)}</Tag>
+        </Flex>
+      ),
     },
     {
-      title: "Amount After Discount",
+      title: (
+        <div style={{ lineHeight: "1.2" }}>
+          Amount After <br />
+          Discount
+        </div>
+      ),
       dataIndex: "amountAfterDiscount",
+      width: 120,
       render: (v = 0) => (
-      <Flex align="center" gap="small">
-        <Tag color="purple">₹{Number(v).toFixed(2)}</Tag>
-      </Flex>
-    ),
+        <Flex align="center" gap="small">
+          <Tag color="purple">₹{Number(v).toFixed(2)}</Tag>
+        </Flex>
+      ),
     },
     {
-      title: "Tax Rate (%)",
+      title: (
+        <div style={{ lineHeight: "1.2" }}>
+          <div>Tax</div>
+          <div>Rate (%)</div>
+        </div>
+      ),
       dataIndex: "parseTaxRate",
+      width: 100,
       render: (v = 0) => (
-      <Flex align="center" gap="small">
-        <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
-      </Flex>
-     ),
+        <Flex align="center" gap="small">
+          <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
+        </Flex>
+      ),
     },
 
     {
       title: "Tax",
       dataIndex: "tax",
+      width: 120,
       render: (v = 0) => (
-      <Flex align="center" gap="small">
-        <Tag color="orange">₹{Number(v).toFixed(2)}</Tag>
-      </Flex>
-    ),
+        <Flex align="center" gap="small">
+          <Tag color="orange">₹{Number(v).toFixed(2)}</Tag>
+        </Flex>
+      ),
     },
     {
-      title: 'Total Amount',
-      dataIndex: 'totalAmount',
+      title: "Total Amount",
+      dataIndex: "totalAmount",
+      width: 120,
       render: (v = 0) => (
-      <Flex align="center" gap="small">
-        <Tag color="blue">₹{Number(v).toFixed(2)}</Tag>
-      </Flex>
-    ),
+        <Flex align="center" gap="small">
+          <Tag color="blue">₹{Number(v).toFixed(2)}</Tag>
+        </Flex>
+      ),
     },
-    
+
     {
-      title: 'Action',
-      width: 350,
+      title: "Action",
+      width: 400,
       render: (_, record) => {
-        if (record.status === 'PAID') {
+        if (record.status === "PAID") {
           return (
-            <Tag color="green" style={{ padding: '8px 16px', fontSize: '14px', fontWeight: 'bold' }}>
+            <Tag
+              color="green"
+              style={{
+                padding: "8px 16px",
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
               ✓ PAID
             </Tag>
           );
@@ -283,20 +327,20 @@ export default function InvoiceList() {
 
         const statusMenuItems = [
           {
-            key: 'PENDING',
-            label: 'Pending',
-            onClick: () => handleStatusChange(record._id, 'PENDING'),
+            key: "PENDING",
+            label: "Pending",
+            onClick: () => handleStatusChange(record._id, "PENDING"),
           },
           {
-            key: 'CONFIRMED',
-            label: 'Confirmed',
-            onClick: () => handleStatusChange(record._id, 'CONFIRMED'),
+            key: "CONFIRMED",
+            label: "Confirmed",
+            onClick: () => handleStatusChange(record._id, "CONFIRMED"),
           },
           {
-            key: 'CANCELLED',
-            label: '🗑️ Cancel & Delete',
+            key: "CANCELLED",
+            label: "🗑️ Cancel & Delete",
             danger: true,
-            onClick: () => handleStatusChange(record._id, 'CANCELLED'),
+            onClick: () => handleStatusChange(record._id, "CANCELLED"),
           },
         ];
 
@@ -334,50 +378,60 @@ export default function InvoiceList() {
           </Space>
         );
       },
-    }
+    },
   ];
 
   return (
     <>
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
+      <Row gutter={25} style={{ marginBottom: 24 }}>
+        <Col span={4}>
+          <Card>
+            <Statistic
+              title="Overdue Invoices"
+              value={overdueCount}
+              prefix={<WarningOutlined />}
+              valueStyle={{ color: "#fa541c", fontSize: "20px" }}
+            />
+          </Card>
+        </Col>
+        <Col span={4}>
           <Card>
             <Statistic
               title="Pending Amount"
               value={pendingAmount.toFixed(2)}
               prefix="₹"
-              valueStyle={{ color: '#faad14', fontSize: '20px' }}
+              valueStyle={{ color: "#faad14", fontSize: "20px" }}
             />
           </Card>
         </Col>
-        
-        <Col span={6}>
+
+        <Col span={4}>
           <Card>
             <Statistic
               title="Confirmed Amount"
               value={confirmedAmount.toFixed(2)}
               prefix="₹"
-              valueStyle={{ color: '#1890ff', fontSize: '20px' }}
+              valueStyle={{ color: "#1890ff", fontSize: "20px" }}
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={4}>
           <Card>
             <Statistic
               title="Paid Amount"
               value={paidAmount.toFixed(2)}
               prefix="₹"
-              valueStyle={{ color: '#52c41a', fontSize: '20px' }}
+              valueStyle={{ color: "#52c41a", fontSize: "20px" }}
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={4}>
           <Card>
             <Statistic
               title="Total Amount"
               value={totalAmount.toFixed(2)}
               prefix="₹"
-              valueStyle={{ color: '#1890ff', fontSize: '20px' }}
+              valueStyle={{ color: "#1890ff", fontSize: "20px" }}
             />
           </Card>
         </Col>
@@ -386,10 +440,7 @@ export default function InvoiceList() {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={24}>
           <Space>
-            <Button
-              type="primary"
-              onClick={() => navigate('/create-invoice')}
-            >
+            <Button type="primary" onClick={() => navigate("/create-invoice")}>
               Create Invoice
             </Button>
 
@@ -400,10 +451,10 @@ export default function InvoiceList() {
               value={statusFilter}
               onChange={setStatusFilter}
               options={[
-                { value: null, label: '📋 All Status' },
-                { value: 'PENDING', label: '🟡 Pending' },
-                { value: 'CONFIRMED', label: '🔵 Confirmed' },
-                { value: 'PAID', label: '🟢 Paid' },
+                { value: null, label: "📋 All Status" },
+                { value: "PENDING", label: "🟡 Pending" },
+                { value: "CONFIRMED", label: "🔵 Confirmed" },
+                { value: "PAID", label: "🟢 Paid" },
               ]}
             />
           </Space>
@@ -415,7 +466,11 @@ export default function InvoiceList() {
           columns={columns}
           dataSource={filteredInvoices}
           rowKey="_id"
+          onChange={handleTableChange}
           pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: pagination.totalItems,
             showQuickJumper: true,
             showSizeChanger: true,
             pageSizeOptions: [5, 10, 20, 50],

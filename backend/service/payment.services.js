@@ -111,7 +111,7 @@ const getPaymentStatusService = async (userId, data) => {
   if (invoice.createdBy.toString() !== userId.toString()) {
     throw new Error("Not authorized to view this invoice");
   }
-  
+
   return {
     invoiceId: invoice._id,
     status: invoice.status,
@@ -120,8 +120,8 @@ const getPaymentStatusService = async (userId, data) => {
   };
 };
 
-export { 
-    processCardPaymentService, 
-    processQrPaymentService, 
-    getPaymentStatusService
+export {
+  processCardPaymentService,
+  processQrPaymentService,
+  getPaymentStatusService,
 };
