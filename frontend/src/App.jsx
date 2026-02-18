@@ -18,6 +18,8 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { logout, getCurrentUser } from "./features/auth/authSlice.js";
+import InvoiceView from "./pages/InvoiceView.jsx";
+import "./index.css";
 
 const { Header, Content } = Layout;
 
@@ -174,6 +176,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <CreateInvoice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/view-invoices/:id"
+            element={
+              <ProtectedRoute>
+                <InvoiceView />
               </ProtectedRoute>
             }
           />

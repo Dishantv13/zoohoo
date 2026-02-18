@@ -5,6 +5,9 @@ import {
   updateInvoiceService,
   updateInvoiceStatusService,
   deleteInvoiceService,
+  downloadInvoiceService,
+  getCompanyService,
+  
 } from "../service/invoice.service.js";
 
 const createInvoice = async (req, res) => {
@@ -25,6 +28,7 @@ const getInvoices = async (req, res) => {
     const result = await getInvoicesServices(req.user._id, {
       page: req.query.page,
       limit: req.query.limit,
+      status: req.query.status,
     });
     res.status(200).json({
       success: true,
@@ -39,10 +43,14 @@ const getInvoices = async (req, res) => {
 const getInvoiceById = async (req, res) => {
   try {
     const invoice = await getInvoiceByIdService(req.user._id, req.params.id);
+    
+    const company = getCompanyService();
+
     res.status(200).json({
       success: true,
       message: "Invoice retrieved successfully",
       invoice,
+      company,
     });
   } catch (error) {
     res.status(404).json({ 
@@ -94,6 +102,20 @@ const deleteInvoice = async (req, res) => {
   }
 };
 
+const downloadInvoice = async (req, res) => {
+  try {
+    await downloadInvoiceService(
+      req.user._id,
+      req.params.id,
+      res
+    );
+
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+
 export {
   createInvoice,
   getInvoices,
@@ -101,4 +123,5 @@ export {
   updateInvoice,
   updateInvoiceStatus,
   deleteInvoice,
+  downloadInvoice,
 };

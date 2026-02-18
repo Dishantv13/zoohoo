@@ -15,12 +15,15 @@ import {
   Dropdown,
   Modal,
   Select,
+  Tooltip,
 } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   CreditCardOutlined,
   WarningOutlined,
+  DownloadOutlined,
+  EyeOutlined
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -29,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import api from "../service/api";
 import PaymentModal from "../components/PaymentModal";
+import InvoiceView from "./InvoiceView";
 
 export default function InvoiceList() {
   const dispatch = useDispatch();
@@ -47,8 +51,8 @@ export default function InvoiceList() {
     useState(null);
 
   useEffect(() => {
-    dispatch(fetchInvoices({ page, limit: pageSize }));
-  }, [dispatch, page, pageSize]);
+    dispatch(fetchInvoices({ page, limit: pageSize, status: statusFilter }));
+  }, [dispatch, page, pageSize, statusFilter]);
 
   const handleEdit = (invoice) => {
     navigate(`/invoices/${invoice._id}`);
@@ -60,7 +64,7 @@ export default function InvoiceList() {
       message: "Success",
       description: "Invoice deleted successfully",
     });
-    dispatch(fetchInvoices({ page, limit: pageSize }));
+    dispatch(fetchInvoices({ page, limit: pageSize, status: statusFilter }));
   };
 
   const handlePaymentClick = (invoice) => {
@@ -75,12 +79,40 @@ export default function InvoiceList() {
     setPaymentModalVisible(true);
   };
 
+  const handleDownLoad = async (invoice) => {
+    try {
+      const response = await api.get(`/invoices/${invoice._id}/download`, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([response.data], {
+        type: "application/pdf",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice_${invoice.invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      notification.error({
+        message: "Failed",
+        description: "Failed to download invoice",
+      });
+    }
+  };
+
   const handlePaymentSuccess = () => {
     notification.success({
       message: "Success",
       description: "Invoice marked as PAID",
     });
-    dispatch(fetchInvoices({ page, limit: pageSize }));
+    dispatch(fetchInvoices({ page, limit: pageSize, status: statusFilter }));
     setPaymentModalVisible(false);
   };
 
@@ -104,7 +136,9 @@ export default function InvoiceList() {
               message: "Success",
               description: "Invoice cancelled and deleted successfully",
             });
-            dispatch(fetchInvoices({ page, limit: pageSize }));
+            dispatch(
+              fetchInvoices({ page, limit: pageSize, status: statusFilter }),
+            );
           } catch (error) {
             notification.error({
               message: "Failed",
@@ -122,7 +156,7 @@ export default function InvoiceList() {
         message: "Success",
         description: `Invoice status updated to ${newStatus}`,
       });
-      dispatch(fetchInvoices({ page, limit: pageSize }));
+      dispatch(fetchInvoices({ page, limit: pageSize, status: statusFilter }));
     } catch (error) {
       notification.error({
         message: "Failed",
@@ -130,6 +164,11 @@ export default function InvoiceList() {
       });
     }
   };
+
+  const handleViewInvoice = (invoice) => {
+  navigate(`/view-invoices/${invoice._id}`);
+};
+
 
   const summaryData = summary || {};
 
@@ -185,7 +224,7 @@ export default function InvoiceList() {
       width: 100,
       render: (d, record) => {
         const date = dayjs(d).format("DD MMM YYYY");
-        const isPastDue = dayjs(d).isBefore(dayjs(), "day");
+        const isPastDue = dayjs(d).isBefore(dayjs().startOf("start-day"));
         const isUnpaid =
           record.status !== "PAID" && record.status !== "CANCELLED";
         return (
@@ -228,41 +267,46 @@ export default function InvoiceList() {
         </Flex>
       ),
     },
-
     {
       title: (
-        <div style={{ lineHeight: "1.2" }}>
-          <div>Discount</div>
-          <div>Rate (%)</div>
+        <div style={{ lineHeight: "1.2", textAlign: "center" }}>
+          <div>Discount Rate</div>
+          <div>(%)</div>
         </div>
       ),
       dataIndex: "parseDiscount",
       width: 100,
+      key: "discountRate",
       render: (v = 0) => (
-        <Flex align="center" gap="small">
+        <Flex align="center" gap="small" justify="center">
           <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
         </Flex>
       ),
     },
     {
-      title: "Discount",
+      title: "Discount ₹",
       dataIndex: "discount",
       width: 120,
-      render: (v = 0) => (
-        <Flex align="center" gap="small">
-          <Tag color="red">₹{Number(v).toFixed(2)}</Tag>
-        </Flex>
-      ),
+      key: "discount",
+      render: (v) => {
+        const value = Number(v) || 0;
+        return (
+          <Flex align="center" gap="small">
+            <Tag color="red">₹{value.toFixed(2)}</Tag>
+          </Flex>
+        );
+      },
     },
     {
       title: (
-        <div style={{ lineHeight: "1.2" }}>
+        <div style={{ lineHeight: "1.2", textAlign: "center" }}>
           Amount After <br />
           Discount
         </div>
       ),
       dataIndex: "amountAfterDiscount",
       width: 120,
+      key: "amountAfterDiscount",
       render: (v = 0) => (
         <Flex align="center" gap="small">
           <Tag color="purple">₹{Number(v).toFixed(2)}</Tag>
@@ -271,24 +315,25 @@ export default function InvoiceList() {
     },
     {
       title: (
-        <div style={{ lineHeight: "1.2" }}>
-          <div>Tax</div>
-          <div>Rate (%)</div>
+        <div style={{ lineHeight: "1.2", textAlign: "center" }}>
+          <div>Tax Rate</div>
+          <div>(%)</div>
         </div>
       ),
       dataIndex: "parseTaxRate",
       width: 100,
+      key: "taxRate",
       render: (v = 0) => (
-        <Flex align="center" gap="small">
+        <Flex align="center" gap="small" justify="center">
           <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
         </Flex>
       ),
     },
-
     {
-      title: "Tax",
+      title: "Tax ₹",
       dataIndex: "tax",
       width: 120,
+      key: "tax",
       render: (v = 0) => (
         <Flex align="center" gap="small">
           <Tag color="orange">₹{Number(v).toFixed(2)}</Tag>
@@ -299,6 +344,7 @@ export default function InvoiceList() {
       title: "Total Amount",
       dataIndex: "totalAmount",
       width: 120,
+      key: "totalAmount",
       render: (v = 0) => (
         <Flex align="center" gap="small">
           <Tag color="blue">₹{Number(v).toFixed(2)}</Tag>
@@ -355,26 +401,81 @@ export default function InvoiceList() {
               Pay Now
             </Button>
 
+            <Tooltip title="Change Status">
             <Dropdown menu={{ items: statusMenuItems }} placement="bottomLeft">
-              <Button size="small">Status</Button>
+              <Button size="small"
+                style={{
+                  borderRadius: "5px",
+                  backgroundColor: "#b07d17",
+                  borderColor: "#faad14",
+                  color: "white",
+                }}
+              >
+                Status
+              </Button>
             </Dropdown>
+            </Tooltip>
 
+            <Tooltip title="View Invoice">
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewInvoice(record)}
+              style={{
+                borderRadius: "5px",
+                color: "black",
+              }}
+            >
+
+            </Button>
+            </Tooltip>
+
+            <Tooltip title="Edit Invoice">
             <Button
               size="small"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
-            >
-              Edit
-            </Button>
+              style={{
+                borderRadius: "5px",
+                backgroundColor: "#1890ff",
+                borderColor: "#1890ff",
+                color: "white",
+              }}
+            ></Button>
+            </Tooltip>
 
+            <Tooltip title="Download Invoice">
+              <Button
+                size="small"
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownLoad(record)}
+                style={{
+                  borderRadius: "5px",
+                  backgroundColor: "#16a34a",
+                  borderColor: "#16a34a",
+                  color: "white",
+                  size: "large",
+                }}
+              ></Button>
+            </Tooltip>
+
+            <Tooltip title="Delete Invoice">
             <Popconfirm
               title="Delete this invoice?"
               onConfirm={() => handleDelete(record._id)}
             >
-              <Button danger size="small" icon={<DeleteOutlined />}>
-                Delete
-              </Button>
+              <Button danger 
+              size="small" 
+              icon={<DeleteOutlined />}
+              style={{
+                borderRadius: "5px",
+                backgroundColor: "#ff4d4f",
+                borderColor: "#ff4d4f",
+                color: "white",
+              }}
+              ></Button>
             </Popconfirm>
+            </Tooltip>
           </Space>
         );
       },
@@ -449,9 +550,12 @@ export default function InvoiceList() {
               style={{ width: 200 }}
               allowClear
               value={statusFilter}
-              onChange={setStatusFilter}
+              onChange={(value) => {
+                setPage(1);
+                setStatusFilter(value === "ALL" ? null : value);
+              }}
               options={[
-                { value: null, label: "📋 All Status" },
+                { value: "ALL", label: "📋 All Status" },
                 { value: "PENDING", label: "🟡 Pending" },
                 { value: "CONFIRMED", label: "🔵 Confirmed" },
                 { value: "PAID", label: "🟢 Paid" },
@@ -467,6 +571,7 @@ export default function InvoiceList() {
           dataSource={filteredInvoices}
           rowKey="_id"
           onChange={handleTableChange}
+          scroll={{ x: "max-content" }}
           pagination={{
             current: page,
             pageSize: pageSize,
@@ -474,7 +579,11 @@ export default function InvoiceList() {
             showQuickJumper: true,
             showSizeChanger: true,
             pageSizeOptions: [5, 10, 20, 50],
+            showTotal: (total, range) =>
+              `Showing ${range[0]}-${range[1]} of ${total} invoices`,
+            position: ["bottomRight"],
           }}
+          size="large"
         />
       </Spin>
 

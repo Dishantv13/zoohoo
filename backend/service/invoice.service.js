@@ -1,5 +1,8 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import { Invoice } from "../model/invoice.model.js";
+import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
 
 const createInvoiceService = async (userId, data) => {
   const {
@@ -34,6 +37,8 @@ const createInvoiceService = async (userId, data) => {
   const totalAmount = subtotal + taxAmount - discountAmount;
 
   const finalSubtotal = Number(subtotal.toFixed(2));
+  const finalDiscountAmount = Number(discountAmount.toFixed(2));
+  const finalAmountAfterDiscount = Number(amountAfterDiscount.toFixed(2));
   const finalTax = Number(taxAmount.toFixed(2));
   const finalTotal = Number(totalAmount.toFixed(2));
 
@@ -41,6 +46,7 @@ const createInvoiceService = async (userId, data) => {
 
   const invoice = await Invoice.create({
     invoiceNumber: `INV-${invoiceCount + 1}`,
+    invoiceCount: invoiceCount + 1,
     createdBy: userId,
     customer,
     invoiceDate,
@@ -51,8 +57,8 @@ const createInvoiceService = async (userId, data) => {
     parseTaxRate: parsedTaxRate,
     tax: finalTax,
     parseDiscount: parsedDiscount,
-    discount: discountAmount,
-    amountAfterDiscount: amountAfterDiscount,
+    discount: finalDiscountAmount,
+    amountAfterDiscount: finalAmountAfterDiscount,
     totalAmount: finalTotal,
   });
   return invoice;
@@ -63,12 +69,19 @@ const getInvoicesServices = async (userId, options = {}) => {
   const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
   const skip = (page - 1) * limit;
 
-  const match = { createdBy: userId };
+  const { status } = options;
 
-  const totalItems = await Invoice.countDocuments(match);
+  const filteredMatch = {
+    createdBy: userId,
+    ...(status && status !== "null" ? { status } : {}),
+  };
+
+  const summaryMatch = { createdBy: userId };
+
+  const totalItems = await Invoice.countDocuments(filteredMatch);
 
   const invoices = await Invoice.aggregate([
-    { $match: match },
+    { $match: filteredMatch },
     { $addFields: { isPaid: { $cond: [{ $eq: ["$status", "PAID"] }, 1, 0] } } },
     { $sort: { isPaid: 1, dueDate: 1, createdAt: -1 } },
     { $skip: skip },
@@ -76,45 +89,45 @@ const getInvoicesServices = async (userId, options = {}) => {
   ]);
 
   const summary = await Invoice.aggregate([
-  { $match: match },
-  {
-    $group: {
-      _id: null,
-      totalAmount: { $sum: "$totalAmount" },
-      paidAmount: {
-        $sum: {
-          $cond: [{ $eq: ["$status", "PAID"] }, "$totalAmount", 0],
+    { $match: summaryMatch },
+    {
+      $group: {
+        _id: userId,
+        totalAmount: { $sum: "$totalAmount" },
+        paidAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "PAID"] }, "$totalAmount", 0],
+          },
         },
-      },
-      pendingAmount: {
-        $sum: {
-          $cond: [{ $eq: ["$status", "PENDING"] }, "$totalAmount", 0],
+        pendingAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "PENDING"] }, "$totalAmount", 0],
+          },
         },
-      },
-      confirmedAmount: {
-        $sum: {
-          $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
+        confirmedAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
+          },
         },
-      },
-      overdueCount: {
-        $sum: {
-          $cond: [
-            {
-              $and: [
-                { $lt: ["$dueDate", new Date()] },
-                { $ne: ["$status", "PAID"] },
-                { $ne: ["$status", "CANCELLED"] },
-                // { $nin: ["$status", ["PAID", "CANCELLED"]] },
-              ],
-            },
-            1,
-            0,
-          ],
+        overdueCount: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $lt: ["$dueDate", new Date()] },
+                  { $ne: ["$status", "PAID"] },
+                  { $ne: ["$status", "CANCELLED"] },
+                  // { $nin: ["$status", ["PAID", "CANCELLED"]] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
         },
       },
     },
-  },
-]);
+  ]);
 
   const populated = await Invoice.populate(invoices, {
     path: "customer",
@@ -143,13 +156,12 @@ const getInvoicesServices = async (userId, options = {}) => {
       hasPrev: page > 1 && totalPages > 0,
     },
     summary: summary[0] || {
-    totalAmount: 0,
-    paidAmount: 0,
-    pendingAmount: 0,
-    confirmedAmount: 0,
-    overdueCount: 0,
-}
-
+      totalAmount: 0,
+      paidAmount: 0,
+      pendingAmount: 0,
+      confirmedAmount: 0,
+      overdueCount: 0,
+    },
   };
 };
 
@@ -205,37 +217,41 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
   }, 0);
 
   const discountAmount = subtotal * (parsedDiscount / 100);
-  // console.log("Subtotal:", subtotal, "Discount Amount:", discountAmount);
 
   const amountAfterDiscount = subtotal - discountAmount;
-  // console.log("Amount after discount:", amountAfterDiscount);
 
   const taxAmount = amountAfterDiscount * (parsedTaxRate / 100);
-  // console.log("Tax Amount:", taxAmount);
 
   const totalAmount = subtotal + taxAmount - discountAmount;
-  // console.log("Total Amount:", totalAmount);
 
   const finalSubtotal = Number(subtotal.toFixed(2));
+  const finalDiscountAmount = Number(discountAmount.toFixed(2));
+  const finalAmountAfterDiscount = Number(amountAfterDiscount.toFixed(2));
   const finalTax = Number(taxAmount.toFixed(2));
   const finalTotal = Number(totalAmount.toFixed(2));
 
-  invoice.customer = customer;
-  invoice.invoiceDate = invoiceDate;
-  invoice.dueDate = dueDate;
-  invoice.status = status || invoice.status;
-  invoice.items = items;
-  invoice.subtotal = finalSubtotal;
-  invoice.parseTaxRate = parsedTaxRate;
-  invoice.tax = finalTax;
-  invoice.parseDiscount = parsedDiscount;
-  invoice.amountAfterDiscount = amountAfterDiscount;
-  invoice.discount = discountAmount;
-  invoice.totalAmount = finalTotal;
+  const updateData = {
+    customer,
+    invoiceDate,
+    dueDate,
+    status,
+    items,
+    subtotal: finalSubtotal,
+    parseTaxRate: parsedTaxRate,
+    tax: finalTax,
+    parseDiscount: parsedDiscount,
+    amountAfterDiscount: finalAmountAfterDiscount,
+    discount: finalDiscountAmount,
+    totalAmount: finalTotal,
+  };
 
-  await invoice.save();
+  const updatedInvoice = await Invoice.findByIdAndUpdate(
+    invoiceId,
+    { $set: updateData },
+    { new: true },
+  );
 
-  return invoice;
+  return updatedInvoice;
 };
 
 const updateInvoiceStatusService = async (userId, invoiceId, newStatus) => {
@@ -272,6 +288,181 @@ const deleteInvoiceService = async (userId, invoiceId) => {
   await Invoice.findByIdAndDelete(invoiceId);
 };
 
+const downloadInvoiceService = async (userId, invoiceId, res) => {
+  const invoice = await Invoice.findById(invoiceId).populate("customer");
+
+  if (!invoice) throw new Error("Invoice not found");
+
+  if (invoice.createdBy.toString() !== userId.toString()) {
+    throw new Error("Not authorized");
+  }
+
+  const doc = new PDFDocument({
+    size: "A4",
+    margin: 50,
+  });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`,
+  );
+
+  doc.pipe(res);
+
+  const logoPath = path.join("public", "pdf.png");
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, 50, 45, { width: 60 });
+  }
+
+  doc
+    .fontSize(20)
+    .text("YOUR COMPANY NAME", 120, 50)
+    .fontSize(10)
+    .text("Your Company Address Line 1", 120, 70)
+    .text("City, State, Pincode", 120, 85)
+    .text("GSTIN: 22AAAAA0000A1Z5", 120, 100)
+    .moveDown();
+
+  doc.moveTo(50, 130).lineTo(550, 130).stroke();
+
+  doc
+    .fontSize(12)
+    .text(`Invoice No: ${invoice.invoiceNumber}`, 50, 150)
+    .text(
+      `Invoice Date: ${new Date(invoice.invoiceDate).toLocaleDateString()}`,
+      350,
+      150,
+    )
+    .text(
+      `Due Date: ${new Date(invoice.dueDate).toLocaleDateString()}`,
+      350,
+      170,
+    )
+    .moveDown();
+
+  doc
+    .text("Bill To:", 50, 190)
+    .text(invoice.customer.name, 50, 205)
+    .text(invoice.customer.email, 50, 220)
+    .moveDown();
+
+  doc
+    .text("Bill From:", 350, 190)
+    .text("Your Company Name", 350, 205)
+    .text("Your Company Email", 350, 220)
+    .moveDown();
+
+  const tableTop = 260;
+
+  doc
+    .font("Helvetica-Bold")
+    .text("S.No", 50, tableTop)
+    .text("Item", 90, tableTop)
+    .text("Qty", 300, tableTop)
+    .text("Rate", 350, tableTop)
+    .text("Amount", 450, tableTop);
+
+  doc
+    .moveTo(50, tableTop + 15)
+    .lineTo(550, tableTop + 15)
+    .stroke();
+
+  doc.font("Helvetica");
+
+  let position = tableTop + 30;
+
+  invoice.items.forEach((item, index) => {
+    doc
+      .text(index + 1, 50, position)
+      .text(item.name, 90, position)
+      .text(item.quantity, 300, position)
+      .text(`₹ ${item.rate}`, 350, position)
+      .text(`₹ ${item.quantity * item.rate}`, 450, position);
+
+    position += 25;
+  });
+
+  doc
+    .moveTo(300, position + 10)
+    .lineTo(550, position + 10)
+    .stroke();
+
+  position += 25;
+
+  doc
+    .font("Helvetica-Bold")
+    .text(`Subtotal: ₹ ${invoice.subtotal}`, 350, position);
+
+  position += 20;
+
+  doc.text(
+    `Discount (${invoice.parseDiscount}%): - ₹ ${invoice.discount}`,
+    350,
+    position,
+  );
+
+  position += 20;
+
+  doc.text(
+    `AfterDiscount (${invoice.parseDiscount}%): ₹ ${invoice.amountAfterDiscount}`,
+    350,
+    position,
+  );
+
+  position += 20;
+
+  doc.text(
+    `Tax (${invoice.parseTaxRate}% GST): ₹ ${invoice.tax}`,
+    350,
+    position,
+  );
+
+  position += 20;
+
+  doc
+    .fontSize(14)
+    .text(`Total Amount: ₹ ${invoice.totalAmount}`, 350, position);
+
+  doc.moveDown(5);
+
+  doc
+    .fontSize(10)
+    .text("Authorized Signature", 400, 700)
+    .moveTo(400, 690)
+    .lineTo(550, 690)
+    .stroke();
+
+  doc
+    .fontSize(8)
+    .text(
+      "This is a computer-generated invoice and does not require a physical signature.",
+      50,
+      780,
+      { align: "center" },
+    );
+
+  doc.end();
+};
+
+const getCompanyService = () => {
+  return {
+    name: "Technologies Pvt Ltd",
+    address: "401, Business Hub, Andheri East, Mumbai - 400069",
+    gst: "27ABCDE1234F1Z5",
+    phone: "+91 9876543210",
+    email: "info@technologies.com",
+    website: "www.technologies.com",
+    bankDetails: {
+      accountName: "Technologies Pvt Ltd",
+      bankName: "HDFC Bank",
+      accountNumber: "12345678901234",
+      ifsc: "HDFC0001234"
+    }
+  };
+};
+
+
 export {
   createInvoiceService,
   getInvoicesServices,
@@ -279,4 +470,6 @@ export {
   updateInvoiceService,
   updateInvoiceStatusService,
   deleteInvoiceService,
+  downloadInvoiceService,
+  getCompanyService
 };
