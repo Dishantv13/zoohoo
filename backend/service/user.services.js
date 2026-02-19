@@ -35,7 +35,7 @@ const loginService = async (userData) => {
 };
 
 const registerService = async (userData) => {
-  const { name, email, password, phonenumber } = userData;
+  const { name, email, password, phonenumber, address } = userData;
 
   if (!name || !email || !password) {
     throw new Error("Please provide name, email and password");
@@ -51,6 +51,7 @@ const registerService = async (userData) => {
     email: email.toLowerCase(),
     password,
     phonenumber,
+    address,
   });
 
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -65,6 +66,7 @@ const registerService = async (userData) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      address: user.address,
     },
   };
 };
@@ -107,11 +109,11 @@ const getCurrentUserProfileService = async (userId) => {
 // };
 
 const updateUserProfileService = async (userId, updateData) => {
-  const { name, email, phonenumber } = updateData;
+  const { name, email, phonenumber, address } = updateData;
 
   const user = await User.findByIdAndUpdate(
     userId,
-    { name, email, phonenumber },
+    { name, email, phonenumber, address },
     { new: true, runValidators: true },
   ).select("-password");
 
@@ -162,9 +164,9 @@ const changePasswordService = async (userId, data) => {
   user.password = newPassword;
   await user.save();
 
-  return { 
-    success: true, 
-    message: "Password updated successfully" 
+  return {
+    success: true,
+    message: "Password updated successfully",
   };
 };
 

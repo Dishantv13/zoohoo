@@ -23,7 +23,7 @@ import {
   CreditCardOutlined,
   WarningOutlined,
   DownloadOutlined,
-  EyeOutlined
+  EyeOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -166,9 +166,8 @@ export default function InvoiceList() {
   };
 
   const handleViewInvoice = (invoice) => {
-  navigate(`/view-invoices/${invoice._id}`);
-};
-
+    navigate(`/view-invoices/${invoice._id}`);
+  };
 
   const summaryData = summary || {};
 
@@ -358,16 +357,42 @@ export default function InvoiceList() {
       render: (_, record) => {
         if (record.status === "PAID") {
           return (
-            <Tag
-              color="green"
-              style={{
-                padding: "8px 16px",
-                fontSize: "14px",
-                fontWeight: "bold",
-              }}
-            >
-              ✓ PAID
-            </Tag>
+            <Space wrap>
+              <Tag
+                color="green"
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                }}
+              >
+                ✓ PAID
+              </Tag>
+
+              <Tooltip title="View Invoice">
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => handleViewInvoice(record)}
+                  style={{
+                    borderRadius: "5px",
+                    color: "black",
+                  }}
+                ></Button>
+              </Tooltip>
+
+              <Tooltip title="Download Invoice">
+                <Button
+                  size="small"
+                  icon={<DownloadOutlined />}
+                  onClick={() => handleDownLoad(record)}
+                  style={{
+                    borderRadius: "5px",
+                    color: "green",
+                  }}
+                ></Button>
+              </Tooltip>
+            </Space>
           );
         }
 
@@ -392,56 +417,58 @@ export default function InvoiceList() {
 
         return (
           <Space wrap>
-            <Button
-              type="primary"
-              size="small"
-              icon={<CreditCardOutlined />}
-              onClick={() => handlePaymentClick(record)}
-            >
-              Pay Now
-            </Button>
+            <Tooltip title="Pay Invoice">
+              <Button
+                type="primary"
+                size="small"
+                icon={<CreditCardOutlined />}
+                onClick={() => handlePaymentClick(record)}
+              >
+                Pay
+              </Button>
+            </Tooltip>
 
             <Tooltip title="Change Status">
-            <Dropdown menu={{ items: statusMenuItems }} placement="bottomLeft">
-              <Button size="small"
-                style={{
-                  borderRadius: "5px",
-                  backgroundColor: "#b07d17",
-                  borderColor: "#faad14",
-                  color: "white",
-                }}
+              <Dropdown
+                menu={{ items: statusMenuItems }}
+                placement="bottomLeft"
               >
-                Status
-              </Button>
-            </Dropdown>
+                <Button
+                  size="small"
+                  style={{
+                    borderRadius: "5px",
+                    backgroundColor: "#b07d17",
+                    borderColor: "#faad14", 
+                    color: "white",
+                  }}
+                >
+                  Status
+                </Button>
+              </Dropdown>
             </Tooltip>
 
             <Tooltip title="View Invoice">
-            <Button
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewInvoice(record)}
-              style={{
-                borderRadius: "5px",
-                color: "black",
-              }}
-            >
-
-            </Button>
+              <Button
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => handleViewInvoice(record)}
+                style={{
+                  borderRadius: "5px",
+                  color: "black",
+                }}
+              ></Button>
             </Tooltip>
 
             <Tooltip title="Edit Invoice">
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              style={{
-                borderRadius: "5px",
-                backgroundColor: "#1890ff",
-                borderColor: "#1890ff",
-                color: "white",
-              }}
-            ></Button>
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+                style={{
+                  borderRadius: "5px",
+                  color: "blue",
+                }}
+              ></Button>
             </Tooltip>
 
             <Tooltip title="Download Invoice">
@@ -451,30 +478,26 @@ export default function InvoiceList() {
                 onClick={() => handleDownLoad(record)}
                 style={{
                   borderRadius: "5px",
-                  backgroundColor: "#16a34a",
-                  borderColor: "#16a34a",
-                  color: "white",
-                  size: "large",
+                  color: "green",
                 }}
               ></Button>
             </Tooltip>
 
             <Tooltip title="Delete Invoice">
-            <Popconfirm
-              title="Delete this invoice?"
-              onConfirm={() => handleDelete(record._id)}
-            >
-              <Button danger 
-              size="small" 
-              icon={<DeleteOutlined />}
-              style={{
-                borderRadius: "5px",
-                backgroundColor: "#ff4d4f",
-                borderColor: "#ff4d4f",
-                color: "white",
-              }}
-              ></Button>
-            </Popconfirm>
+              <Popconfirm
+                title="Delete this invoice?"
+                onConfirm={() => handleDelete(record._id)}
+              >
+                <Button
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  style={{
+                    borderRadius: "5px",
+                    color: "red",
+                  }}
+                ></Button>
+              </Popconfirm>
             </Tooltip>
           </Space>
         );

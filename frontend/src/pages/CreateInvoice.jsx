@@ -29,9 +29,9 @@ export default function CreateInvoice() {
 
   const calculateTotals = (values) => {
     if (!values.items && !values.tax && !values.discount) return;
-    
+
     const items = values.items || [];
-    const taxRate = Number(values.tax) || 18; 
+    const taxRate = Number(values.tax) || 18;
     const discountRate = Number(values.discount) || 0;
 
     const subTotal = items.reduce((sum, item) => {
@@ -77,15 +77,15 @@ export default function CreateInvoice() {
             dueDate: dayjs(data.dueDate),
             status: data.status,
             items: data.items,
-            tax: data.parseTaxRate, 
-            discount: data.parseDiscount, 
+            tax: data.parseTaxRate,
+            discount: data.parseDiscount,
             subTotal: data.subtotal,
             discountAmount: data.discount,
             taxAmount: data.tax,
             amountAfterDiscount: data.amountAfterDiscount,
             totalAmount: data.totalAmount,
           };
-          
+
           form.setFieldsValue(formData);
           setTimeout(() => calculateTotals(formData), 0);
         })
@@ -180,7 +180,6 @@ export default function CreateInvoice() {
       </Row>
 
       <Row gutter={20}>
-
         <Col xs={24} sm={4}>
           <Form.Item name="status" label="Status" initialValue="PENDING">
             <Select placeholder="Select status">
@@ -193,9 +192,9 @@ export default function CreateInvoice() {
         </Col>
 
         <Col xs={24} sm={4}>
-          <Form.Item 
-            name="discount" 
-            label="Discount (%)" 
+          <Form.Item
+            name="discount"
+            label="Discount (%)"
             initialValue={0}
             rules={[{ type: "number", min: 0, max: 100 }]}
           >
@@ -204,9 +203,9 @@ export default function CreateInvoice() {
         </Col>
 
         <Col xs={24} sm={4}>
-          <Form.Item 
-            name="tax" 
-            label="Tax Rate (%)" 
+          <Form.Item
+            name="tax"
+            label="Tax Rate (%)"
             initialValue={18}
             rules={[{ type: "number", min: 0, max: 100 }]}
           >
@@ -219,14 +218,24 @@ export default function CreateInvoice() {
         {(fields, { add, remove }) => (
           <>
             {fields.map(({ key, name }) => (
-              <Row key={key} gutter={20} align="middle" style={{ marginBottom: 16 }}>
+              <Row
+                key={key}
+                gutter={20}
+                align="middle"
+                style={{ marginBottom: 16 }}
+              >
                 <Col span={5}>
                   <Form.Item
                     name={[name, "name"]}
                     label="Item Name"
-                    rules={[{ required: true, message: "Item name is required" }]}
+                    rules={[
+                      { required: true, message: "Item name is required" },
+                    ]}
                   >
-                    <Input placeholder="Enter item name" style={{ width: "100%" }}/>
+                    <Input
+                      placeholder="Enter item name"
+                      style={{ width: "100%" }}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -234,9 +243,15 @@ export default function CreateInvoice() {
                   <Form.Item
                     name={[name, "quantity"]}
                     label="Quantity"
-                    rules={[{ required: true, message: "Quantity is required" }]}
+                    rules={[
+                      { required: true, message: "Quantity is required" },
+                    ]}
                   >
-                    <InputNumber placeholder="Quantity" min={1} style={{ width: "100%" }} />
+                    <InputNumber
+                      placeholder="Quantity"
+                      min={1}
+                      style={{ width: "100%" }}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -246,7 +261,11 @@ export default function CreateInvoice() {
                     label="Rate"
                     rules={[{ required: true, message: "Rate is required" }]}
                   >
-                    <InputNumber placeholder="Rate" min={0} style={{ width: "100%" }} />
+                    <InputNumber
+                      placeholder="Rate"
+                      min={0}
+                      style={{ width: "100%" }}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -274,7 +293,6 @@ export default function CreateInvoice() {
       </Form.List>
 
       <Row gutter={25} style={{ marginTop: 25 }}>
-
         <Col xs={24} sm={4}>
           <Form.Item name="subTotal" label="Sub Total">
             <InputNumber disabled style={{ width: "100%" }} />
@@ -301,7 +319,10 @@ export default function CreateInvoice() {
 
         <Col xs={24} sm={4}>
           <Form.Item name="totalAmount" label="Total Amount (₹)">
-            <InputNumber disabled style={{ width: "100%", fontWeight: "bold" }} />
+            <InputNumber
+              disabled
+              style={{ width: "100%", fontWeight: "bold" }}
+            />
           </Form.Item>
         </Col>
       </Row>

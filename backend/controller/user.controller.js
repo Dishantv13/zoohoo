@@ -30,7 +30,7 @@ const login = async (req, res) => {
       res.status(200).json({
         message: result.message,
         token: result.token,
-        user: result.user
+        user: result.user,
       });
     } else {
       res.status(401).json({ message: result.message });

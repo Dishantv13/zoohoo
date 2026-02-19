@@ -14,6 +14,7 @@ import {
   LockOutlined,
   MailOutlined,
   PhoneOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -199,6 +200,18 @@ export default function Customers() {
                     phonenumber: e.target.value.replace(/\D/g, ""),
                   })
                 }
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="address"
+              label="Address"
+              rules={[{ required: true, message: "Please enter your address" }]}
+            >
+              <Input
+                prefix={<EnvironmentOutlined />}
+                rows={2}
+                placeholder="Enter your address"
               />
             </Form.Item>
           </Form>

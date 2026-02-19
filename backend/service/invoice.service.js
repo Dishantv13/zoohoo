@@ -1,8 +1,5 @@
-import mongoose from "mongoose";
 import { Invoice } from "../model/invoice.model.js";
 import PDFDocument from "pdfkit";
-import fs from "fs";
-import path from "path";
 
 const createInvoiceService = async (userId, data) => {
   const {
@@ -290,17 +287,26 @@ const deleteInvoiceService = async (userId, invoiceId) => {
 
 const downloadInvoiceService = async (userId, invoiceId, res) => {
   const invoice = await Invoice.findById(invoiceId).populate("customer");
-
   if (!invoice) throw new Error("Invoice not found");
-
-  if (invoice.createdBy.toString() !== userId.toString()) {
+  if (invoice.createdBy.toString() !== userId.toString())
     throw new Error("Not authorized");
-  }
 
-  const doc = new PDFDocument({
-    size: "A4",
-    margin: 50,
-  });
+  const company = getCompanyService();
+
+  const formatCurrency = (value) =>
+    `₹ ${Number(value || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  const formatDate = (value) =>
+    new Date(value).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  const doc = new PDFDocument({ size: "A4", margin: 50 });
 
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
@@ -310,142 +316,255 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
 
   doc.pipe(res);
 
-  const logoPath = path.join("public", "pdf.png");
-  if (fs.existsSync(logoPath)) {
-    doc.image(logoPath, 50, 45, { width: 60 });
-  }
+  doc.registerFont("NotoSans", "./fonts/NotoSans-Regular.ttf");
+  doc.registerFont("NotoSans-Bold", "./fonts/NotoSans-Bold.ttf");
+
+  const margin = 50;
+  const pageWidth = doc.page.width;
+  const contentWidth = pageWidth - margin * 2;
+
+  /* ================= HEADER ================= */
+
+  doc.rect(margin, 40, contentWidth, 110).fill("#f5f7fb");
 
   doc
+    .font("NotoSans-Bold")
     .fontSize(20)
-    .text("YOUR COMPANY NAME", 120, 50)
-    .fontSize(10)
-    .text("Your Company Address Line 1", 120, 70)
-    .text("City, State, Pincode", 120, 85)
-    .text("GSTIN: 22AAAAA0000A1Z5", 120, 100)
-    .moveDown();
-
-  doc.moveTo(50, 130).lineTo(550, 130).stroke();
+    .fillColor("#111827")
+    .text(company.name, margin + 20, 55);
 
   doc
-    .fontSize(12)
-    .text(`Invoice No: ${invoice.invoiceNumber}`, 50, 150)
-    .text(
-      `Invoice Date: ${new Date(invoice.invoiceDate).toLocaleDateString()}`,
-      350,
-      150,
-    )
-    .text(
-      `Due Date: ${new Date(invoice.dueDate).toLocaleDateString()}`,
-      350,
-      170,
-    )
-    .moveDown();
+    .font("NotoSans")
+    .fontSize(9)
+    .fillColor("#4b5563")
+    .text(company.address, margin + 20, 80, { width: contentWidth / 2 - 10 })
+    .text(`GST: ${company.gst}`)
+    .text(`${company.email} | ${company.phone}`)
+    .text(company.website);
+
+  const boxX = margin + contentWidth - 220;
+  const boxY = 50;
+
+  doc.rect(boxX, boxY, 200, 90).fill("#f5f7fb");
 
   doc
-    .text("Bill To:", 50, 190)
-    .text(invoice.customer.name, 50, 205)
-    .text(invoice.customer.email, 50, 220)
-    .moveDown();
+    .font("NotoSans-Bold")
+    .fontSize(18)
+    .fillColor("#111827")
+    .text("INVOICE", boxX + 15, boxY + 5);
 
   doc
-    .text("Bill From:", 350, 190)
-    .text("Your Company Name", 350, 205)
-    .text("Your Company Email", 350, 220)
-    .moveDown();
+    .font("NotoSans")
+    .fontSize(9)
+    .fillColor("#6b7280")
+    .text(`Invoice No: ${invoice.invoiceNumber}`, boxX + 15, boxY + 30)
+    .text(`Invoice Date: ${formatDate(invoice.invoiceDate)}`)
+    .text(`Due Date: ${formatDate(invoice.dueDate)}`);
 
-  const tableTop = 260;
+  const statusColors = {
+    PAID: "#16a34a",
+    CONFIRMED: "#2563eb",
+    PENDING: "#f59e0b",
+    CANCELLED: "#dc2626",
+  };
 
   doc
-    .font("Helvetica-Bold")
-    .text("S.No", 50, tableTop)
-    .text("Item", 90, tableTop)
-    .text("Qty", 300, tableTop)
-    .text("Rate", 350, tableTop)
-    .text("Amount", 450, tableTop);
+    .roundedRect(boxX + 115, boxY + 12, 70, 18, 4)
+    .fill(statusColors[invoice.status] || "#6b7280");
 
   doc
-    .moveTo(50, tableTop + 15)
-    .lineTo(550, tableTop + 15)
-    .stroke();
+    .font("NotoSans-Bold")
+    .fontSize(8)
+    .fillColor("#ffffff")
+    .text(invoice.status, boxX + 115, boxY + 15, {
+      width: 70,
+      align: "center",
+    });
 
-  doc.font("Helvetica");
+  /* ================= BILL SECTION ================= */
 
-  let position = tableTop + 30;
+  const billTop = 170;
+  const boxHeight = 100;
 
-  invoice.items.forEach((item, index) => {
+  doc
+    .rect(margin, billTop, contentWidth / 2 - 10, boxHeight)
+    .fill("#f8fafc")
+    .stroke("#e5e7eb");
+
+  doc
+    .font("NotoSans-Bold")
+    .fontSize(11)
+    .fillColor("#111827")
+    .text("Bill From", margin + 15, billTop + 10);
+
+  doc
+    .font("NotoSans")
+    .fontSize(9)
+    .fillColor("#374151")
+    .text(`Name: ${company.name}`, margin + 15, billTop + 30, {
+      width: contentWidth / 2 - 35,
+    })
+    .text(`Email: ${company.email}`, { width: contentWidth / 2 - 35 })
+    .text(`Phone: ${company.phone}`, { width: contentWidth / 2 - 35 })
+    .text(`Address: ${company.address}`, { width: contentWidth / 2 - 35 });
+
+  const fromX = margin + contentWidth / 2 + 10;
+
+  doc
+    .rect(fromX, billTop, contentWidth / 2 - 10, boxHeight)
+    .fill("#f8fafc")
+    .stroke("#e5e7eb");
+
+  doc
+    .font("NotoSans-Bold")
+    .fontSize(11)
+    .fillColor("#111827")
+    .text("Bill To", fromX + 15, billTop + 10);
+
+  doc
+    .font("NotoSans")
+    .fontSize(9)
+    .fillColor("#374151")
+    .text(`Name: ${invoice.customer?.name || "-"}`, fromX + 15, billTop + 30, {
+      width: contentWidth / 2 - 35,
+    })
+    .text(`Email: ${invoice.customer?.email || "-"}`, {
+      width: contentWidth / 2 - 35,
+    })
+    .text(`Phone: ${invoice.customer?.phonenumber || "-"}`, {
+      width: contentWidth / 2 - 35,
+    })
+    .text(`Address: ${invoice.customer?.address || "-"}`, {
+      width: contentWidth / 2 - 35,
+    });
+
+  /* ================= ITEMS TABLE ================= */
+
+  let y = billTop + boxHeight + 30;
+  const pageHeight = doc.page.height;
+  const bottomMargin = 100;
+  const itemRowHeight = 20;
+  const headerRowHeight = 22;
+
+  const renderTableHeader = () => {
+    doc.rect(margin, y, contentWidth, headerRowHeight).fill("#111827");
+
     doc
-      .text(index + 1, 50, position)
-      .text(item.name, 90, position)
-      .text(item.quantity, 300, position)
-      .text(`₹ ${item.rate}`, 350, position)
-      .text(`₹ ${item.quantity * item.rate}`, 450, position);
+      .font("NotoSans-Bold")
+      .fontSize(9)
+      .fillColor("#ffffff")
+      .text("#", margin + 5, y + 7)
+      .text("Item", margin + 40, y + 7)
+      .text("Qty", margin + 280, y + 7)
+      .text("Rate", margin + 330, y + 7)
+      .text("Amount", margin + 420, y + 7);
 
-    position += 25;
+    y += headerRowHeight + 5;
+  };
+
+  renderTableHeader();
+
+  invoice.items.forEach((item, i) => {
+    const qty = Number(item.quantity || 0);
+    const rate = Number(item.rate || 0);
+    const amount = qty * rate;
+
+    if (y + itemRowHeight + bottomMargin > pageHeight) {
+      doc.addPage({ size: "A4", margin: 50 });
+      y = margin + 30;
+      renderTableHeader();
+    }
+
+    if (i % 2 === 0)
+      doc.rect(margin, y - 4, contentWidth, itemRowHeight).fill("#f9fafb");
+
+    doc
+      .font("NotoSans")
+      .fontSize(9)
+      .fillColor("#111827")
+      .text(i + 1, margin + 5, y + 3)
+      .text(item.name || item.description || "-", margin + 40, y + 3)
+      .text(qty.toString(), margin + 280, y + 3)
+      .text(formatCurrency(rate), margin + 330, y + 3)
+      .text(formatCurrency(amount), margin + 420, y + 3);
+
+    y += itemRowHeight;
   });
 
+  /* ================= TOTAL SECTION ================= */
+
+  y += 20;
+
+  const totalsX = margin + contentWidth - 260;
+  const totalsBoxHeight = 120;
+
+  // Ensure totals box fits on current page
+  if (y + totalsBoxHeight + 50 > pageHeight) {
+    doc.addPage({ size: "A4", margin: 50 });
+    y = margin + 30;
+  }
+
+  doc.rect(totalsX, y, 260, totalsBoxHeight).fill("#f8fafc").stroke("#e5e7eb");
+
   doc
-    .moveTo(300, position + 10)
-    .lineTo(550, position + 10)
+    .moveTo(totalsX + 12, y + 93)
+    .lineTo(totalsX + 248, y + 93)
     .stroke();
 
-  position += 25;
+  const totals = [
+    { label: "Subtotal", value: invoice.subtotal },
+    { label: "Discount", value: invoice.discount },
+    { label: "Amount after Discount", value: invoice.amountAfterDiscount },
+    { label: "Tax", value: invoice.tax },
+    { label: "Total", value: invoice.totalAmount, bold: true },
+  ];
+
+  totals.forEach((t, i) => {
+    const ty = y + 12 + i * 22;
+
+    doc
+      .font("NotoSans")
+      .fontSize(t.bold ? 11 : 9)
+      .fillColor("#111827")
+      .text(t.label, totalsX + 12, ty)
+      .text(formatCurrency(t.value), totalsX + 140, ty, {
+        width: 100,
+        align: "right",
+      });
+  });
+
+  const totalsBottomY = y + totalsBoxHeight;
+
+  const signatureY = totalsBottomY + 40;
 
   doc
-    .font("Helvetica-Bold")
-    .text(`Subtotal: ₹ ${invoice.subtotal}`, 350, position);
-
-  position += 20;
-
-  doc.text(
-    `Discount (${invoice.parseDiscount}%): - ₹ ${invoice.discount}`,
-    350,
-    position,
-  );
-
-  position += 20;
-
-  doc.text(
-    `AfterDiscount (${invoice.parseDiscount}%): ₹ ${invoice.amountAfterDiscount}`,
-    350,
-    position,
-  );
-
-  position += 20;
-
-  doc.text(
-    `Tax (${invoice.parseTaxRate}% GST): ₹ ${invoice.tax}`,
-    350,
-    position,
-  );
-
-  position += 20;
-
-  doc
-    .fontSize(14)
-    .text(`Total Amount: ₹ ${invoice.totalAmount}`, 350, position);
-
-  doc.moveDown(5);
-
-  doc
+    .font("NotoSans")
     .fontSize(10)
-    .text("Authorized Signature", 400, 700)
-    .moveTo(400, 690)
-    .lineTo(550, 690)
-    .stroke();
+    .fillColor("#111827")
+    .text("Authorized Signature", totalsX + 90, signatureY + 20);
 
   doc
-    .fontSize(8)
-    .text(
-      "This is a computer-generated invoice and does not require a physical signature.",
-      50,
-      780,
-      { align: "center" },
-    );
+    .moveTo(totalsX + 60, signatureY + 15)
+    .lineTo(totalsX + 200, signatureY + 15)
+    .stroke();
+
+  //   doc
+  //     .fontSize(8)
+  //     .fillColor("#6b7280")
+  //     .text(
+  //       "This is a computer-generated invoice and does not require a physical signature.",
+  //       margin,
+  //       doc.page.height - 20,
+  //       {
+  //         align: "center",
+  //         width: contentWidth,
+  //       },
+  //     );
 
   doc.end();
 };
 
-const getCompanyService = () => {
+function getCompanyService() {
   return {
     name: "Technologies Pvt Ltd",
     address: "401, Business Hub, Andheri East, Mumbai - 400069",
@@ -457,11 +576,10 @@ const getCompanyService = () => {
       accountName: "Technologies Pvt Ltd",
       bankName: "HDFC Bank",
       accountNumber: "12345678901234",
-      ifsc: "HDFC0001234"
-    }
+      ifsc: "HDFC0001234",
+    },
   };
-};
-
+}
 
 export {
   createInvoiceService,
@@ -471,5 +589,5 @@ export {
   updateInvoiceStatusService,
   deleteInvoiceService,
   downloadInvoiceService,
-  getCompanyService
+  getCompanyService,
 };

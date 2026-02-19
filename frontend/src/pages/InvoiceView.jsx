@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Table, Divider, Typography, Button } from "antd";
+import { Card, Row, Col, Table, Divider, Typography, Button, Tag } from "antd";
 import { useParams } from "react-router-dom";
 import api from "../service/api";
 
@@ -9,6 +9,8 @@ const InvoiceView = () => {
   const { id } = useParams();
   const [invoice, setInvoice] = useState(null);
   const [company, setCompany] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetchInvoice();
@@ -32,8 +34,8 @@ const InvoiceView = () => {
 
   const columns = [
     {
-      title: "#",
-      render: (_, __, index) => index + 1,
+      title: "No.",
+      render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
       width: 50,
     },
     {
@@ -48,19 +50,18 @@ const InvoiceView = () => {
     {
       title: "Rate",
       dataIndex: "rate",
-      align: "right",
+      align: "center",
       render: (value) => `₹${value}`,
     },
     {
       title: "Amount",
       align: "right",
-      render: (_, record) =>
-        `₹${record.quantity * record.rate}`,
+      render: (_, record) => `₹${record.quantity * record.rate}`,
     },
   ];
 
   return (
-    <div style={{ padding: 40, background: "#f5f5f5" }}>
+    <div style={{ padding: 40, background: "#f5f5f5", minHeight: "100vh" }}>
       <Card
         style={{
           maxWidth: 900,
@@ -68,38 +69,67 @@ const InvoiceView = () => {
           boxShadow: "0 0 10px rgba(0,0,0,0.1)",
         }}
       >
-
         <Row justify="space-between">
           <Col>
             <Title level={3} style={{ marginBottom: 0 }}>
               {company.name}
             </Title>
-            <Text>{company.address}</Text><br />
-            <Text>GSTIN: {company.gst}</Text><br />
-            <Text>Phone: {company.phone}</Text><br />
+            <Text>{company.address}</Text>
+            <br />
+            <Text>GSTIN: {company.gst}</Text>
+            <br />
+            <Text>Phone: {company.phone}</Text>
+            <br />
             <Text>Email: {company.email}</Text>
           </Col>
-        </Row>
 
-        <Divider />
-
-        <Row justify="space-between">
           <Col>
-            <Title level={4}>INVOICE</Title>
-            <Text strong>Invoice No:</Text> {invoice.invoiceNumber}<br />
+            <Title level={3}>INVOICE</Title>
+            <Text strong>Invoice No:</Text> {invoice.invoiceNumber}
+            <br />
             <Text strong>Invoice Date:</Text>{" "}
-            {new Date(invoice.invoiceDate).toLocaleDateString()}<br />
+            {new Date(invoice.invoiceDate).toLocaleDateString()}
+            <br />
             <Text strong>Due Date:</Text>{" "}
             {new Date(invoice.dueDate).toLocaleDateString()}
           </Col>
 
           <Col>
+            <Title level={3}>Status Of Invoice:</Title>
+            <br />
+            <Tag
+              color={
+                invoice.status === "PAID"
+                  ? "green"
+                  : invoice.status === "PENDING"
+                    ? "orange"
+                    : invoice.status === "CONFIRMED"
+                      ? "blue"
+                      : "default"
+              }
+            >
+              {invoice.status || "N/A"}
+            </Tag>
+          </Col>
+        </Row>
+        <Divider />
+        <Row justify="align-start" gutter={50}>
+          <Col>
+            <Title level={5}>Bill From:</Title>
+            <Text strong> Name : {company?.name}</Text>
+            <br />
+            <Text> Address : {company?.address || "N/A"}</Text>
+            <br />
+            <Text>GSTIN: {company?.gst || "N/A"}</Text>
+          </Col>
+
+          <Col>
             <Title level={5}>Bill To:</Title>
-            <Text>{invoice.customer?.name}</Text><br />
-            <Text>{invoice.customer?.address}</Text><br />
-            <Text>
-              GSTIN: {invoice.customer?.gst || "N/A"}
-            </Text>
+            <Text strong> Name : {invoice.customer?.name}</Text>
+            <br />
+            <Text> Address : {invoice.customer?.address || "N/A"}</Text>
+            <br />
+            <Text>GSTIN: {invoice.customer?.gst || "N/A"}</Text>
           </Col>
         </Row>
 
@@ -108,32 +138,51 @@ const InvoiceView = () => {
         <Table
           columns={columns}
           dataSource={invoice.items}
-          pagination={false}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: invoice.items.length,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
+            pageSizeOptions: ["5", "10", "15", "20"],
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} items`,
+            position: ["bottomRight"],
+          }}
           rowKey={(record, index) => index}
         />
 
         <Row justify="end" style={{ marginTop: 20 }}>
-          <Col span={8}>
+          <Col span={7}>
             <Row justify="space-between">
-              <Text>Subtotal:</Text>
-              <Text>₹{invoice.subtotal}</Text>
+              <Text strong>Subtotal:</Text>
+              <Text strong>₹{invoice.subtotal}</Text>
             </Row>
 
             <Row justify="space-between">
-              <Text>Tax:</Text>
-              <Text>₹{invoice.tax}</Text>
-            </Row>
-
-            <Row justify="space-between">
-              <Text>Discount:</Text>
+              <Text strong>Discount: {invoice.parseDiscount}(%)</Text>
               <Text>- ₹{invoice.discount}</Text>
             </Row>
 
             <Divider style={{ margin: "10px 0" }} />
 
             <Row justify="space-between">
+              <Text strong>Amount After Discount:</Text>
+              <Text strong>₹{invoice.amountAfterDiscount}</Text>
+            </Row>
+
+            <Row justify="space-between">
+              <Text strong>Tax: {invoice.parseTaxRate}(%)</Text>
+              <Text>+ ₹{invoice.tax}</Text>
+            </Row>
+
+            <Divider style={{ margin: "10px 0" }} />
+
+            <Row justify="space-between">
               <Text strong>Grand Total:</Text>
-              <Text strong>₹{invoice.total}</Text>
+              <Text strong>₹{invoice.totalAmount}</Text>
             </Row>
           </Col>
         </Row>
@@ -146,25 +195,27 @@ const InvoiceView = () => {
           </Col>
 
           <Col style={{ textAlign: "center" }}>
-            <div style={{
-              borderTop: "1px solid #000",
-              width: 150,
-              marginTop: 40
-            }} />
+            <div
+              style={{
+                borderTop: "1px solid #000",
+                width: 150,
+                marginTop: 40,
+              }}
+            />
             <Text>Authorized Signature</Text>
           </Col>
         </Row>
-
       </Card>
 
-      <Button 
-      type="primary" 
-      onClick={() => window.print()}
-        style={{    
-            display: "block",
-            margin: "20px auto",
+      <Button
+        type="primary"
+        onClick={() => window.print()}
+        style={{
+          display: "block",
+          margin: "20px auto",
         }}
-      >Print Invoice
+      >
+        Print Invoice
       </Button>
     </div>
   );

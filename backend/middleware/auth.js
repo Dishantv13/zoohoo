@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { User } from "../model/user.model.js";
 
-export const protect = async (req, res, next) => {
+const protect = async (req, res, next) => {
   try {
     let token;
 
@@ -35,3 +35,13 @@ export const protect = async (req, res, next) => {
       .json({ message: "Not authorized to access this route" });
   }
 };
+
+// const admin = (req, res, next) => {
+//   if (req.user && req.user.role === "admin") {
+//     next();
+//   } else {
+//     res.status(403).json({ message: "Admin access only" });
+//   }
+// };
+
+export { protect };

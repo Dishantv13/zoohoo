@@ -2,12 +2,24 @@ import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
-import { Form, Input, Button, Card, Spin, notification } from "antd";
+import {
+  Form,
+  Input,
+  Button,
+  Card,
+  Spin,
+  notification,
+  Typography,
+} from "antd";
+
+const { Text } = Typography;
+
 import {
   UserOutlined,
   LockOutlined,
   MailOutlined,
   PhoneOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import { register } from "../features/auth/authSlice";
 import "./Auth.css";
@@ -83,7 +95,6 @@ export default function Register() {
                   pattern: /^[0-9]{10}$/,
                   message: "Phone number must be exactly 10 digits",
                 },
-                // { type: "number", message: 'Invalid phonenumber format' },
               ]}
             >
               <Input
@@ -96,6 +107,18 @@ export default function Register() {
                   const digitsOnly = e.target.value.replace(/\D/g, "");
                   setPhone(digitsOnly);
                 }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="address"
+              label="Address"
+              rules={[{ required: true, message: "Please enter your address" }]}
+            >
+              <Input.TextArea
+                prefix={<EnvironmentOutlined />}
+                placeholder="Enter your address"
+                rows={2}
               />
             </Form.Item>
 
@@ -137,6 +160,10 @@ export default function Register() {
               />
             </Form.Item>
 
+            <Text style={{ color: "red" }}>
+              Field Indicate with * are required
+            </Text>
+
             <Form.Item>
               <Button
                 type="primary"
@@ -144,6 +171,7 @@ export default function Register() {
                 size="large"
                 block
                 loading={loading}
+                style={{ marginTop: 5 }}
               >
                 Register
               </Button>

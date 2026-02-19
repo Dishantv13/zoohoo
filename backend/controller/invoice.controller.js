@@ -7,7 +7,6 @@ import {
   deleteInvoiceService,
   downloadInvoiceService,
   getCompanyService,
-  
 } from "../service/invoice.service.js";
 
 const createInvoice = async (req, res) => {
@@ -43,7 +42,7 @@ const getInvoices = async (req, res) => {
 const getInvoiceById = async (req, res) => {
   try {
     const invoice = await getInvoiceByIdService(req.user._id, req.params.id);
-    
+
     const company = getCompanyService();
 
     res.status(200).json({
@@ -53,9 +52,10 @@ const getInvoiceById = async (req, res) => {
       company,
     });
   } catch (error) {
-    res.status(404).json({ 
+    res.status(404).json({
       success: false,
-      message: error.message });
+      message: error.message,
+    });
   }
 };
 
@@ -102,19 +102,13 @@ const deleteInvoice = async (req, res) => {
   }
 };
 
-const downloadInvoice = async (req, res) => {
+const downloadInvoice = async (req, res, next) => {
   try {
-    await downloadInvoiceService(
-      req.user._id,
-      req.params.id,
-      res
-    );
-
+    await downloadInvoiceService(req.user._id, req.params.id, res);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
-
 
 export {
   createInvoice,
