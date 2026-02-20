@@ -91,10 +91,7 @@ export default function Register() {
               label="Phone Number"
               rules={[
                 { required: true, message: "Please enter your phonenumber" },
-                {
-                  pattern: /^[0-9]{10}$/,
-                  message: "Phone number must be exactly 10 digits",
-                },
+
               ]}
             >
               <Input
@@ -103,10 +100,9 @@ export default function Register() {
                 maxLength={10}
                 placeholder="Enter your phone number"
                 size="large"
-                onChange={(e) => {
-                  const digitsOnly = e.target.value.replace(/\D/g, "");
-                  setPhone(digitsOnly);
-                }}
+                onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, "");
+              }}
               />
             </Form.Item>
 

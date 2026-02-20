@@ -7,7 +7,11 @@ import {
   deleteInvoiceService,
   downloadInvoiceService,
   getCompanyService,
+  getAdminAllInvoicesService,
+  getCustomerInvoicesByAdminService,
 } from "../service/invoice.service.js";
+
+
 
 const createInvoice = async (req, res) => {
   try {
@@ -41,9 +45,7 @@ const getInvoices = async (req, res) => {
 
 const getInvoiceById = async (req, res) => {
   try {
-    const invoice = await getInvoiceByIdService(req.user._id, req.params.id);
-
-    const company = getCompanyService();
+    const { invoice, company } = await getInvoiceByIdService(req.user._id, req.params.id);
 
     res.status(200).json({
       success: true,
@@ -110,6 +112,45 @@ const downloadInvoice = async (req, res, next) => {
   }
 };
 
+const getAdminAllInvoices = async (req, res) => {
+  try {
+    const result = await getAdminAllInvoicesService(req.user._id, {
+      page: req.query.page,
+      limit: req.query.limit,
+      status: req.query.status,
+      customerId: req.query.customerId,
+    });
+    res.status(200).json({
+      success: true,
+      message: "Company invoices retrieved successfully",
+      ...result,
+    });
+  } catch (error) {
+    res.status(403).json({ message: error.message });
+  }
+};
+
+const getCustomerInvoicesByAdmin = async (req, res) => {
+  try {
+    const result = await getCustomerInvoicesByAdminService(
+      req.user._id,
+      req.params.customerId,
+      {
+        page: req.query.page,
+        limit: req.query.limit,
+        status: req.query.status,
+      }
+    );
+    res.status(200).json({
+      success: true,
+      message: "Customer invoices retrieved successfully",
+      ...result,
+    });
+  } catch (error) {
+    res.status(403).json({ message: error.message });
+  }
+};
+
 export {
   createInvoice,
   getInvoices,
@@ -118,4 +159,6 @@ export {
   updateInvoiceStatus,
   deleteInvoice,
   downloadInvoice,
+  getAdminAllInvoices,
+  getCustomerInvoicesByAdmin,
 };

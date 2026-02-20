@@ -76,9 +76,9 @@ const InvoiceView = () => {
             </Title>
             <Text>{company.address}</Text>
             <br />
-            <Text>GSTIN: {company.gst}</Text>
+            <Text>GSTIN: {company.gstNumber}</Text>
             <br />
-            <Text>Phone: {company.phone}</Text>
+            <Text>Phone: {company.phonenumber}</Text>
             <br />
             <Text>Email: {company.email}</Text>
           </Col>
@@ -120,7 +120,7 @@ const InvoiceView = () => {
             <br />
             <Text> Address : {company?.address || "N/A"}</Text>
             <br />
-            <Text>GSTIN: {company?.gst || "N/A"}</Text>
+            <Text>GSTIN: {company?.gstNumber || "N/A"}</Text>
           </Col>
 
           <Col>
@@ -129,7 +129,7 @@ const InvoiceView = () => {
             <br />
             <Text> Address : {invoice.customer?.address || "N/A"}</Text>
             <br />
-            <Text>GSTIN: {invoice.customer?.gst || "N/A"}</Text>
+            <Text>GSTIN: {invoice.customer?.gstNumber || "N/A"}</Text>
           </Col>
         </Row>
 

@@ -1,9 +1,12 @@
 import {
   loginService,
   registerService,
-  // createCustomerService,
+  adminRegisterService,
+  createCustomerService,
+  getCompanyCustomersService,
+  updateCustomerService,
+  deleteCustomerService,
   getCurrentUserProfileService,
-  // getCustomerService,
   updateUserProfileService,
   deleteProfileService,
   changePasswordService,
@@ -100,9 +103,73 @@ const changePassword = async (req, res) => {
   }
 };
 
+const adminRegister = async (req, res) => {
+  try {
+    const result = await adminRegisterService(req.body);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error("Admin registration error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const createCustomer = async (req, res) => {
+  try {
+    const customer = await createCustomerService(req.user._id, req.body);
+    res.status(201).json(customer);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const getCompanyCustomers = async (req, res) => {
+  try {
+    const customers = await getCompanyCustomersService(req.user._id, {
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
+      status: req.query.status,
+    });
+    res.status(200).json(customers);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+};
+
+const updateCustomer = async (req, res) => {
+  try {
+    const updatedCustomer = await updateCustomerService(
+      req.user._id,
+      req.params.customerId,
+      req.body
+    );
+    res.json(updatedCustomer);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const deleteCustomer = async (req, res) => {
+  try {
+    const result = await deleteCustomerService(req.user._id, req.params.customerId);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 export {
   register,
   login,
+  adminRegister,
+  createCustomer,
+  getCompanyCustomers,
+  updateCustomer,
+  deleteCustomer,
   getCurrentUserProfile,
   updateUserProfile,
   deleteProfile,

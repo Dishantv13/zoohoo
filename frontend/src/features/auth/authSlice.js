@@ -43,6 +43,21 @@ export const getCurrentUser = createAsyncThunk(
   },
 );
 
+export const adminRegister = createAsyncThunk(
+  "auth/adminRegister",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.adminRegister(data);
+      localStorage.setItem("token", response.data.token);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Admin registration failed",
+      );
+    }
+  },
+);
+
 const initialState = {
   user: null,
   token: localStorage.getItem("token") || null,
@@ -114,6 +129,22 @@ const authSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem("token");
+      });
+
+    builder
+      .addCase(adminRegister.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(adminRegister.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+      })
+      .addCase(adminRegister.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

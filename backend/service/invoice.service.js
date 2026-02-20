@@ -1,4 +1,7 @@
 import { Invoice } from "../model/invoice.model.js";
+import { User } from "../model/user.model.js";
+import { Company } from "../model/company.model.js";
+import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 
 const createInvoiceService = async (userId, data) => {
@@ -14,6 +17,22 @@ const createInvoiceService = async (userId, data) => {
 
   if (!items.length) {
     throw new Error("Invoice must have at least one item");
+  }
+
+  const user = await User.findById(userId).populate("companyId");
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  let companyId;
+  if (user.role === "admin") {
+    companyId = user.companyId?._id;
+  } else if (user.role === "customer") {
+    companyId = user.companyId;
+  }
+
+  if (!companyId) {
+    throw new Error("Company not found for this user");
   }
 
   const parsedTaxRate = Number(tax);
@@ -46,6 +65,7 @@ const createInvoiceService = async (userId, data) => {
     invoiceCount: invoiceCount + 1,
     createdBy: userId,
     customer,
+    companyId,
     invoiceDate,
     dueDate,
     status,
@@ -68,12 +88,27 @@ const getInvoicesServices = async (userId, options = {}) => {
 
   const { status } = options;
 
+  const user = await User.findById(userId);
+
+  let baseMatch;
+  if (user.role === "customer") {
+    
+    baseMatch = {
+      $or: [
+        { createdBy: userId },
+        { customer: userId },
+      ],
+    };
+  } else {
+    baseMatch = { createdBy: userId };
+  }
+
   const filteredMatch = {
-    createdBy: userId,
+    ...baseMatch,
     ...(status && status !== "null" ? { status } : {}),
   };
 
-  const summaryMatch = { createdBy: userId };
+  const summaryMatch = baseMatch;
 
   const totalItems = await Invoice.countDocuments(filteredMatch);
 
@@ -114,7 +149,6 @@ const getInvoicesServices = async (userId, options = {}) => {
                   { $lt: ["$dueDate", new Date()] },
                   { $ne: ["$status", "PAID"] },
                   { $ne: ["$status", "CANCELLED"] },
-                  // { $nin: ["$status", ["PAID", "CANCELLED"]] },
                 ],
               },
               1,
@@ -126,21 +160,18 @@ const getInvoicesServices = async (userId, options = {}) => {
     },
   ]);
 
-  const populated = await Invoice.populate(invoices, {
-    path: "customer",
-    select: "name email",
-  });
+  const populated = await Invoice.populate(invoices, [
+    {
+      path: "customer",
+      select: "name email",
+    },
+    {
+      path: "createdBy",
+      select: "name email role",
+    }
+  ]);
 
   const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
-
-  // console.log("Pagination Info:", {
-  //   page,
-  //   limit,
-  //   totalItems,
-  //   totalPages,
-  //   hasNext: totalPages > 0 && page < totalPages,
-  //   hasPrev: page > 1 && totalPages > 0,
-  // });
 
   return {
     data: populated,
@@ -163,17 +194,28 @@ const getInvoicesServices = async (userId, options = {}) => {
 };
 
 const getInvoiceByIdService = async (userId, invoiceId) => {
-  const invoice = await Invoice.findById(invoiceId).populate("customer");
+  const invoice = await Invoice.findById(invoiceId)
+    .populate("customer")
+    .populate("createdBy", "name email role");
+
+    const company = await Company.findById(invoice.companyId);
 
   if (!invoice) {
     throw new Error("Invoice not found");
   }
 
-  if (invoice.createdBy.toString() !== userId.toString()) {
+  if (!company) {
+    throw new Error("Company not found");
+    }
+
+  const isCreator = invoice.createdBy._id.toString() === userId.toString();
+  const isCustomer = invoice.customer && invoice.customer._id.toString() === userId.toString();
+
+  if (!isCreator && !isCustomer) {
     throw new Error("Not authorized to access this invoice");
   }
 
-  return invoice;
+  return { invoice, company };
 };
 
 const updateInvoiceService = async (userId, invoiceId, data) => {
@@ -287,11 +329,19 @@ const deleteInvoiceService = async (userId, invoiceId) => {
 
 const downloadInvoiceService = async (userId, invoiceId, res) => {
   const invoice = await Invoice.findById(invoiceId).populate("customer");
-  if (!invoice) throw new Error("Invoice not found");
-  if (invoice.createdBy.toString() !== userId.toString())
-    throw new Error("Not authorized");
+  const company = await Company.findById(invoice.companyId);
+  const user = await User.findById(userId);
 
-  const company = getCompanyService();
+  if (!invoice) throw new Error("Invoice not found");
+  if(!company) throw new Error("Company not found");
+
+  const isCreator = invoice.createdBy.toString() === userId.toString();
+  const isAdmin = user.role === "admin" && company.adminId.toString() === userId.toString();
+  const isCustomer = invoice.customer && invoice.customer._id.toString() === userId.toString();
+
+  if (!isCreator && !isAdmin && !isCustomer) {
+    throw new Error("Not authorized");
+  }
 
   const formatCurrency = (value) =>
     `₹ ${Number(value || 0).toLocaleString("en-IN", {
@@ -338,8 +388,8 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
     .fontSize(9)
     .fillColor("#4b5563")
     .text(company.address, margin + 20, 80, { width: contentWidth / 2 - 10 })
-    .text(`GST: ${company.gst}`)
-    .text(`${company.email} | ${company.phone}`)
+    .text(`GST: ${company.gstNumber}`)
+    .text(`${company.email} | ${company.phonenumber}`)
     .text(company.website);
 
   const boxX = margin + contentWidth - 220;
@@ -581,6 +631,232 @@ function getCompanyService() {
   };
 }
 
+const getAdminAllInvoicesService = async (adminId, options = {}) => {
+  const page = Math.max(parseInt(options.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
+  const skip = (page - 1) * limit;
+
+  const { status, customerId } = options;
+
+  const admin = await User.findById(adminId).populate("companyId");
+  if (!admin || admin.role !== "admin") {
+    throw new Error("Only admin can view company invoices");
+  }
+
+  const companyId = admin.companyId?._id;
+
+  const filteredMatch = {
+    companyId,
+    ...(status && status !== "null" ? { status } : {}),
+    ...(customerId ? { customer: customerId } : {}),
+  };
+
+  const totalItems = await Invoice.countDocuments(filteredMatch);
+
+  const invoices = await Invoice.aggregate([
+    { $match: filteredMatch },
+    { $addFields: { isPaid: { $cond: [{ $eq: ["$status", "PAID"] }, 1, 0] } } },
+    { $sort: { isPaid: 1, dueDate: 1, createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ]);
+
+  const summary = await Invoice.aggregate([
+    { $match: { companyId } },
+    {
+      $group: {
+        _id: companyId,
+        totalAmount: { $sum: "$totalAmount" },
+        paidAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "PAID"] }, "$totalAmount", 0],
+          },
+        },
+        pendingAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "PENDING"] }, "$totalAmount", 0],
+          },
+        },
+        confirmedAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
+          },
+        },
+        overdueCount: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $lt: ["$dueDate", new Date()] },
+                  { $ne: ["$status", "PAID"] },
+                  { $ne: ["$status", "CANCELLED"] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+        totalInvoices: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const populated = await Invoice.populate(invoices, [
+    {
+      path: "customer",
+      select: "name email phonenumber",
+    },
+    {
+      path: "createdBy",
+      select: "name email role",
+    }
+  ]);
+
+  const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
+
+  return {
+    data: populated,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: totalPages > 0 && page < totalPages,
+      hasPrev: page > 1 && totalPages > 0,
+    },
+    summary: summary[0] || {
+      totalAmount: 0,
+      paidAmount: 0,
+      pendingAmount: 0,
+      confirmedAmount: 0,
+      overdueCount: 0,
+      totalInvoices: 0,
+    },
+  };
+};
+
+const getCustomerInvoicesByAdminService = async (adminId, customerId, options = {}) => {
+  const page = Math.max(parseInt(options.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
+  const skip = (page - 1) * limit;
+
+  const { status } = options;
+
+  const admin = await User.findById(adminId).populate("companyId");
+  if (!admin || admin.role !== "admin") {
+    throw new Error("Only admin can view customer invoices");
+  }
+
+  const customer = await User.findById(customerId);
+  if (!customer || customer.companyId.toString() !== admin.companyId._id.toString()) {
+    throw new Error("Customer not found in your company");
+  }
+
+  const customerObjId = new mongoose.Types.ObjectId(customerId);
+  const companyObjId = new mongoose.Types.ObjectId(admin.companyId._id);
+
+  const filteredMatch = {
+    companyId: companyObjId,
+    customer: customerObjId,
+    ...(status && status !== "null" ? { status } : {}),
+  };
+
+  const totalItems = await Invoice.countDocuments({
+    companyId: admin.companyId._id,
+    customer: customerId,
+    ...(status && status !== "null" ? { status } : {}),
+  });
+
+  const invoices = await Invoice.aggregate([
+    { $match: filteredMatch },
+    { $addFields: { isPaid: { $cond: [{ $eq: ["$status", "PAID"] }, 1, 0] } } },
+    { $sort: { isPaid: 1, dueDate: 1, createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ]);
+
+  const summary = await Invoice.aggregate([
+    { $match: filteredMatch },
+    {
+      $group: {
+        _id: customerObjId,
+        totalAmount: { $sum: "$totalAmount" },
+        paidAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "PAID"] }, "$totalAmount", 0],
+          },
+        },
+        pendingAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "PENDING"] }, "$totalAmount", 0],
+          },
+        },
+        confirmedAmount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
+          },
+        },
+        overdueCount: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $lt: ["$dueDate", new Date()] },
+                  { $ne: ["$status", "PAID"] },
+                  { $ne: ["$status", "CANCELLED"] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+        totalInvoices: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const populated = await Invoice.populate(invoices, [
+    {
+      path: "customer",
+      select: "name email phonenumber",
+    },
+    {
+      path: "createdBy",
+      select: "name email role",
+    }
+  ]);
+
+  const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
+
+  return {
+    customer: {
+      id: customer._id,
+      name: customer.name,
+      email: customer.email,
+      phonenumber: customer.phonenumber,
+    },
+    data: populated,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: totalPages > 0 && page < totalPages,
+      hasPrev: page > 1 && totalPages > 0,
+    },
+    summary: summary[0] || {
+      totalAmount: 0,
+      paidAmount: 0,
+      pendingAmount: 0,
+      confirmedAmount: 0,
+      overdueCount: 0,
+      totalInvoices: 0,
+    },
+  };
+};
+
 export {
   createInvoiceService,
   getInvoicesServices,
@@ -590,4 +866,6 @@ export {
   deleteInvoiceService,
   downloadInvoiceService,
   getCompanyService,
+  getAdminAllInvoicesService,
+  getCustomerInvoicesByAdminService,
 };

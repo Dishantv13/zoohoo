@@ -16,6 +16,7 @@ import {
   Modal,
   Select,
   Tooltip,
+  Drawer,
 } from "antd";
 import {
   EditOutlined,
@@ -33,6 +34,7 @@ import dayjs from "dayjs";
 import api from "../service/api";
 import PaymentModal from "../components/PaymentModal";
 import InvoiceView from "./InvoiceView";
+import "./InvoiceManagement.css";
 
 export default function InvoiceList() {
   const dispatch = useDispatch();
@@ -47,6 +49,8 @@ export default function InvoiceList() {
   const [pageSize, setPageSize] = useState(pagination?.limit || 5);
   const [statusFilter, setStatusFilter] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
 
@@ -56,6 +60,11 @@ export default function InvoiceList() {
 
   const handleEdit = (invoice) => {
     navigate(`/invoices/${invoice._id}`);
+  };
+
+  const handleViewDetails = (invoice) => {
+    setSelectedInvoice(invoice);
+    setIsDrawerVisible(true);
   };
 
   const handleDelete = async (id) => {
@@ -165,9 +174,9 @@ export default function InvoiceList() {
     }
   };
 
-  const handleViewInvoice = (invoice) => {
-    navigate(`/view-invoices/${invoice._id}`);
-  };
+  //   const handleViewInvoice = (invoice) => {
+  //     navigate(`/view-invoices/${invoice._id}`);
+  //   };
 
   const summaryData = summary || {};
 
@@ -181,6 +190,13 @@ export default function InvoiceList() {
     ? invoices.filter((invoice) => invoice.status === statusFilter)
     : invoices;
 
+  const statusColors = {
+    PAID: "green",
+    CONFIRMED: "blue",
+    PENDING: "orange",
+    CANCELLED: "red",
+  };
+
   const columns = [
     {
       title: "Invoice No",
@@ -193,15 +209,24 @@ export default function InvoiceList() {
       ),
     },
     {
-      title: "Customer",
+      title: "Created By",
       width: 100,
       render: (_, r) => {
-        const name = r.customer?.name;
+        const isCreatedByCustomer = r.createdBy?._id === r.customer?._id;
+        const creatorName = isCreatedByCustomer
+          ? r.customer?.name
+          : r.createdBy?.name;
 
-        if (!name) {
+        if (!creatorName) {
           return <Tag color="default">UNKNOWN</Tag>;
         }
-        return <Tag color="pink">{name.toUpperCase()}</Tag>;
+
+        const tagColor = isCreatedByCustomer ? "pink" : "purple";
+        return (
+          <Flex vertical gap="2px">
+            <Tag color={tagColor}>{creatorName.toUpperCase()}</Tag>
+          </Flex>
+        );
       },
     },
     {
@@ -353,8 +378,11 @@ export default function InvoiceList() {
 
     {
       title: "Action",
-      width: 400,
+      width: 200,
+      fixed: "right",
       render: (_, record) => {
+        const isCreatedByAdmin = record.createdBy?._id !== record.customer?._id;
+
         if (record.status === "PAID") {
           return (
             <Space wrap>
@@ -373,7 +401,48 @@ export default function InvoiceList() {
                 <Button
                   size="small"
                   icon={<EyeOutlined />}
-                  onClick={() => handleViewInvoice(record)}
+                  onClick={() => handleViewDetails(record)}
+                  style={{
+                    borderRadius: "5px",
+                    color: "black",
+                  }}
+                ></Button>
+              </Tooltip>
+
+              <Tooltip title="Download Invoice">
+                <Button
+                  size="small"
+                  icon={<DownloadOutlined />}
+                  onClick={() => handleDownLoad(record)}
+                  style={{
+                    borderRadius: "5px",
+                    color: "green",
+                  }}
+                ></Button>
+              </Tooltip>
+            </Space>
+          );
+        }
+
+        if (isCreatedByAdmin) {
+          return (
+            <Space wrap>
+              <Tooltip title="Pay Invoice">
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<CreditCardOutlined />}
+                  onClick={() => handlePaymentClick(record)}
+                >
+                  Pay
+                </Button>
+              </Tooltip>
+
+              <Tooltip title="View Invoice">
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => handleViewDetails(record)}
                   style={{
                     borderRadius: "5px",
                     color: "black",
@@ -438,7 +507,7 @@ export default function InvoiceList() {
                   style={{
                     borderRadius: "5px",
                     backgroundColor: "#b07d17",
-                    borderColor: "#faad14", 
+                    borderColor: "#faad14",
                     color: "white",
                   }}
                 >
@@ -451,7 +520,7 @@ export default function InvoiceList() {
               <Button
                 size="small"
                 icon={<EyeOutlined />}
-                onClick={() => handleViewInvoice(record)}
+                onClick={() => handleViewDetails(record)}
                 style={{
                   borderRadius: "5px",
                   color: "black",
@@ -616,6 +685,103 @@ export default function InvoiceList() {
         onClose={() => setPaymentModalVisible(false)}
         onPaymentSuccess={handlePaymentSuccess}
       />
+
+      <Drawer
+        title="Invoice Details"
+        onClose={() => setIsDrawerVisible(false)}
+        open={isDrawerVisible}
+        width={500}
+      >
+        {selectedInvoice && (
+          <div className="invoice-details">
+            <div className="detail-section">
+              <h3>Invoice Information</h3>
+              <p>
+                <strong>Invoice Number:</strong> {selectedInvoice.invoiceNumber}
+              </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                <Tag color={statusColors[selectedInvoice.status]}>
+                  {selectedInvoice.status}
+                </Tag>
+              </p>
+              <p>
+                <strong>Invoice Date:</strong>{" "}
+                {new Date(selectedInvoice.invoiceDate).toLocaleDateString(
+                  "en-IN",
+                )}
+              </p>
+              <p>
+                <strong>Due Date:</strong>{" "}
+                {new Date(selectedInvoice.dueDate).toLocaleDateString("en-IN")}
+              </p>
+            </div>
+
+            <div className="detail-section">
+              <h3>Customer Details</h3>
+              <p>
+                <strong>Name:</strong> {selectedInvoice.customer?.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {selectedInvoice.customer?.email}
+              </p>
+              <p>
+                <strong>Phone:</strong>{" "}
+                {selectedInvoice.customer?.phonenumber || "N/A"}
+              </p>
+            </div>
+
+            <div className="detail-section">
+              <h3>Items</h3>
+              {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                <table className="items-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Rate</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedInvoice.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td>{item.name}</td>
+                        <td>{item.quantity}</td>
+                        <td>₹{item.rate?.toFixed(2)}</td>
+                        <td>₹{(item.quantity * item.rate)?.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>No items</p>
+              )}
+            </div>
+
+            <div className="detail-section">
+              <h3>Amount Details</h3>
+              <p>
+                <strong>Subtotal:</strong> ₹
+                {selectedInvoice.subtotal?.toFixed(2)}
+              </p>
+              <p>
+                <strong>Discount:</strong> ₹
+                {selectedInvoice.discount?.toFixed(2)} (
+                {selectedInvoice.parseDiscount}%)
+              </p>
+              <p>
+                <strong>Tax:</strong> ₹{selectedInvoice.tax?.toFixed(2)} (
+                {selectedInvoice.parseTaxRate}%)
+              </p>
+              <p style={{ fontSize: "16px", fontWeight: "bold" }}>
+                <strong>Total Amount:</strong> ₹
+                {selectedInvoice.totalAmount?.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        )}
+      </Drawer>
     </>
   );
 }

@@ -84,6 +84,9 @@ export default function Login() {
           <p style={{ textAlign: "center" }}>
             Don't have an account? <Link to="/register">Register here</Link>
           </p>
+          <p style={{ textAlign: "center" }}>
+            Are you an admin? <Link to="/admin/register">Register your company</Link>
+          </p>
         </Spin>
       </Card>
     </div>

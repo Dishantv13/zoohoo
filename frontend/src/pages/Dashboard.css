@@ -1,0 +1,38 @@
+.customer-management {
+  min-height: 100%;
+}
+
+.customer-management .ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.customer-management .ant-table {
+  font-size: 14px;
+}
+
+.customer-management .ant-table-cell {
+  padding: 16px;
+}
+
+.customer-management .ant-btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.customer-management .ant-drawer-body {
+  padding: 24px;
+}
+
+.customer-management .ant-drawer-body p {
+  margin-bottom: 16px;
+  line-height: 1.8;
+}
+
+.customer-management .ant-drawer-body strong {
+  color: #262626;
+}
+
+.ant-modal-wrap .ant-modal-content {
+  border-radius: 8px;
+}
