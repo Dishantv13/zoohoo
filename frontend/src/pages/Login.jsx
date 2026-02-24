@@ -24,7 +24,7 @@ export default function Login() {
     } else {
       notification.error({
         message: "Login Failed",
-        description: result.payload || error || "Login Failed",
+        description: result.payload || error || "Invalid email or password",
       });
     }
   };

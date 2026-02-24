@@ -29,9 +29,9 @@ import {
   DeleteOutlined,
   EditOutlined,
   WarningOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
-import { invoiceAPI } from "../service/invoiceAPI";
-import { authAPI } from "../service/authAPI";
+import { apiService } from "../service/apiService";
 import dayjs from "dayjs";
 import "./InvoiceManagement.css";
 
@@ -81,7 +81,7 @@ export default function AdminInvoiceManagement() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await authAPI.getCustomers({ limit: 1000 });
+        const response = await apiService.getCustomers({ limit: 1000 });
         const customersData = response.data?.customers || response.data || [];
         setCustomers(Array.isArray(customersData) ? customersData : []);
       } catch (error) {
@@ -96,13 +96,13 @@ export default function AdminInvoiceManagement() {
     try {
       let response;
       if (customerId) {
-        response = await invoiceAPI.getCustomerInvoices(customerId, {
+        response = await apiService.getCustomerInvoices(customerId, {
           page,
           limit: pageSize,
           status: statusFilters.status,
         });
       } else {
-        response = await invoiceAPI.getAdminAllInvoices({
+        response = await apiService.getAdminAllInvoices({
           page,
           limit: pageSize,
           status: statusFilters.status,
@@ -138,7 +138,7 @@ export default function AdminInvoiceManagement() {
 
   const handleDownload = async (invoiceId, invoiceNumber) => {
     try {
-      const response = await invoiceAPI.downloadInvoice(invoiceId);
+      const response = await apiService.downloadInvoice(invoiceId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -174,7 +174,7 @@ export default function AdminInvoiceManagement() {
   const handleUpdateInvoice = async (values) => {
     try {
       setLoading(true);
-      await invoiceAPI.updateInvoice(selectedInvoice._id, {
+      await apiService.updateInvoice(selectedInvoice._id, {
         status: values.status,
         invoiceDate: values.invoiceDate.toDate(),
         dueDate: values.dueDate.toDate(),
@@ -563,6 +563,7 @@ export default function AdminInvoiceManagement() {
             <Select
               placeholder="Filter by Customer"
               style={{ width: 200 }}
+              prefix={<SearchOutlined />}
               allowClear
               showSearch
               value={selectedCustomer || undefined}

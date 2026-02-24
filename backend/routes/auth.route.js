@@ -8,6 +8,7 @@ import {
   updateCustomer,
   deleteCustomer,
   getCurrentUserProfile,
+  logout,
 } from "../controller/user.controller.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.route("/register").post(register);
 router.route("/login").post(login);
+router.route("/logout").post(protect, logout);
 
 router.route("/admin/register").post(adminRegister);
 

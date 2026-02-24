@@ -13,7 +13,7 @@ import {
 } from "antd";
 import { CreditCardOutlined, QrcodeOutlined } from "@ant-design/icons";
 import QRCode from "qrcode";
-import api from "../service/api";
+import { apiService } from "../service/apiService";
 
 const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const [form] = Form.useForm();
@@ -48,7 +48,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const handleCardPayment = async (values) => {
     setLoading(true);
     try {
-      const response = await api.post("/payments/card", {
+      const response = await apiService.cardPayment({
         invoiceId: invoice._id,
         cardNumber: values.cardNumber,
         cardHolder: values.cardHolder,
@@ -80,7 +80,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const handleQRPayment = async () => {
     setLoading(true);
     try {
-      const response = await api.post("/payments/qr", {
+      const response = await apiService.qrPayment({
         invoiceId: invoice._id,
         qrData: `QR-PAYMENT-${Date.now()}`,
       });

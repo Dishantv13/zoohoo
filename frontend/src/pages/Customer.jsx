@@ -18,7 +18,7 @@ import {
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../service/api";
+import { apiService } from "../service/apiService";
 
 export default function Customers() {
   const [form] = Form.useForm();
@@ -35,7 +35,7 @@ export default function Customers() {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/customers/profile");
+      const res = await apiService.customerProfile();
       form.setFieldsValue(res.data);
     } catch (error) {
       notification.error({
@@ -50,7 +50,7 @@ export default function Customers() {
   const onFinish = async (values) => {
     try {
       setLoading(true);
-      await api.put("/customers/profile", values);
+      await apiService.updateCustomerProfile(values);
 
       notification.success({
         message: "Success",
@@ -73,7 +73,7 @@ export default function Customers() {
     try {
       setLoading(true);
 
-      await api.put("/customers/change-password", {
+      await apiService.changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
       });
@@ -107,7 +107,7 @@ export default function Customers() {
       onOk: async () => {
         try {
           setLoading(true);
-          await api.delete("/customers/profile");
+          await apiService.deleteCustomerProfile();
 
           notification.success({
             message: "Account Deleted",
@@ -185,21 +185,15 @@ export default function Customers() {
                   required: true,
                   message: "Please enter your phone number",
                 },
-                {
-                  pattern: /^[0-9]{10}$/,
-                  message: "Phone number must be exactly 10 digits",
-                },
               ]}
             >
               <Input
                 prefix={<PhoneOutlined />}
                 maxLength={10}
                 placeholder="Enter your phone number"
-                onChange={(e) =>
-                  form.setFieldsValue({
-                    phonenumber: e.target.value.replace(/\D/g, ""),
-                  })
-                }
+                onInput={(e) => {
+                  e.target.value = e.target.value.replace(/[^0-9]/g, "");
+                }}
               />
             </Form.Item>
 

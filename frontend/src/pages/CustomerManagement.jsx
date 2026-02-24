@@ -26,7 +26,7 @@ import {
   SearchOutlined,
   EyeOutlined
 } from "@ant-design/icons";
-import { authAPI } from "../service/authAPI";
+import { apiService } from "../service/apiService";
 import "./Dashboard.css";
 
 export default function CustomerManagement() {
@@ -56,7 +56,7 @@ export default function CustomerManagement() {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await authAPI.getCustomers({
+      const response = await apiService.getCustomers({
         page: page,
         limit: pageSize,
         search: searchTerm,
@@ -102,7 +102,7 @@ export default function CustomerManagement() {
   const handleSubmit = async (values) => {
     try {
       if (isEditMode) {
-        const response = await authAPI.updateCustomer(
+        const response = await apiService.updateCustomer(
           selectedCustomer.id,
           values,
         );
@@ -120,7 +120,7 @@ export default function CustomerManagement() {
           description: "Customer updated successfully",
         });
       } else {
-        const response = await authAPI.createCustomer(values);
+        const response = await apiService.createCustomer(values);
         const newCustomer = {
           ...response.data,
           id: response.data._id,
@@ -145,7 +145,7 @@ export default function CustomerManagement() {
 
   const handleDelete = async (customerId) => {
     try {
-      await authAPI.deleteCustomer(customerId);
+      await apiService.deleteCustomer(customerId);
       setCustomers(customers.filter((c) => c.id !== customerId));
       notification.success({
         message: "Success",

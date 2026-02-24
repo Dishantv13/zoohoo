@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../../service/api";
+import { apiService } from "../../service/apiService";
 
 const defaultPagination = {
   page: 1,
@@ -12,12 +12,30 @@ const defaultPagination = {
 
 export const fetchInvoices = createAsyncThunk(
   "invoices/fetch",
-  async (params = {}) => (await api.get("/invoices", { params })).data,
+  async (params = {}) => {
+    try {
+      const response = await apiService.getInvoices(params);
+      return response.data;
+    } catch (error) {
+      return Promise.reject(
+        error.response?.data?.message || "Failed to fetch invoices",
+      );
+    }
+  },
 );
 
 export const addInvoice = createAsyncThunk(
   "invoices/add",
-  async (data) => (await api.post("/invoices", data)).data,
+  async (data) => {
+    try {
+      const response = await apiService.createInvoice(data);
+      return response.data;
+    } catch (error) {
+      return Promise.reject(
+        error.response?.data?.message || "Failed to create invoice",
+      );
+    }
+  },
 );
 
 const invoiceSlice = createSlice({

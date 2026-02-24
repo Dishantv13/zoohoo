@@ -16,4 +16,5 @@ router.route("/profile").get(protect, getCurrentUserProfile);
 router.route("/profile").put(protect, updateUserProfile);
 router.route("/change-password").put(protect, changePassword);
 
+
 export default router;

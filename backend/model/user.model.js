@@ -13,7 +13,6 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: [true, "email is required"],
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -45,6 +44,8 @@ const userSchema = new Schema(
   },
   { timestamps: true },
 );
+
+userSchema.index({ companyId: 1, email: 1 },{ unique: true });
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;

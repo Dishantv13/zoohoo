@@ -1,36 +1,37 @@
 import { Invoice } from "../model/invoice.model.js";
 import { Payment } from "../model/payment.model.js";
+import ApiError from "../util/apiError.js";
 
 const processCardPaymentService = async (userId, data) => {
   const { invoiceId, cardNumber, cardHolder, expiryDate, cvv } = data;
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
-    throw new Error("Invoice not found");
+    throw new ApiError(404, "Invoice not found");
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new Error("Not authorized to pay this invoice");
+    throw new ApiError(403, "Not authorized to pay this invoice");
   }
 
   if (invoice.status === "PAID") {
-    throw new Error("Invoice is already paid");
+    throw new ApiError(400, "Invoice is already paid");
   }
 
   if (!cardNumber || cardNumber.length < 13) {
-    throw new Error("Invalid card number");
+    throw new ApiError(400, "Invalid card number");
   }
 
   if (!cardHolder || cardHolder.trim() === "") {
-    throw new Error("Card holder name is required");
+    throw new ApiError(400, "Card holder name is required");
   }
 
   if (!expiryDate || expiryDate.trim() === "") {
-    throw new Error("Expiry date is required");
+    throw new ApiError(400, "Expiry date is required");
   }
 
   if (!cvv || cvv.length < 3) {
-    throw new Error("Invalid CVV");
+    throw new ApiError(400, "Invalid CVV");
   }
 
   await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -62,19 +63,19 @@ const processQrPaymentService = async (userId, data) => {
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
-    throw new Error("Invoice not found");
+    throw new ApiError(404, "Invoice not found");
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new Error("Not authorized to pay this invoice");
+    throw new ApiError(403, "Not authorized to pay this invoice");
   }
 
   if (invoice.status === "PAID") {
-    throw new Error("Invoice is already paid");
+    throw new ApiError(400, "Invoice is already paid");
   }
 
   if (!qrData || qrData.trim() === "") {
-    throw new Error("Invalid QR code data");
+    throw new ApiError(400, "Invalid QR code data");
   }
 
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -105,11 +106,11 @@ const getPaymentStatusService = async (userId, data) => {
   const invoice = await Invoice.findById(invoiceId);
 
   if (!invoice) {
-    throw new Error("Invoice not found");
+    throw new ApiError(404, "Invoice not found");
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new Error("Not authorized to view this invoice");
+    throw new ApiError(403, "Not authorized to view this invoice");
   }
 
   return {

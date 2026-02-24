@@ -21,7 +21,7 @@ import {
   GlobalOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
-import { adminRegister } from "../features/auth/authSlice";
+import { apiService } from "../service/apiService";
 import "./Auth.css";
 
 export default function AdminRegister() {
@@ -31,7 +31,7 @@ export default function AdminRegister() {
   const [form] = Form.useForm();
 
   const onFinish = async (values) => {
-    const result = await dispatch(adminRegister(values));
+    const result = await dispatch(apiService.adminRegister(values));
 
     if (result.type === "auth/adminRegister/fulfilled") {
       notification.success({

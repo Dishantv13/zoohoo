@@ -10,9 +10,11 @@ import {
   updateUserProfileService,
   deleteProfileService,
   changePasswordService,
+  logOutService,
 } from "../service/user.services.js";
 
 const register = async (req, res) => {
+  console.log("Received registration data:", req.body);
   try {
     const result = await registerService(req.body);
     if (result.success) {
@@ -44,15 +46,6 @@ const login = async (req, res) => {
   }
 };
 
-// const createCustomer = async (req, res) => {
-//   try {
-//     const customer = await createCustomerService(req.body);
-//     res.status(201).json(customer);
-//   } catch (error) {
-//     res.status(400).json({ message: error.message });
-//   }
-// };
-
 const getCurrentUserProfile = async (req, res) => {
   try {
     const user = await getCurrentUserProfileService(req.user._id);
@@ -61,15 +54,6 @@ const getCurrentUserProfile = async (req, res) => {
     res.status(404).json({ message: error.message });
   }
 };
-
-// const getCustomer = async (req, res) => {
-//   try {
-//     const customers = await getCustomerService();
-//     res.json(customers);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 const updateUserProfile = async (req, res) => {
   try {
@@ -100,6 +84,24 @@ const changePassword = async (req, res) => {
   } catch (error) {
     console.error("Change password error:", error);
     res.status(500).json({ message: "Error updating password" });
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    const result = await logOutService(req.user._id);
+    if (result.success) {
+      res.status(200).json({
+        success: result.success,
+        message: result.message,
+        user: result.user,
+      });
+    } else {
+      res.status(400).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: error.message || "Error logging out" });
   }
 };
 
@@ -145,9 +147,9 @@ const updateCustomer = async (req, res) => {
     const updatedCustomer = await updateCustomerService(
       req.user._id,
       req.params.customerId,
-      req.body
+      req.body,
     );
-    res.json(updatedCustomer);
+    res.status(200).json(updatedCustomer);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -155,8 +157,11 @@ const updateCustomer = async (req, res) => {
 
 const deleteCustomer = async (req, res) => {
   try {
-    const result = await deleteCustomerService(req.user._id, req.params.customerId);
-    res.json(result);
+    const result = await deleteCustomerService(
+      req.user._id,
+      req.params.customerId,
+    );
+    res.status(200).json(result);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -165,6 +170,7 @@ const deleteCustomer = async (req, res) => {
 export {
   register,
   login,
+  logout,
   adminRegister,
   createCustomer,
   getCompanyCustomers,

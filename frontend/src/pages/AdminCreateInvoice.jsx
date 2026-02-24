@@ -16,10 +16,13 @@ import {
   Col,
   Empty,
 } from "antd";
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
-import { authAPI } from "../service/authAPI";
-import { invoiceAPI } from "../service/invoiceAPI";
+import { apiService } from "../service/apiService";
 import "./CreateInvoice.css";
 
 export default function AdminCreateInvoice() {
@@ -47,7 +50,7 @@ export default function AdminCreateInvoice() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await authAPI.getCustomers({ limit: 1000 });
+        const response = await apiService.getCustomers({ limit: 1000 });
         const customersData = response.data?.customers || response.data || [];
         setCustomers(Array.isArray(customersData) ? customersData : []);
       } catch (error) {
@@ -75,7 +78,10 @@ export default function AdminCreateInvoice() {
   }, [location.state, form]);
 
   const calculateSubtotal = () => {
-    return items.reduce((sum, item) => sum + (item.quantity * item.rate || 0), 0);
+    return items.reduce(
+      (sum, item) => sum + (item.quantity * item.rate || 0),
+      0,
+    );
   };
 
   const calculateDiscount = () => {
@@ -128,11 +134,11 @@ export default function AdminCreateInvoice() {
       };
 
       if (isEditMode) {
-        await invoiceAPI.updateInvoice(editInvoiceId, invoiceData);
+        await apiService.updateInvoice(editInvoiceId, invoiceData);
         message.success("Invoice updated successfully");
-        navigate('/admin/invoices');
+        navigate("/admin/invoices");
       } else {
-        await invoiceAPI.createInvoice(invoiceData);
+        await apiService.createInvoice(invoiceData);
         message.success("Invoice created successfully");
         form.resetFields();
         setItems([{ name: "", quantity: 1, rate: 0 }]);
@@ -141,7 +147,10 @@ export default function AdminCreateInvoice() {
         setTax(18);
       }
     } catch (error) {
-      message.error(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} invoice`);
+      message.error(
+        error.response?.data?.message ||
+          `Failed to ${isEditMode ? "update" : "create"} invoice`,
+      );
     } finally {
       setLoading(false);
     }
@@ -228,15 +237,20 @@ export default function AdminCreateInvoice() {
                 <Select
                   placeholder="Search and select customer"
                   value={selectedCustomer}
+                  prefix={<SearchOutlined />}
                   onChange={setSelectedCustomer}
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
-                  options={(Array.isArray(customers) ? customers : []).map((c) => ({
-                    label: `${c.name} (${c.email})`,
-                    value: c._id,
-                  }))}
+                  options={(Array.isArray(customers) ? customers : []).map(
+                    (c) => ({
+                      label: `${c.name} (${c.email})`,
+                      value: c._id,
+                    }),
+                  )}
                 />
               </Form.Item>
             </Col>
@@ -245,7 +259,9 @@ export default function AdminCreateInvoice() {
                 name="invoiceDate"
                 label="Invoice Date"
                 initialValue={dayjs()}
-                rules={[{ required: true, message: "Please select invoice date" }]}
+                rules={[
+                  { required: true, message: "Please select invoice date" },
+                ]}
               >
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
@@ -264,8 +280,7 @@ export default function AdminCreateInvoice() {
           </Row>
 
           <Row gutter={16}>
-            
-            <Col xs={24} sm={6 }>
+            <Col xs={24} sm={6}>
               <Form.Item
                 name="status"
                 label="Invoice Status"
@@ -304,17 +319,17 @@ export default function AdminCreateInvoice() {
                 />
               </Form.Item>
             </Col>
-
           </Row>
 
-          <Row gutter={16}>
-            
-          </Row>
+          <Row gutter={16}></Row>
 
           <Card title="Invoice Items" style={{ marginBottom: 16 }}>
             {items.length > 0 ? (
               <Table
-                dataSource={items.map((item, index) => ({ ...item, key: index }))}
+                dataSource={items.map((item, index) => ({
+                  ...item,
+                  key: index,
+                }))}
                 columns={itemColumns}
                 pagination={false}
                 size="small"
@@ -384,7 +399,7 @@ export default function AdminCreateInvoice() {
                 size="large"
                 onClick={() => {
                   if (isEditMode) {
-                    navigate('/admin/invoices');
+                    navigate("/admin/invoices");
                   } else {
                     form.resetFields();
                     setItems([{ name: "", quantity: 1, rate: 0 }]);

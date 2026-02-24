@@ -31,9 +31,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchInvoices } from "../features/invoice/invoice.slice";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
-import api from "../service/api";
+import { apiService } from "../service/apiService";
 import PaymentModal from "../components/PaymentModal";
-import InvoiceView from "./InvoiceView";
 import "./InvoiceManagement.css";
 
 export default function InvoiceList() {
@@ -68,7 +67,7 @@ export default function InvoiceList() {
   };
 
   const handleDelete = async (id) => {
-    await api.delete(`/invoices/${id}`);
+    await apiService.deleteInvoice(id);
     notification.success({
       message: "Success",
       description: "Invoice deleted successfully",
@@ -90,7 +89,7 @@ export default function InvoiceList() {
 
   const handleDownLoad = async (invoice) => {
     try {
-      const response = await api.get(`/invoices/${invoice._id}/download`, {
+      const response = await apiService.downloadInvoice(invoice._id, {
         responseType: "blob",
       });
 
@@ -140,7 +139,7 @@ export default function InvoiceList() {
         cancelText: "No",
         onOk: async () => {
           try {
-            await api.delete(`/invoices/${invoiceId}`);
+            await apiService.deleteInvoice(invoiceId);
             notification.success({
               message: "Success",
               description: "Invoice cancelled and deleted successfully",
@@ -160,7 +159,7 @@ export default function InvoiceList() {
     }
 
     try {
-      await api.patch(`/invoices/${invoiceId}/status`, { status: newStatus });
+      await apiService.updateInvoiceStatus(invoiceId, { status: newStatus });
       notification.success({
         message: "Success",
         description: `Invoice status updated to ${newStatus}`,

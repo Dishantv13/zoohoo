@@ -5,6 +5,7 @@ const app = new express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 import userRouter from "./routes/user.route.js";
 import invoiceRouter from "./routes/invoice.route.js";

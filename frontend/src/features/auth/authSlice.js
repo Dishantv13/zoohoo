@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { authAPI } from "../../service/authAPI.js";
+import { apiService } from "../../service/apiService";
 
 export const register = createAsyncThunk(
   "auth/register",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await authAPI.register(data);
+      const response = await apiService.register(data);
       localStorage.setItem("token", response.data.token);
       return response.data;
     } catch (error) {
@@ -20,7 +20,7 @@ export const login = createAsyncThunk(
   "auth/login",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await authAPI.login(data);
+      const response = await apiService.login(data);
       localStorage.setItem("token", response.data.token);
       return response.data;
     } catch (error) {
@@ -29,11 +29,24 @@ export const login = createAsyncThunk(
   },
 );
 
+export const logout = createAsyncThunk(
+  "auth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      await apiService.logout();
+      localStorage.removeItem("token");
+      return { success: true };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Logout failed");
+    }
+  },
+);
+
 export const getCurrentUser = createAsyncThunk(
   "auth/getCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await authAPI.getCurrentUser();
+      const response = await apiService.getCurrentUser();
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -47,7 +60,7 @@ export const adminRegister = createAsyncThunk(
   "auth/adminRegister",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await authAPI.adminRegister(data);
+      const response = await apiService.adminRegister(data);
       localStorage.setItem("token", response.data.token);
       return response.data;
     } catch (error) {
@@ -69,18 +82,6 @@ const initialState = {
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {
-    logout: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.error = null;
-      localStorage.removeItem("token");
-    },
-    clearError: (state) => {
-      state.error = null;
-    },
-  },
   extraReducers: (builder) => {
     builder
       .addCase(register.pending, (state) => {
@@ -112,6 +113,26 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      });
+
+    builder
+      .addCase(logout.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
       });
 
     builder
@@ -149,5 +170,4 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
 export default authSlice.reducer;

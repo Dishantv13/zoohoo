@@ -6,11 +6,11 @@ import {
   updateInvoiceStatusService,
   deleteInvoiceService,
   downloadInvoiceService,
-  getCompanyService,
   getAdminAllInvoicesService,
   getCustomerInvoicesByAdminService,
 } from "../service/invoice.service.js";
 
+import ApiResponse from "../util/apiResponse.js";
 
 
 const createInvoice = async (req, res) => {

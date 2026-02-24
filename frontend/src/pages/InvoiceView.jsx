@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, Row, Col, Table, Divider, Typography, Button, Tag } from "antd";
 import { useParams } from "react-router-dom";
-import api from "../service/api";
+import { apiService } from "../service/apiService";
 
 const { Title, Text } = Typography;
 
@@ -18,7 +18,7 @@ const InvoiceView = () => {
 
   const fetchInvoice = async () => {
     try {
-      const res = await api.get(`/invoices/${id}`);
+      const res = await apiService.getInvoiceById(id);
 
       const invoice = res.data.invoice;
       const company = res.data.company;

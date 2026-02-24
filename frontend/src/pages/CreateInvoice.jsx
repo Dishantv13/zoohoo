@@ -14,7 +14,7 @@ import {
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
-import api from "../service/api";
+import { apiService } from "../service/apiService";
 import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
@@ -66,8 +66,8 @@ export default function CreateInvoice() {
   useEffect(() => {
     if (isEditing) {
       setLoading(true);
-      api
-        .get(`/invoices/${id}`)
+      apiService
+        .getInvoiceById(id)
         .then((response) => {
           const data = response.data.invoice;
           const formData = {
@@ -112,13 +112,13 @@ export default function CreateInvoice() {
       };
 
       if (isEditing) {
-        await api.put(`/invoices/${id}`, finalValues);
+        await apiService.updateInvoice(id, finalValues);
         notification.success({
           message: "Success",
           description: "Invoice updated successfully",
         });
       } else {
-        await api.post("/invoices", finalValues);
+        await apiService.createInvoice(finalValues);
         notification.success({
           message: "Success",
           description: "Invoice created successfully",

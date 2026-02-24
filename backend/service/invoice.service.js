@@ -3,6 +3,7 @@ import { User } from "../model/user.model.js";
 import { Company } from "../model/company.model.js";
 import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
+import ApiError from "../util/apiError.js";
 
 const createInvoiceService = async (userId, data) => {
   const {
@@ -16,12 +17,12 @@ const createInvoiceService = async (userId, data) => {
   } = data;
 
   if (!items.length) {
-    throw new Error("Invoice must have at least one item");
+    throw new ApiError(400, "Invoice must have at least one item");
   }
 
   const user = await User.findById(userId).populate("companyId");
   if (!user) {
-    throw new Error("User not found");
+    throw new ApiError(404, "User not found");
   }
 
   let companyId;
@@ -32,7 +33,7 @@ const createInvoiceService = async (userId, data) => {
   }
 
   if (!companyId) {
-    throw new Error("Company not found for this user");
+    throw new ApiError(404, "Company not found for this user");
   }
 
   const parsedTaxRate = Number(tax);
@@ -201,18 +202,18 @@ const getInvoiceByIdService = async (userId, invoiceId) => {
     const company = await Company.findById(invoice.companyId);
 
   if (!invoice) {
-    throw new Error("Invoice not found");
+    throw new ApiError(404, "Invoice not found");
   }
 
   if (!company) {
-    throw new Error("Company not found");
-    }
+    throw new ApiError(404, "Company not found");
+  }
 
   const isCreator = invoice.createdBy._id.toString() === userId.toString();
   const isCustomer = invoice.customer && invoice.customer._id.toString() === userId.toString();
 
   if (!isCreator && !isCustomer) {
-    throw new Error("Not authorized to access this invoice");
+    throw new ApiError(403, "Not authorized to access this invoice");
   }
 
   return { invoice, company };
@@ -230,20 +231,20 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
   } = data;
 
   if (!items.length) {
-    throw new Error("Invoice must have at least one item");
+    throw new ApiError(400, "Invoice must have at least one item");
   }
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
-    throw new Error("Invoice not found");
+    throw new ApiError(404, "Invoice not found");
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new Error("Not authorized to update this invoice");
+    throw new ApiError(403, "Not authorized to update this invoice");
   }
 
   if (invoice.status === "PAID" && status !== "PAID") {
-    throw new Error("Paid invoice cannot be updated");
+    throw new ApiError(400, "Paid invoice cannot be updated");
   }
 
   const parsedTaxRate = Number(tax);
@@ -296,11 +297,11 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
 const updateInvoiceStatusService = async (userId, invoiceId, newStatus) => {
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
-    throw new Error("Invoice not found");
+    throw new ApiError(404, "Invoice not found");
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new Error("Not authorized to update invoice status");
+    throw new ApiError(403, "Not authorized to update invoice status");
   }
 
   invoice.status = newStatus;
@@ -313,15 +314,15 @@ const deleteInvoiceService = async (userId, invoiceId) => {
   const invoice = await Invoice.findById(invoiceId);
 
   if (!invoice) {
-    throw new Error("Invoice not found");
+    throw new ApiError(404, "Invoice not found");
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new Error("Not authorized to delete this invoice");
+    throw new ApiError(403, "Not authorized to delete this invoice");
   }
 
   if (invoice.status === "PAID") {
-    throw new Error("Paid invoice cannot be deleted");
+    throw new ApiError(400, "Paid invoice cannot be deleted");
   }
 
   await Invoice.findByIdAndDelete(invoiceId);
@@ -614,23 +615,6 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
   doc.end();
 };
 
-function getCompanyService() {
-  return {
-    name: "Technologies Pvt Ltd",
-    address: "401, Business Hub, Andheri East, Mumbai - 400069",
-    gst: "27ABCDE1234F1Z5",
-    phone: "+91 9876543210",
-    email: "info@technologies.com",
-    website: "www.technologies.com",
-    bankDetails: {
-      accountName: "Technologies Pvt Ltd",
-      bankName: "HDFC Bank",
-      accountNumber: "12345678901234",
-      ifsc: "HDFC0001234",
-    },
-  };
-}
-
 const getAdminAllInvoicesService = async (adminId, options = {}) => {
   const page = Math.max(parseInt(options.page, 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
@@ -640,7 +624,7 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
 
   const admin = await User.findById(adminId).populate("companyId");
   if (!admin || admin.role !== "admin") {
-    throw new Error("Only admin can view company invoices");
+    throw new ApiError(403, "Only admin can view company invoices");
   }
 
   const companyId = admin.companyId?._id;
@@ -745,12 +729,12 @@ const getCustomerInvoicesByAdminService = async (adminId, customerId, options = 
 
   const admin = await User.findById(adminId).populate("companyId");
   if (!admin || admin.role !== "admin") {
-    throw new Error("Only admin can view customer invoices");
+    throw new ApiError(403, "Only admin can view customer invoices");
   }
 
   const customer = await User.findById(customerId);
   if (!customer || customer.companyId.toString() !== admin.companyId._id.toString()) {
-    throw new Error("Customer not found in your company");
+    throw new ApiError(404, "Customer not found in your company");
   }
 
   const customerObjId = new mongoose.Types.ObjectId(customerId);
@@ -865,7 +849,6 @@ export {
   updateInvoiceStatusService,
   deleteInvoiceService,
   downloadInvoiceService,
-  getCompanyService,
   getAdminAllInvoicesService,
   getCustomerInvoicesByAdminService,
 };
