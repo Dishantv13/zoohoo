@@ -51,7 +51,8 @@ export default function AdminCreateInvoice() {
     const fetchCustomers = async () => {
       try {
         const response = await apiService.getCustomers({ limit: 1000 });
-        const customersData = response.data?.customers || response.data || [];
+        const customersData =
+          response.data.data?.customers || response.data || [];
         setCustomers(Array.isArray(customersData) ? customersData : []);
       } catch (error) {
         message.error("Failed to fetch customers");
@@ -73,6 +74,7 @@ export default function AdminCreateInvoice() {
         invoiceDate: dayjs(invoice.invoiceDate),
         dueDate: dayjs(invoice.dueDate),
         status: invoice.status,
+        invoiceNumber: invoice.invoiceNumber,
       });
     }
   }, [location.state, form]);
@@ -126,6 +128,7 @@ export default function AdminCreateInvoice() {
       const invoiceData = {
         customer: selectedCustomer,
         items,
+        invoiceNumber: values.invoiceNumber || `INV-${Date.now()}`,
         invoiceDate: values.invoiceDate?.toDate(),
         dueDate: values.dueDate?.toDate(),
         discount,
@@ -148,7 +151,7 @@ export default function AdminCreateInvoice() {
       }
     } catch (error) {
       message.error(
-        error.response?.data?.message ||
+        error.response?.data?.data?.message ||
           `Failed to ${isEditMode ? "update" : "create"} invoice`,
       );
     } finally {
@@ -166,7 +169,7 @@ export default function AdminCreateInvoice() {
           type="text"
           value={text}
           onChange={(e) => updateItem(index, "name", e.target.value)}
-          className="invoice-input"
+          //   className="invoice-input"
           placeholder="Enter item name"
         />
       ),
@@ -180,7 +183,7 @@ export default function AdminCreateInvoice() {
           type="number"
           value={text}
           onChange={(e) => updateItem(index, "quantity", e.target.value)}
-          className="invoice-input"
+          //   className="invoice-input"
         />
       ),
     },
@@ -193,7 +196,7 @@ export default function AdminCreateInvoice() {
           type="number"
           value={text}
           onChange={(e) => updateItem(index, "rate", e.target.value)}
-          className="invoice-input"
+          //   className="invoice-input"
         />
       ),
     },
@@ -271,11 +274,22 @@ export default function AdminCreateInvoice() {
               <Form.Item
                 name="dueDate"
                 label="Due Date"
-                initialValue={dayjs().add(30, "days")}
+                initialValue={dayjs()}
                 rules={[{ required: true, message: "Please select due date" }]}
               >
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={6}>
+              {isEditMode && (
+                <Form.Item name="invoiceNumber" label="Invoice Number">
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    disabled={isEditMode}
+                  />
+                </Form.Item>
+              )}
             </Col>
           </Row>
 
@@ -291,7 +305,6 @@ export default function AdminCreateInvoice() {
                   <Select.Option value="PENDING">Pending</Select.Option>
                   <Select.Option value="CONFIRMED">Confirmed</Select.Option>
                   <Select.Option value="PAID">Paid</Select.Option>
-                  <Select.Option value="CANCELLED">Cancelled</Select.Option>
                 </Select>
               </Form.Item>
             </Col>

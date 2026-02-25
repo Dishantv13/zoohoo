@@ -1,6 +1,6 @@
 import "@ant-design/v5-patch-for-react-19";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { Layout, Menu, Button, Dropdown, Spin } from "antd";
+import { Layout, Menu, Button, Dropdown, Spin, message } from "antd";
 import {
   UserOutlined,
   FileAddOutlined,
@@ -96,6 +96,7 @@ export default function App() {
       icon: <LogoutOutlined />,
       onClick: () => {
         dispatch(logout());
+        message.success("Logout Successful");
       },
     },
   ];

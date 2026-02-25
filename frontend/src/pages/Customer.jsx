@@ -36,7 +36,7 @@ export default function Customers() {
     try {
       setLoading(true);
       const res = await apiService.customerProfile();
-      form.setFieldsValue(res.data);
+      form.setFieldsValue(res.data.data);
     } catch (error) {
       notification.error({
         message: "Failed",

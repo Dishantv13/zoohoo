@@ -15,7 +15,7 @@ export const fetchInvoices = createAsyncThunk(
   async (params = {}) => {
     try {
       const response = await apiService.getInvoices(params);
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return Promise.reject(
         error.response?.data?.message || "Failed to fetch invoices",
@@ -24,19 +24,16 @@ export const fetchInvoices = createAsyncThunk(
   },
 );
 
-export const addInvoice = createAsyncThunk(
-  "invoices/add",
-  async (data) => {
-    try {
-      const response = await apiService.createInvoice(data);
-      return response.data;
-    } catch (error) {
-      return Promise.reject(
-        error.response?.data?.message || "Failed to create invoice",
-      );
-    }
-  },
-);
+export const addInvoice = createAsyncThunk("invoices/add", async (data) => {
+  try {
+    const response = await apiService.createInvoice(data);
+    return response.data.data;
+  } catch (error) {
+    return Promise.reject(
+      error.response?.data?.message || "Failed to create invoice",
+    );
+  }
+});
 
 const invoiceSlice = createSlice({
   name: "invoices",

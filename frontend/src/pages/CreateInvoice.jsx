@@ -69,7 +69,8 @@ export default function CreateInvoice() {
       apiService
         .getInvoiceById(id)
         .then((response) => {
-          const data = response.data.invoice;
+          const data = response.data.data;
+          console.log("Fetched invoice:", data);
           const formData = {
             customer: data.customer._id,
             invoiceNumber: data.invoiceNumber,
@@ -93,7 +94,7 @@ export default function CreateInvoice() {
           notification.error({
             message: "Failed",
             description:
-              error.response?.data?.message || "Failed To Load Invoice",
+              error.response?.data?.data?.message || "Failed To Load Invoice",
           });
           navigate("/invoices");
         })
@@ -130,7 +131,8 @@ export default function CreateInvoice() {
     } catch (error) {
       notification.error({
         message: "Failed",
-        description: error.response?.data?.message || "Something went wrong",
+        description:
+          error.response?.data?.data?.message || "Something went wrong",
       });
     }
   };

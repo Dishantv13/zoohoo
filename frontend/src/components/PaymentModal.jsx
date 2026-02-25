@@ -58,8 +58,8 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
 
       setPaymentStatus({
         success: true,
-        transactionId: response.data.transactionId,
-        message: response.data.message,
+        transactionId: response.data.data.transactionId,
+        message: response.data.data.message,
       });
 
       setTimeout(() => {
@@ -87,8 +87,8 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
 
       setPaymentStatus({
         success: true,
-        transactionId: response.data.transactionId,
-        message: response.data.message,
+        transactionId: response.data.data.transactionId,
+        message: response.data.data.message,
       });
 
       setTimeout(() => {

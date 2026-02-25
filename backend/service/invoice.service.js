@@ -3,6 +3,7 @@ import { User } from "../model/user.model.js";
 import { Company } from "../model/company.model.js";
 import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
+import excelJS from "exceljs";
 import ApiError from "../util/apiError.js";
 
 const createInvoiceService = async (userId, data) => {
@@ -93,12 +94,8 @@ const getInvoicesServices = async (userId, options = {}) => {
 
   let baseMatch;
   if (user.role === "customer") {
-    
     baseMatch = {
-      $or: [
-        { createdBy: userId },
-        { customer: userId },
-      ],
+      $or: [{ createdBy: userId }, { customer: userId }],
     };
   } else {
     baseMatch = { createdBy: userId };
@@ -169,7 +166,7 @@ const getInvoicesServices = async (userId, options = {}) => {
     {
       path: "createdBy",
       select: "name email role",
-    }
+    },
   ]);
 
   const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
@@ -199,24 +196,19 @@ const getInvoiceByIdService = async (userId, invoiceId) => {
     .populate("customer")
     .populate("createdBy", "name email role");
 
-    const company = await Company.findById(invoice.companyId);
-
   if (!invoice) {
     throw new ApiError(404, "Invoice not found");
   }
 
-  if (!company) {
-    throw new ApiError(404, "Company not found");
-  }
-
   const isCreator = invoice.createdBy._id.toString() === userId.toString();
-  const isCustomer = invoice.customer && invoice.customer._id.toString() === userId.toString();
+  const isCustomer =
+    invoice.customer && invoice.customer._id.toString() === userId.toString();
 
   if (!isCreator && !isCustomer) {
     throw new ApiError(403, "Not authorized to access this invoice");
   }
 
-  return { invoice, company };
+  return invoice;
 };
 
 const updateInvoiceService = async (userId, invoiceId, data) => {
@@ -334,11 +326,13 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
   const user = await User.findById(userId);
 
   if (!invoice) throw new Error("Invoice not found");
-  if(!company) throw new Error("Company not found");
+  if (!company) throw new Error("Company not found");
 
   const isCreator = invoice.createdBy.toString() === userId.toString();
-  const isAdmin = user.role === "admin" && company.adminId.toString() === userId.toString();
-  const isCustomer = invoice.customer && invoice.customer._id.toString() === userId.toString();
+  const isAdmin =
+    user.role === "admin" && company.adminId.toString() === userId.toString();
+  const isCustomer =
+    invoice.customer && invoice.customer._id.toString() === userId.toString();
 
   if (!isCreator && !isAdmin && !isCustomer) {
     throw new Error("Not authorized");
@@ -694,7 +688,7 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
     {
       path: "createdBy",
       select: "name email role",
-    }
+    },
   ]);
 
   const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
@@ -720,7 +714,11 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
   };
 };
 
-const getCustomerInvoicesByAdminService = async (adminId, customerId, options = {}) => {
+const getCustomerInvoicesByAdminService = async (
+  adminId,
+  customerId,
+  options = {},
+) => {
   const page = Math.max(parseInt(options.page, 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
   const skip = (page - 1) * limit;
@@ -733,7 +731,10 @@ const getCustomerInvoicesByAdminService = async (adminId, customerId, options = 
   }
 
   const customer = await User.findById(customerId);
-  if (!customer || customer.companyId.toString() !== admin.companyId._id.toString()) {
+  if (
+    !customer ||
+    customer.companyId.toString() !== admin.companyId._id.toString()
+  ) {
     throw new ApiError(404, "Customer not found in your company");
   }
 
@@ -809,7 +810,7 @@ const getCustomerInvoicesByAdminService = async (adminId, customerId, options = 
     {
       path: "createdBy",
       select: "name email role",
-    }
+    },
   ]);
 
   const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
@@ -840,6 +841,56 @@ const getCustomerInvoicesByAdminService = async (adminId, customerId, options = 
     },
   };
 };
+
+const exportInvoiceServices = async (userId, option = {}) => {
+    const query = { createdBy: userId };
+
+    if (option.status) {
+        query.status = option.status;
+    }
+
+    const invoice = await Invoice.find(query).populate("customer");
+
+    const workbook = new excelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Invoices");
+
+    const columns = [
+        { header: "Invoice Number", key: "invoiceNumber", width: 20 },
+        { header: "Customer Name", key: "customerName", width: 30 },
+        { header: "Invoice Date", key: "invoiceDate", width: 15 },
+        { header: "Due Date", key: "dueDate", width: 15 },
+        { header: "Status", key: "status", width: 15 },
+        { header: "Discount", key: "discount", width: 15 },
+        { header: "Tax", key: "tax", width: 15 },
+        { header: "Amount After Discount", key: "amountAfterDiscount", width: 20 },
+        { header: "Total Amount", key: "totalAmount", width: 20 },
+    ]
+
+    worksheet.getRow(1).font = { bold: true };
+
+    let totalAmount = 0;
+
+    invoice.forEach((inv) => {
+        totalAmount += inv.totalAmount;
+        
+        worksheet.addRow({
+            invoiceNumber: inv.invoiceNumber,
+            customerName: inv.customer ? inv.customer.name : "N/A",
+            invoiceDate: inv.invoiceDate.toISOString().split("T")[0],
+            dueDate: inv.dueDate.toISOString().split("T")[0],
+            status: inv.status,
+            discount: inv.discount,
+            tax: inv.tax,
+            amountAfterDiscount: inv.amountAfterDiscount,
+            totalAmount: inv.totalAmount,
+        });
+    });
+
+    worksheet.addRow({});
+    worksheet.addRow({ customer: "Total", invoiceNumber: "Total", totalAmount });
+
+    return workbook;
+}
 
 export {
   createInvoiceService,

@@ -148,7 +148,10 @@ const changePasswordService = async (userId, data) => {
   }
 
   if (currentPassword === newPassword) {
-    throw new ApiError(400, "New password cannot be the same as current password");
+    throw new ApiError(
+      400,
+      "New password cannot be the same as current password",
+    );
   }
 
   const user = await User.findById(userId).select("+password");

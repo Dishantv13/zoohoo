@@ -6,8 +6,8 @@ export const register = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await apiService.register(data);
-      localStorage.setItem("token", response.data.token);
-      return response.data;
+      localStorage.setItem("token", response.data.data.token);
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Registration failed",
@@ -21,8 +21,8 @@ export const login = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await apiService.login(data);
-      localStorage.setItem("token", response.data.token);
-      return response.data;
+      localStorage.setItem("token", response.data.data.token);
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Login failed");
     }
@@ -47,7 +47,7 @@ export const getCurrentUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiService.getCurrentUser();
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch user",
@@ -61,8 +61,8 @@ export const adminRegister = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await apiService.adminRegister(data);
-      localStorage.setItem("token", response.data.token);
-      return response.data;
+      localStorage.setItem("token", response.data.data.token);
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Admin registration failed",

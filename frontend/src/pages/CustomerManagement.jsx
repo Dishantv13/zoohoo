@@ -15,6 +15,10 @@ import {
   Drawer,
   Empty,
   Select,
+  Row,
+  Col,
+  Statistic,
+  Divider,
 } from "antd";
 import {
   PlusOutlined,
@@ -24,10 +28,16 @@ import {
   MailOutlined,
   UserOutlined,
   SearchOutlined,
-  EyeOutlined
+  EyeOutlined,
 } from "@ant-design/icons";
 import { apiService } from "../service/apiService";
 import "./Dashboard.css";
+
+const currencyFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 2,
+});
 
 export default function CustomerManagement() {
   const { user } = useSelector((state) => state.auth);
@@ -40,6 +50,8 @@ export default function CustomerManagement() {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [customerSummary, setCustomerSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -63,21 +75,22 @@ export default function CustomerManagement() {
         status: statusFilter,
       });
 
-      const customersData = response.data?.customers || response.data || [];
+      const customersData =
+        response.data.data?.customers || response.data || [];
 
       const filteredData = customersData.map((customer) => ({
         ...customer,
         id: customer._id,
       }));
 
-      setTotalCustomers(response.data?.pagination?.totalCustomers || 0);
+      setTotalCustomers(response.data.data?.pagination?.totalCustomers || 0);
       setCustomers(filteredData);
     } catch (error) {
       console.error("Fetch customers error:", error);
       notification.error({
         message: "Error",
         description:
-          error.response?.data?.message ||
+          error.response?.data?.data?.message ||
           error.message ||
           "Failed to fetch customers",
       });
@@ -92,10 +105,6 @@ export default function CustomerManagement() {
   };
 
   useEffect(() => {
-    setPage(1);
-  }, [searchTerm, statusFilter]);
-
-  useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, searchTerm, statusFilter]);
 
@@ -107,8 +116,8 @@ export default function CustomerManagement() {
           values,
         );
         const updatedCustomer = {
-          ...response.data,
-          id: response.data._id,
+          ...response.data.data,
+          id: response.data.data._id,
         };
         setCustomers(
           customers.map((c) =>
@@ -122,8 +131,8 @@ export default function CustomerManagement() {
       } else {
         const response = await apiService.createCustomer(values);
         const newCustomer = {
-          ...response.data,
-          id: response.data._id,
+          ...response.data.data,
+          id: response.data.data._id,
         };
         setCustomers([...customers, newCustomer]);
         notification.success({
@@ -138,7 +147,7 @@ export default function CustomerManagement() {
     } catch (error) {
       notification.error({
         message: "Error",
-        description: error.response?.data?.message || "Operation failed",
+        description: error.response?.data?.data?.message || "Operation failed",
       });
     }
   };
@@ -155,7 +164,7 @@ export default function CustomerManagement() {
       notification.error({
         message: "Error",
         description:
-          error.response?.data?.message || "Failed to delete customer",
+          error.response?.data?.data?.message || "Failed to delete customer",
       });
     }
   };
@@ -181,7 +190,33 @@ export default function CustomerManagement() {
   const handleViewDetails = (record) => {
     setSelectedCustomer(record);
     setIsDrawerVisible(true);
+    fetchCustomerSummary(record.id);
   };
+
+  const fetchCustomerSummary = async (customerId) => {
+    setSummaryLoading(true);
+    try {
+      const response = await apiService.getCustomerInvoices(customerId, {
+        page: 1,
+        limit: 1,
+      });
+      setCustomerSummary(response.data.data?.summary || null);
+    } catch (error) {
+      setCustomerSummary(null);
+      notification.error({
+        message: "Error",
+        description:
+          error.response?.data?.data?.message ||
+          error.message ||
+          "Failed to fetch customer summary",
+      });
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const formatCurrency = (value) =>
+    currencyFormatter.format(Number(value) || 0);
 
   const columns = [
     {
@@ -225,8 +260,8 @@ export default function CustomerManagement() {
           >
             Edit
           </Button>
-          <Button 
-            size="small" 
+          <Button
+            size="small"
             onClick={() => handleViewDetails(record)}
             icon={<EyeOutlined />}
           >
@@ -388,7 +423,11 @@ export default function CustomerManagement() {
 
       <Drawer
         title="Customer Details"
-        onClose={() => setIsDrawerVisible(false)}
+        width={600}
+        onClose={() => {
+          setIsDrawerVisible(false);
+          setCustomerSummary(null);
+        }}
         open={isDrawerVisible}
       >
         {selectedCustomer && (
@@ -412,6 +451,55 @@ export default function CustomerManagement() {
                 {selectedCustomer.isActive ? "Active" : "Inactive"}
               </span>
             </p>
+            <Divider />
+            <Card
+              title="Invoice Summary"
+              size="medium"
+              loading={summaryLoading}
+            >
+              <Row gutter={[16, 16]}>
+                <Col span={12}>
+                  <Statistic
+                    title="Total Invoices"
+                    value={customerSummary?.totalInvoices || 0}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Overdue Invoices"
+                    value={customerSummary?.overdueCount || 0}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Total Amount"
+                    value={customerSummary?.totalAmount || 0}
+                    formatter={formatCurrency}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Paid Amount"
+                    value={customerSummary?.paidAmount || 0}
+                    formatter={formatCurrency}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Pending Amount"
+                    value={customerSummary?.pendingAmount || 0}
+                    formatter={formatCurrency}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Confirmed Amount"
+                    value={customerSummary?.confirmedAmount || 0}
+                    formatter={formatCurrency}
+                  />
+                </Col>
+              </Row>
+            </Card>
           </div>
         )}
       </Drawer>

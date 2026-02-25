@@ -159,7 +159,7 @@ export default function InvoiceList() {
     }
 
     try {
-      await apiService.updateInvoiceStatus(invoiceId, { status: newStatus });
+      await apiService.updateInvoiceStatus(invoiceId, newStatus);
       notification.success({
         message: "Success",
         description: `Invoice status updated to ${newStatus}`,
@@ -172,10 +172,6 @@ export default function InvoiceList() {
       });
     }
   };
-
-  //   const handleViewInvoice = (invoice) => {
-  //     navigate(`/view-invoices/${invoice._id}`);
-  //   };
 
   const summaryData = summary || {};
 

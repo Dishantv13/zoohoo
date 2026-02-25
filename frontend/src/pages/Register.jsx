@@ -91,7 +91,6 @@ export default function Register() {
               label="Phone Number"
               rules={[
                 { required: true, message: "Please enter your phonenumber" },
-
               ]}
             >
               <Input
@@ -101,8 +100,8 @@ export default function Register() {
                 placeholder="Enter your phone number"
                 size="large"
                 onInput={(e) => {
-                e.target.value = e.target.value.replace(/[^0-9]/g, "");
-              }}
+                  e.target.value = e.target.value.replace(/[^0-9]/g, "");
+                }}
               />
             </Form.Item>
 

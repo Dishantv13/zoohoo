@@ -26,7 +26,6 @@ import {
 import {
   EyeOutlined,
   FilePdfOutlined,
-  DeleteOutlined,
   EditOutlined,
   WarningOutlined,
   SearchOutlined,
@@ -82,7 +81,8 @@ export default function AdminInvoiceManagement() {
     const fetchCustomers = async () => {
       try {
         const response = await apiService.getCustomers({ limit: 1000 });
-        const customersData = response.data?.customers || response.data || [];
+        const customersData =
+          response.data.data?.customers || response.data || [];
         setCustomers(Array.isArray(customersData) ? customersData : []);
       } catch (error) {
         console.error("Failed to fetch customers:", error);
@@ -109,18 +109,18 @@ export default function AdminInvoiceManagement() {
         });
       }
 
-      setInvoices(response.data.data || []);
+      setInvoices(response.data.data.data || []);
       setPagination({
-        current: response.data.pagination.page,
-        pageSize: response.data.pagination.limit,
-        total: response.data.pagination.totalItems,
+        current: response.data.data.pagination.page,
+        pageSize: response.data.data.pagination.limit,
+        total: response.data.data.pagination.totalItems,
       });
-      setSummary(response.data.summary);
+      setSummary(response.data.data.summary);
     } catch (error) {
       notification.error({
         message: "Error",
         description:
-          error.response?.data?.message || "Failed to fetch invoices",
+          error.response?.data?.data?.message || "Failed to fetch invoices",
       });
     } finally {
       setLoading(false);
@@ -190,7 +190,7 @@ export default function AdminInvoiceManagement() {
       notification.error({
         message: "Error",
         description:
-          error.response?.data?.message || "Failed to update invoice",
+          error.response?.data?.data?.message || "Failed to update invoice",
       });
     } finally {
       setLoading(false);
@@ -390,7 +390,9 @@ export default function AdminInvoiceManagement() {
                 <Button
                   size="small"
                   icon={<FilePdfOutlined />}
-                  onClick={() => handleDownload(record._id, record.invoiceNumber)}
+                  onClick={() =>
+                    handleDownload(record._id, record.invoiceNumber)
+                  }
                   style={{
                     borderRadius: "5px",
                     color: "green",
@@ -438,7 +440,9 @@ export default function AdminInvoiceManagement() {
                 <Button
                   icon={<FilePdfOutlined />}
                   size="small"
-                  onClick={() => handleDownload(record._id, record.invoiceNumber)}
+                  onClick={() =>
+                    handleDownload(record._id, record.invoiceNumber)
+                  }
                   style={{
                     borderRadius: "5px",
                     color: "green",
@@ -488,7 +492,7 @@ export default function AdminInvoiceManagement() {
   return (
     <div className="invoice-management">
       <Row gutter={16} style={{ marginBottom: "24px" }}>
-        <Col xs={24} sm={12} lg={4}>
+        <Col xs={24} sm={12} lg={3}>
           <Card>
             <Statistic
               title="Total Invoices"
@@ -497,7 +501,7 @@ export default function AdminInvoiceManagement() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={4}>
+        <Col xs={24} sm={12} lg={3}>
           <Card>
             <Statistic
               title="Overdue Invoices"
@@ -506,7 +510,7 @@ export default function AdminInvoiceManagement() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={5}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Pending Amount"
@@ -516,7 +520,7 @@ export default function AdminInvoiceManagement() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={5}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Confirmed Amount"
@@ -526,7 +530,7 @@ export default function AdminInvoiceManagement() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={5}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Paid Amount"
@@ -536,7 +540,7 @@ export default function AdminInvoiceManagement() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Total Amount"
@@ -548,18 +552,16 @@ export default function AdminInvoiceManagement() {
         </Col>
       </Row>
 
-      <Alert
-        message="Company Invoice Management"
-        description="This shows all invoices created by you and your customers. Invoices created by customers in their personal login are automatically visible here."
-        type="info"
-        showIcon
-        style={{ marginBottom: "24px" }}
-      />
-
       <Card
         title="Company Invoices"
         extra={
-          <Space>
+          <Space wrap>
+            {/* <Alert
+              type="warning"
+              color="red"
+              showIcon
+              message={`Overdue invoices: ${summary.overdueCount || 0}`}
+            ></Alert> */}
             <Select
               placeholder="Filter by Customer"
               style={{ width: 200 }}

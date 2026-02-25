@@ -18,7 +18,9 @@ router.route("/").post(protect, createInvoice);
 router.route("/").get(protect, getInvoices);
 
 router.route("/admin/all").get(protect, adminOnly, getAdminAllInvoices);
-router.route("/admin/customer/:customerId").get(protect, adminOnly, getCustomerInvoicesByAdmin);
+router
+  .route("/admin/customer/:customerId")
+  .get(protect, adminOnly, getCustomerInvoicesByAdmin);
 
 router.route("/:id").get(protect, getInvoiceById);
 router.route("/:id").put(protect, updateInvoice);

@@ -45,7 +45,7 @@ api.interceptors.response.use(
 );
 
 export const apiService = {
-    // Customer APIs
+  // Customer APIs
   customerProfile: () => api.get("/customers/profile"),
   updateCustomerProfile: (data) => api.put("/customers/profile", data),
   changePassword: (data) => api.put("/customers/change-password", data),
@@ -55,21 +55,21 @@ export const apiService = {
   cardPayment: (data) => api.post("/payments/card", data),
   qrPayment: (data) => api.post("/payments/qr", data),
 
-    // Authentication APIs
+  // Authentication APIs
   register: (data) => authApi.post("/register", data),
   login: (data) => authApi.post("/login", data),
   logout: () => authApi.post("/logout"),
   adminRegister: (data) => authApi.post("/admin/register", data),
   getCurrentUser: () => authApi.get("/me"),
 
-    // Admin Customer Management APIs
+  // Admin Customer Management APIs
   createCustomer: (data) => authApi.post("/customers", data),
   getCustomers: (params) => authApi.get("/customers", { params }),
   updateCustomer: (customerId, data) =>
     authApi.put(`/customers/${customerId}`, data),
   deleteCustomer: (customerId) => authApi.delete(`/customers/${customerId}`),
 
-    // Invoice APIs
+  // Invoice APIs
   createInvoice: (data) => invoiceApi.post("/", data),
   getInvoices: (params) => invoiceApi.get("/", { params }),
   getInvoiceById: (id) => invoiceApi.get(`/${id}`),
