@@ -82,6 +82,8 @@ export const apiService = {
   getAdminAllInvoices: (params) => invoiceApi.get("/admin/all", { params }),
   getCustomerInvoices: (customerId, params) =>
     invoiceApi.get(`/admin/customer/${customerId}`, { params }),
+  exportInvoice: (params) => 
+    invoiceApi.get("/export", { params, responseType: "blob" }),
 };
 
 export default apiService;

@@ -198,9 +198,12 @@ const adminRegisterService = async (userData) => {
   if (
     !adminName ||
     !adminEmail ||
+    !adminPhone ||
     !adminPassword ||
     !companyName ||
-    !companyAddress
+    !companyAddress ||
+    !companyEmail ||
+    !companyPhone
   ) {
     throw new ApiError(400, "Please provide all required fields");
   }

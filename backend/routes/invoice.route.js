@@ -9,13 +9,18 @@ import {
   downloadInvoice,
   getAdminAllInvoices,
   getCustomerInvoicesByAdmin,
+  exportInvoice,
 } from "../controller/invoice.controller.js";
 import { protect, adminOnly } from "../middleware/auth.js";
+
+import { exportRateLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
 
 router.route("/").post(protect, createInvoice);
 router.route("/").get(protect, getInvoices);
+
+router.route("/export").get(protect, exportRateLimiter, exportInvoice);
 
 router.route("/admin/all").get(protect, adminOnly, getAdminAllInvoices);
 router

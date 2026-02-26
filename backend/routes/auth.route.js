@@ -16,17 +16,15 @@ const router = express.Router();
 
 router.route("/register").post(register);
 router.route("/login").post(login);
-router.route("/logout").post(protect, logout);
-
 router.route("/admin/register").post(adminRegister);
 
-router.route("/customers").post(protect, adminOnly, createCustomer);
-router.route("/customers").get(protect, adminOnly, getCompanyCustomers);
-router.route("/customers/:customerId").put(protect, adminOnly, updateCustomer);
-router
-  .route("/customers/:customerId")
-  .delete(protect, adminOnly, deleteCustomer);
+router.use(protect);
+router.route("/logout").post(logout);
+router.route("/customers").post(adminOnly, createCustomer);
+router.route("/customers").get(adminOnly, getCompanyCustomers);
+router.route("/customers/:customerId").put(adminOnly, updateCustomer);
+router.route("/customers/:customerId").delete(adminOnly, deleteCustomer);
 
-router.route("/me").get(protect, getCurrentUserProfile);
+router.route("/me").get(getCurrentUserProfile);
 
 export default router;

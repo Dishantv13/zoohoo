@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 
+import { authRateLimiter, apiRateLimiter } from "./middleware/rateLimit.js";
+import { globalErrorHandler } from "./middleware/globelErrorHandler.js";
+
 const app = new express();
 
 app.use(cors());
@@ -12,9 +15,11 @@ import invoiceRouter from "./routes/invoice.route.js";
 import authRouter from "./routes/auth.route.js";
 import paymentRouter from "./routes/payment.route.js";
 
-app.use("/api/customers", userRouter);
+app.use("/api/customers", apiRateLimiter, userRouter);
 app.use("/api/invoices", invoiceRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/payments", paymentRouter);
+app.use("/api/auth",authRateLimiter, authRouter);
+app.use("/api/payments", apiRateLimiter, paymentRouter);
+    
+app.use(globalErrorHandler);
 
 export default app;

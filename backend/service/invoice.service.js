@@ -843,54 +843,137 @@ const getCustomerInvoicesByAdminService = async (
 };
 
 const exportInvoiceServices = async (userId, option = {}) => {
-    const query = { createdBy: userId };
+  const user = await User.findById(userId);
 
-    if (option.status) {
-        query.status = option.status;
+  let query = {};
+
+  if (user.role === "admin") {
+    if (option.customerId) {
+      query = {
+        $or: [
+          { customer: option.customerId },
+          { createdBy: option.customerId },
+        ],
+      };
+    } else {
+      query = { companyId: user.companyId };
     }
+  } else if (user.role === "customer") {
+    query = {
+      $or: [{ createdBy: userId }, { customer: userId }],
+    };
+  }
 
-    const invoice = await Invoice.find(query).populate("customer");
+  if (option.status) {
+    query.status = option.status;
+  }
 
-    const workbook = new excelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Invoices");
+  const invoices = await Invoice.find(query)
+    .populate("customer", "name email phonenumber")
+    .populate("createdBy", "name email role")
+    .sort({ createdAt: -1 });
 
-    const columns = [
-        { header: "Invoice Number", key: "invoiceNumber", width: 20 },
-        { header: "Customer Name", key: "customerName", width: 30 },
-        { header: "Invoice Date", key: "invoiceDate", width: 15 },
-        { header: "Due Date", key: "dueDate", width: 15 },
-        { header: "Status", key: "status", width: 15 },
-        { header: "Discount", key: "discount", width: 15 },
-        { header: "Tax", key: "tax", width: 15 },
-        { header: "Amount After Discount", key: "amountAfterDiscount", width: 20 },
-        { header: "Total Amount", key: "totalAmount", width: 20 },
-    ]
+  const workbook = new excelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Invoices");
 
-    worksheet.getRow(1).font = { bold: true };
+  worksheet.columns = [
+    { header: "Invoice Number", key: "invoiceNumber", width: 20 },
+    { header: "Customer Name", key: "customerName", width: 30 },
+    { header: "Customer Email", key: "customerEmail", width: 30 },
+    { header: "Created By", key: "createdBy", width: 25 },
+    { header: "Invoice Date", key: "invoiceDate", width: 15 },
+    { header: "Due Date", key: "dueDate", width: 15 },
+    { header: "Status", key: "status", width: 15 },
+    { header: "Subtotal", key: "subtotal", width: 20 },
+    { header: "Discount", key: "discount", width: 20 },
+    { header: "Amount After Discount", key: "amountAfterDiscount", width: 20 },
+    { header: "Tax", key: "tax", width: 20 },
+    { header: "Total Amount", key: "totalAmount", width: 20 },
+  ];
 
-    let totalAmount = 0;
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD3D3D3" },
+  };
 
-    invoice.forEach((inv) => {
-        totalAmount += inv.totalAmount;
-        
-        worksheet.addRow({
-            invoiceNumber: inv.invoiceNumber,
-            customerName: inv.customer ? inv.customer.name : "N/A",
-            invoiceDate: inv.invoiceDate.toISOString().split("T")[0],
-            dueDate: inv.dueDate.toISOString().split("T")[0],
-            status: inv.status,
-            discount: inv.discount,
-            tax: inv.tax,
-            amountAfterDiscount: inv.amountAfterDiscount,
-            totalAmount: inv.totalAmount,
-        });
+  const currencyFormat = '"₹" #,##,##0.00;[Red]-"₹" #,##,##0.00';
+
+  worksheet.getColumn("subtotal").numFmt = currencyFormat;
+  worksheet.getColumn("discount").numFmt = currencyFormat;
+  worksheet.getColumn("amountAfterDiscount").numFmt = currencyFormat;
+  worksheet.getColumn("tax").numFmt = currencyFormat;
+  worksheet.getColumn("totalAmount").numFmt = currencyFormat;
+  worksheet.getColumn("invoiceDate").numFmt = "dd-mm-yyyy";
+  worksheet.getColumn("dueDate").numFmt = "dd-mm-yyyy";
+
+  worksheet.getColumn("invoiceNumber").alignment = { horizontal: "left" };
+  worksheet.getColumn("customerName").alignment = { horizontal: "left" };
+  worksheet.getColumn("customerEmail").alignment = { horizontal: "left" };
+  worksheet.getColumn("createdBy").alignment = { horizontal: "left" };
+
+  worksheet.getColumn("invoiceDate").alignment = { horizontal: "center" };
+  worksheet.getColumn("dueDate").alignment = { horizontal: "center" };
+  worksheet.getColumn("status").alignment = { horizontal: "center" };
+
+  worksheet.getColumn("subtotal").alignment = { horizontal: "left" };
+  worksheet.getColumn("discount").alignment = { horizontal: "left" };
+  worksheet.getColumn("amountAfterDiscount").alignment = { horizontal: "left" };
+  worksheet.getColumn("tax").alignment = { horizontal: "left" };
+  worksheet.getColumn("totalAmount").alignment = { horizontal: "left" };
+
+  let totalAmount = 0;
+  let totalSubtotal = 0;
+  let totalDiscount = 0;
+  let totalAmountAfterDiscount = 0;
+  let totalTax = 0;
+
+  invoices.forEach((inv) => {
+    totalAmount += inv.totalAmount;
+    totalSubtotal += inv.subtotal;
+    totalDiscount += inv.discount;
+    totalAmountAfterDiscount += inv.amountAfterDiscount;
+    totalTax += inv.tax;
+
+    worksheet.addRow({
+      invoiceNumber: inv.invoiceNumber,
+      customerName: inv.customer ? inv.customer.name : "N/A",
+      customerEmail: inv.customer ? inv.customer.email : "N/A",
+      createdBy: inv.createdBy
+        ? `${inv.createdBy.name} (${inv.createdBy.role})`
+        : "N/A",
+      invoiceDate: inv.invoiceDate,
+      dueDate: inv.dueDate,
+      status: inv.status,
+      subtotal: inv.subtotal,
+      discount: inv.discount,
+      amountAfterDiscount: inv.amountAfterDiscount,
+      tax: inv.tax,
+      totalAmount: inv.totalAmount,
     });
+  });
 
-    worksheet.addRow({});
-    worksheet.addRow({ customer: "Total", invoiceNumber: "Total", totalAmount });
+  worksheet.addRow({});
+  const summaryRow = worksheet.addRow({
+    invoiceNumber: "TOTAL",
+    customerName: `${invoices.length} invoices`,
+    subtotal: totalSubtotal,
+    discount: totalDiscount,
+    amountAfterDiscount: totalAmountAfterDiscount,
+    tax: totalTax,
+    totalAmount: totalAmount,
+  });
 
-    return workbook;
-}
+  summaryRow.font = { bold: true };
+  summaryRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFFFEB3B" },
+  };
+
+  return workbook;
+};
 
 export {
   createInvoiceService,
@@ -902,4 +985,5 @@ export {
   downloadInvoiceService,
   getAdminAllInvoicesService,
   getCustomerInvoicesByAdminService,
+  exportInvoiceServices,
 };

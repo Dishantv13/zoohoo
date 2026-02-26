@@ -29,6 +29,7 @@ import {
   EditOutlined,
   WarningOutlined,
   SearchOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import { apiService } from "../service/apiService";
 import dayjs from "dayjs";
@@ -138,6 +139,7 @@ export default function AdminInvoiceManagement() {
 
   const handleDownload = async (invoiceId, invoiceNumber) => {
     try {
+      setLoading(true);
       const response = await apiService.downloadInvoice(invoiceId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -154,47 +156,67 @@ export default function AdminInvoiceManagement() {
         message: "Error",
         description: "Failed to download invoice",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportInvoices = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+
+      if (selectedCustomer) {
+        params.customerId = selectedCustomer;
+      }
+      if (statusFilters.status) {
+        params.status = statusFilters.status;
+      }
+
+      const response = await apiService.exportInvoice(params);
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      let filename = "invoices";
+      if (selectedCustomer) {
+        const customer = customers.find((c) => c._id === selectedCustomer);
+        filename += `_${customer?.name?.replace(/\s+/g, "_") || "customer"}`;
+      }
+      if (statusFilters.status) {
+        filename += `_${statusFilters.status.toLowerCase()}`;
+      }
+      filename += `_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      notification.success({
+        message: "Success",
+        description: "Invoices exported successfully",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      notification.error({
+        message: "Failed",
+        description: "Failed to export invoices",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleEdit = (invoice) => {
     navigate("/create-invoice", { state: { invoice } });
-  };
-
-  //   const handleQuickEdit = (invoice) => {
-  //     setSelectedInvoice(invoice);
-  //     form.setFieldsValue({
-  //       status: invoice.status,
-  //       invoiceDate: dayjs(invoice.invoiceDate),
-  //       dueDate: dayjs(invoice.dueDate),
-  //     });
-  //     setIsEditModalVisible(true);
-  //   };
-
-  const handleUpdateInvoice = async (values) => {
-    try {
-      setLoading(true);
-      await apiService.updateInvoice(selectedInvoice._id, {
-        status: values.status,
-        invoiceDate: values.invoiceDate.toDate(),
-        dueDate: values.dueDate.toDate(),
-      });
-      notification.success({
-        message: "Success",
-        description: "Invoice updated successfully",
-      });
-      setIsEditModalVisible(false);
-      form.resetFields();
-      fetchInvoices(page, selectedCustomer);
-    } catch (error) {
-      notification.error({
-        message: "Error",
-        description:
-          error.response?.data?.data?.message || "Failed to update invoice",
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const statusColors = {
@@ -439,6 +461,7 @@ export default function AdminInvoiceManagement() {
               <Tooltip title="Download Invoice PDF">
                 <Button
                   icon={<FilePdfOutlined />}
+                  disabled={loading}
                   size="small"
                   onClick={() =>
                     handleDownload(record._id, record.invoiceNumber)
@@ -474,6 +497,7 @@ export default function AdminInvoiceManagement() {
               <Button
                 size="small"
                 icon={<FilePdfOutlined />}
+                disabled={loading}
                 onClick={() => handleDownload(record._id, record.invoiceNumber)}
                 style={{
                   borderRadius: "5px",
@@ -556,12 +580,6 @@ export default function AdminInvoiceManagement() {
         title="Company Invoices"
         extra={
           <Space wrap>
-            {/* <Alert
-              type="warning"
-              color="red"
-              showIcon
-              message={`Overdue invoices: ${summary.overdueCount || 0}`}
-            ></Alert> */}
             <Select
               placeholder="Filter by Customer"
               style={{ width: 200 }}
@@ -599,6 +617,20 @@ export default function AdminInvoiceManagement() {
                 { label: "Cancelled", value: "CANCELLED" },
               ]}
             />
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExportInvoices}
+              loading={loading}
+              disabled={invoices.length === 0 || loading}
+              style={{
+                borderRadius: "5px",
+                backgroundColor: "#52c41a",
+                borderColor: "#52c41a",
+                color: "white",
+              }}
+            >
+              Export to Excel
+            </Button>
           </Space>
         }
       >
@@ -725,53 +757,6 @@ export default function AdminInvoiceManagement() {
           </div>
         )}
       </Drawer>
-
-      <Modal
-        title="Edit Invoice"
-        open={isEditModalVisible}
-        onCancel={() => {
-          setIsEditModalVisible(false);
-          form.resetFields();
-        }}
-        onOk={() => form.submit()}
-        confirmLoading={loading}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleUpdateInvoice}
-          autoComplete="off"
-        >
-          <Form.Item
-            name="status"
-            label="Invoice Status"
-            rules={[{ required: true, message: "Please select status" }]}
-          >
-            <Select>
-              <Select.Option value="PENDING">Pending</Select.Option>
-              <Select.Option value="CONFIRMED">Confirmed</Select.Option>
-              <Select.Option value="PAID">Paid</Select.Option>
-              <Select.Option value="CANCELLED">Cancelled</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="invoiceDate"
-            label="Invoice Date"
-            rules={[{ required: true, message: "Please select invoice date" }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-
-          <Form.Item
-            name="dueDate"
-            label="Due Date"
-            rules={[{ required: true, message: "Please select due date" }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 }

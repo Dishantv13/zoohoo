@@ -8,171 +8,132 @@ import {
   downloadInvoiceService,
   getAdminAllInvoicesService,
   getCustomerInvoicesByAdminService,
+  exportInvoiceServices,
 } from "../service/invoice.service.js";
 
-import ApiResponse from "../util/apiResponse.js";
-import ApiError from "../util/apiError.js";
+import { asyncHandler } from "../util/asyncHandler.js";
+import { successResponse, errorResponse } from "../util/response.js";
 
-const createInvoice = async (req, res) => {
-  try {
-    const invoice = await createInvoiceService(req.user._id, req.body);
-    res
-      .status(201)
-      .json(
-        new ApiResponse(
-            201, 
-            "Invoice created successfully", 
-            invoice
-        ));
-  } catch (error) {
-    res.status(400).json(new ApiError(400, error.message));
+const createInvoice = asyncHandler(async (req, res) => {
+  const invoice = await createInvoiceService(req.user._id, req.body);
+
+  if (!invoice) {
+    return errorResponse(res, 400, "Failed to create invoice");
   }
-};
+  successResponse(res, invoice, 201, "Invoice created successfully");
+});
 
-const getInvoices = async (req, res) => {
-  try {
-    const result = await getInvoicesServices(req.user._id, {
+const getInvoices = asyncHandler(async (req, res) => {
+  const result = await getInvoicesServices(req.user._id, {
+    page: req.query.page,
+    limit: req.query.limit,
+    status: req.query.status,
+  });
+  if (!result) {
+    return errorResponse(res, 400, "Failed to retrieve invoices");
+  }
+  successResponse(res, result, 200, "Invoices retrieved successfully");
+});
+
+const getInvoiceById = asyncHandler(async (req, res) => {
+  const invoice = await getInvoiceByIdService(req.user._id, req.params.id);
+
+  if (!invoice) {
+    return errorResponse(res, 404, "Invoice not found");
+  }
+
+  successResponse(res, invoice, 200, "Invoice retrieved successfully");
+});
+
+const updateInvoice = asyncHandler(async (req, res) => {
+  const invoice = await updateInvoiceService(
+    req.user._id,
+    req.params.id,
+    req.body,
+  );
+  if (!invoice) {
+    return errorResponse(res, 400, "Failed to update invoice");
+  }
+
+  successResponse(res, invoice, 200, "Invoice updated successfully");
+});
+
+const updateInvoiceStatus = asyncHandler(async (req, res) => {
+  const invoice = await updateInvoiceStatusService(
+    req.user._id,
+    req.params.id,
+    req.body.status,
+  );
+  if (!invoice) {
+    return errorResponse(res, 400, "Failed to update invoice status");
+  }
+  successResponse(res, invoice, 200, "Invoice status updated successfully");
+});
+
+const deleteInvoice = asyncHandler(async (req, res) => {
+  await deleteInvoiceService(req.user._id, req.params.id);
+  successResponse(res, null, 200, "Invoice deleted successfully");
+});
+
+const downloadInvoice = asyncHandler(async (req, res, next) => {
+  await downloadInvoiceService(req.user._id, req.params.id, res);
+});
+
+const getAdminAllInvoices = asyncHandler(async (req, res) => {
+  const result = await getAdminAllInvoicesService(req.user._id, {
+    page: req.query.page,
+    limit: req.query.limit,
+    status: req.query.status,
+    customerId: req.query.customerId,
+  });
+  if (!result) {
+    return errorResponse(res, 400, "Failed to retrieve invoices");
+  }
+  successResponse(res, result, 200, "Company invoices retrieved successfully");
+});
+
+const getCustomerInvoicesByAdmin = asyncHandler(async (req, res) => {
+  const result = await getCustomerInvoicesByAdminService(
+    req.user._id,
+    req.params.customerId,
+    {
       page: req.query.page,
       limit: req.query.limit,
       status: req.query.status,
-    });
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-            200, 
-            "Invoices retrieved successfully", 
-            result
-        ));
-  } catch (error) {
-    res.status(500).json(new ApiError(500, error.message));
+    },
+  );
+  if (!result) {
+    return errorResponse(res, 400, "Failed to retrieve customer invoices");
   }
-};
+  successResponse(res, result, 200, "Customer invoices retrieved successfully");
+});
 
-const getInvoiceById = async (req, res) => {
-  try {
-    const invoice = await getInvoiceByIdService(req.user._id, req.params.id);
+const exportInvoice = asyncHandler(async (req, res) => {
+  const options = {
+    status: req.query.status,
+    customerId: req.query.customerId,
+  };
 
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-            200, 
-            "Invoice retrieved successfully", 
-            invoice
-        ));
-  } catch (error) {
-    res.status(404).json(new ApiError(404, error.message));
+  const workbook = await exportInvoiceServices(req.user._id, options);
+
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  let filename = "invoices";
+  if (options.customerId) {
+    filename += `_customer_${options.customerId}`;
   }
-};
-
-const updateInvoice = async (req, res) => {
-  try {
-    const invoice = await updateInvoiceService(
-      req.user._id,
-      req.params.id,
-      req.body,
-    );
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-            200, 
-            "Invoice updated successfully", 
-            invoice
-        ));
-  } catch (error) {
-    res.status(400).json(new ApiError(400, error.message));
+  if (options.status) {
+    filename += `_${options.status.toLowerCase()}`;
   }
-};
-
-const updateInvoiceStatus = async (req, res) => {
-  try {
-    const invoice = await updateInvoiceStatusService(
-      req.user._id,
-      req.params.id,
-      req.body.status,
-    );
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-            200, 
-            "Invoice status updated successfully", 
-            invoice
-        ));
-  } catch (error) {
-    res.status(400).json(new ApiError(400, error.message));
-  }
-};
-
-const deleteInvoice = async (req, res) => {
-  try {
-    await deleteInvoiceService(req.user._id, req.params.id);
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-            200, 
-            "Invoice deleted successfully"
-        ));
-  } catch (error) {
-    res.status(400).json(new ApiError(400, error.message));
-  }
-};
-
-const downloadInvoice = async (req, res, next) => {
-  try {
-    await downloadInvoiceService(req.user._id, req.params.id, res);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getAdminAllInvoices = async (req, res) => {
-  try {
-    const result = await getAdminAllInvoicesService(req.user._id, {
-      page: req.query.page,
-      limit: req.query.limit,
-      status: req.query.status,
-      customerId: req.query.customerId,
-    });
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-            200, 
-            "Company invoices retrieved successfully", 
-            result
-        ));
-  } catch (error) {
-    res.status(403).json(new ApiError(403, error.message));
-  }
-};
-
-const getCustomerInvoicesByAdmin = async (req, res) => {
-  try {
-    const result = await getCustomerInvoicesByAdminService(
-      req.user._id,
-      req.params.customerId,
-      {
-        page: req.query.page,
-        limit: req.query.limit,
-        status: req.query.status,
-      },
-    );
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          "Customer invoices retrieved successfully",
-          result,
-        ));
-  } catch (error) {
-    res.status(403).json(new ApiError(403, error.message));
-  }
-};
+  filename += `_${new Date().toISOString().split("T")[0]}.xlsx`;
+  res.set({
+    "Content-Type":
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "Content-Disposition": `attachment; filename=${filename}`,
+    "Content-Length": buffer.length,
+  });
+  return res.end(buffer);
+});
 
 export {
   createInvoice,
@@ -184,4 +145,5 @@ export {
   downloadInvoice,
   getAdminAllInvoices,
   getCustomerInvoicesByAdmin,
+  exportInvoice,
 };

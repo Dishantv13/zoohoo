@@ -52,6 +52,7 @@ export default function InvoiceList() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
+  const [Loading, setLoading] = useState(false);
 
   useEffect(() => {
     dispatch(fetchInvoices({ page, limit: pageSize, status: statusFilter }));
@@ -87,8 +88,49 @@ export default function InvoiceList() {
     setPaymentModalVisible(true);
   };
 
+  const handleExportInvoices = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (statusFilter) {
+        params.status = statusFilter;
+      }
+
+      const response = await apiService.exportInvoice(params);
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `invoices_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      notification.success({
+        message: "Success",
+        description: "Invoices exported successfully",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      notification.error({
+        message: "Failed",
+        description: "Failed to export invoices",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDownLoad = async (invoice) => {
     try {
+      setLoading(true);
       const response = await apiService.downloadInvoice(invoice._id, {
         responseType: "blob",
       });
@@ -112,6 +154,8 @@ export default function InvoiceList() {
         message: "Failed",
         description: "Failed to download invoice",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -409,6 +453,7 @@ export default function InvoiceList() {
                   size="small"
                   icon={<DownloadOutlined />}
                   onClick={() => handleDownLoad(record)}
+                  disabled={Loading}
                   style={{
                     borderRadius: "5px",
                     color: "green",
@@ -450,6 +495,7 @@ export default function InvoiceList() {
                   size="small"
                   icon={<DownloadOutlined />}
                   onClick={() => handleDownLoad(record)}
+                  disabled={Loading}
                   style={{
                     borderRadius: "5px",
                     color: "green",
@@ -540,6 +586,7 @@ export default function InvoiceList() {
                 size="small"
                 icon={<DownloadOutlined />}
                 onClick={() => handleDownLoad(record)}
+                disabled={Loading}
                 style={{
                   borderRadius: "5px",
                   color: "green",
@@ -625,7 +672,7 @@ export default function InvoiceList() {
         </Col>
       </Row>
 
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} style={{ marginBottom: 16 }} justify="space-between">
         <Col span={24}>
           <Space>
             <Button type="primary" onClick={() => navigate("/create-invoice")}>
@@ -648,6 +695,21 @@ export default function InvoiceList() {
                 { value: "PAID", label: "🟢 Paid" },
               ]}
             />
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleExportInvoices}
+              loading={Loading}
+              disabled={invoices.length === 0 || Loading}
+              style={{
+                borderRadius: "5px",
+                backgroundColor: "#52c41a",
+                borderColor: "#52c41a",
+                color: "white",
+              }}
+            >
+              Export to Excel
+            </Button>
           </Space>
         </Col>
       </Row>

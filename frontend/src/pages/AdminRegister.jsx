@@ -22,6 +22,7 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import { adminRegister } from "../features/auth/authSlice";
+import { phoneValidator, gstValidator, panValidator } from "../validation/validation";
 import "./Auth.css";
 
 export default function AdminRegister() {
@@ -95,7 +96,10 @@ export default function AdminRegister() {
       <Form.Item
         name="adminPhone"
         label="Admin Phone Number"
-        rules={[{ required: false, message: "Please enter phone number" }]}
+        rules={[
+          { required: true },
+          { validator: phoneValidator },
+        ]}
       >
         <Input
           prefix={<PhoneOutlined />}
@@ -142,7 +146,10 @@ export default function AdminRegister() {
       <Form.Item
         name="companyPhone"
         label="Company Phone"
-        rules={[{ required: false }]}
+        rules={[
+          { required: true, message: "Please enter phone number" },
+          { validator: phoneValidator },
+        ]}
       >
         <Input
           prefix={<PhoneOutlined />}
@@ -209,7 +216,7 @@ export default function AdminRegister() {
         <Form.Item
           name="gstNumber"
           label="GST Number"
-          rules={[{ required: false }]}
+          rules={[{ validator: gstValidator }]}
         >
           <Input
             prefix={<FileTextOutlined />}
@@ -221,7 +228,7 @@ export default function AdminRegister() {
         <Form.Item
           name="panNumber"
           label="PAN Number"
-          rules={[{ required: false }]}
+          rules={[{ validator: panValidator }]}
         >
           <Input
             prefix={<FileTextOutlined />}

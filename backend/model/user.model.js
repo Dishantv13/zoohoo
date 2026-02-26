@@ -18,9 +18,11 @@ const userSchema = new Schema(
     },
     phonenumber: {
       type: Number,
+      required: [true, "phone number is required"],
     },
     address: {
       type: String,
+      required: [true, "address is required"],
     },
     password: {
       type: String,
@@ -45,7 +47,7 @@ const userSchema = new Schema(
   { timestamps: true },
 );
 
-userSchema.index({ companyId: 1, email: 1 },{ unique: true });
+userSchema.index({ companyId: 1, email: 1 }, { unique: true });
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;

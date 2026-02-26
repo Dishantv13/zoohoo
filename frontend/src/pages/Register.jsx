@@ -22,6 +22,7 @@ import {
   EnvironmentOutlined,
 } from "@ant-design/icons";
 import { register } from "../features/auth/authSlice";
+import { phoneValidator } from "../validation/validation";
 import "./Auth.css";
 
 export default function Register() {
@@ -91,6 +92,7 @@ export default function Register() {
               label="Phone Number"
               rules={[
                 { required: true, message: "Please enter your phonenumber" },
+                { validator: phoneValidator },
               ]}
             >
               <Input
@@ -154,10 +156,6 @@ export default function Register() {
                 size="large"
               />
             </Form.Item>
-
-            <Text style={{ color: "red" }}>
-              Field Indicate with * are required
-            </Text>
 
             <Form.Item>
               <Button

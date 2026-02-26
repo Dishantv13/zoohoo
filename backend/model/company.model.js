@@ -15,6 +15,7 @@ const companySchema = new Schema(
     },
     phonenumber: {
       type: String,
+        required: [true, "Company phone number is required"],
     },
     address: {
       type: String,
