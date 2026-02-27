@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
 import { User } from "../model/user.model.js";
+import { asyncHandler } from "../util/asyncHandler.js";
+import ApiError from "../util/apiError.js";
 
-const protect = async (req, res, next) => {
-  try {
+const protect = asyncHandler(async (req, res, next) => {
     let token;
 
     if (
@@ -13,9 +14,7 @@ const protect = async (req, res, next) => {
     }
 
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: "Not authorized to access this route" });
+      throw new ApiError(401, "Not authorized to access this route");
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -23,24 +22,18 @@ const protect = async (req, res, next) => {
     const user = await User.findById(decoded.id);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      throw new ApiError(404, "User not found");
     }
 
     req.user = user;
     next();
-  } catch (error) {
-    console.log(error);
-    return res
-      .status(401)
-      .json({ message: "Not authorized to access this route" });
-  }
-};
+});
 
 const adminOnly = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
   } else {
-    return res.status(403).json({ message: "Admin access only" });
+    throw new ApiError(403, "Admin access only");
   }
 };
 

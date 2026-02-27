@@ -21,10 +21,19 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [activeTab, setActiveTab] = useState("card");
   const [qrCodeImageUrl, setQrCodeImageUrl] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState(0);
 
   useEffect(() => {
-    if (activeTab === "qr" && invoice) {
-      const qrData = `upi://pay?pa=business@upi&pn=${invoice.invoiceNumber}&tn=Invoice&am=${invoice.totalAmount}`;
+    if (invoice) {
+      const defaultAmount = invoice.remainingAmount || invoice.totalAmount;
+      setPaymentAmount(defaultAmount);
+      form.setFieldsValue({ paymentAmount: defaultAmount });
+    }
+  }, [invoice, form]);
+
+  useEffect(() => {
+    if (activeTab === "qr" && invoice && paymentAmount > 0) {
+      const qrData = `upi://pay?pa=business@upi&pn=${invoice.invoiceNumber}&tn=Invoice&am=${paymentAmount}`;
 
       QRCode.toDataURL(qrData, {
         errorCorrectionLevel: "H",
@@ -43,7 +52,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
           console.error("Error generating QR code:", err);
         });
     }
-  }, [activeTab, invoice]);
+  }, [activeTab, invoice, paymentAmount]);
 
   const handleCardPayment = async (values) => {
     setLoading(true);
@@ -54,12 +63,17 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
         cardHolder: values.cardHolder,
         expiryDate: values.expiryDate,
         cvv: values.cvv,
+        paymentAmount: values.paymentAmount,
       });
+
+      const responseData = response.data.data;
 
       setPaymentStatus({
         success: true,
-        transactionId: response.data.data.transactionId,
-        message: response.data.data.message,
+        transactionId: responseData.transactionId,
+        amountPaid: Number(responseData.amountPaid.toFixed(2)) || 0,
+        remainingAmount: Number(responseData.remainingAmount.toFixed(2)) || 0,
+        message: response.data.message || "Payment successful",
       });
 
       setTimeout(() => {
@@ -83,12 +97,17 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
       const response = await apiService.qrPayment({
         invoiceId: invoice._id,
         qrData: `QR-PAYMENT-${Date.now()}`,
+        paymentAmount: paymentAmount,
       });
+
+      const responseData = response.data.data;
 
       setPaymentStatus({
         success: true,
-        transactionId: response.data.data.transactionId,
-        message: response.data.data.message,
+        transactionId: responseData.transactionId,
+        amountPaid: Number(responseData.amountPaid.toFixed(2)) || 0,
+        remainingAmount: Number(responseData.remainingAmount.toFixed(2)) || 0,
+        message: response.data.message || "Payment successful",
       });
 
       setTimeout(() => {
@@ -111,10 +130,20 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
     form.resetFields();
     setPaymentStatus(null);
     setActiveTab("card");
+    setPaymentAmount(0);
     onClose();
   };
 
+  const handlePaymentAmountChange = (e) => {
+    const value = Number(e.target.value) || 0;
+    setPaymentAmount(value);
+  };
+
   if (!invoice) return null;
+
+  const remainingAmount = invoice.remainingAmount || invoice.totalAmount;
+  const totalAmount = invoice.totalAmount;
+  const amountPaid = invoice.amountPaid || 0;
 
   return (
     <Modal
@@ -142,8 +171,19 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                   </p>
                   <p>
                     <strong>Amount Paid:</strong> ₹
-                    {invoice.totalAmount.toFixed(2)}
+                    {paymentStatus.amountPaid?.toFixed(2)}
                   </p>
+                  {paymentStatus.remainingAmount > 0 && (
+                    <p style={{ color: "#ff9800" }}>
+                      <strong>Remaining Amount:</strong> ₹
+                      {paymentStatus.remainingAmount?.toFixed(2)}
+                    </p>
+                  )}
+                  {paymentStatus.remainingAmount === 0 && (
+                    <p style={{ color: "#52c41a", fontWeight: "bold" }}>
+                      Invoice Fully Paid!
+                    </p>
+                  )}
                 </div>
               )
             }
@@ -163,24 +203,51 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
               <strong>Invoice Number:</strong> {invoice.invoiceNumber}
             </p>
             <p style={{ marginBottom: 8 }}>
-              <strong>Amount to Pay:</strong>{" "}
-              <span
-                style={{
-                  color: "#52c41a",
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                }}
-              >
-                ₹{invoice.totalAmount.toFixed(2)}
-              </span>
+              <strong>Total Amount:</strong> ₹{totalAmount.toFixed(2)}
             </p>
+            {amountPaid > 0 && (
+              <>
+                <p style={{ marginBottom: 8 }}>
+                  <strong>Amount Already Paid:</strong>{" "}
+                  <span style={{ color: "#52c41a" }}>
+                    ₹{amountPaid.toFixed(2)}
+                  </span>
+                </p>
+                <p style={{ marginBottom: 8 }}>
+                  <strong>Remaining Amount:</strong>{" "}
+                  <span
+                    style={{
+                      color: "#ff9800",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ₹{remainingAmount.toFixed(2)}
+                  </span>
+                </p>
+              </>
+            )}
+            {amountPaid === 0 && (
+              <p style={{ marginBottom: 8 }}>
+                <strong>Amount to Pay:</strong>{" "}
+                <span
+                  style={{
+                    color: "#52c41a",
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ₹{remainingAmount.toFixed(2)}
+                </span>
+              </p>
+            )}
             <p style={{ marginBottom: 0 }}>
               <strong>Status:</strong> {invoice.status}
             </p>
           </div>
 
           <Alert
-            message="This is a dummy payment integration for testing purposes"
+            message="You can pay any amount up to the remaining balance"
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
@@ -204,6 +271,40 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                     onFinish={handleCardPayment}
                     style={{ marginTop: 16 }}
                   >
+                    <Form.Item
+                      label="Payment Amount"
+                      name="paymentAmount"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please enter payment amount",
+                        },
+                        {
+                          validator: (_, value) => {
+                            if (value <= 0) {
+                              return Promise.reject(
+                                "Amount must be greater than 0"
+                              );
+                            }
+                            if (value > remainingAmount) {
+                              return Promise.reject(
+                                `Amount cannot exceed remaining balance of ₹${remainingAmount.toFixed(2)}`
+                              );
+                            }
+                            return Promise.resolve();
+                          },
+                        },
+                      ]}
+                    >
+                      <Input
+                        type="number"
+                        prefix="₹"
+                        placeholder={`Enter amount (Max: ${remainingAmount.toFixed(2)})`}
+                        onChange={handlePaymentAmountChange}
+                        step="0.01"
+                      />
+                    </Form.Item>
+
                     <Form.Item
                       label="Cardholder Name"
                       name="cardHolder"
@@ -269,7 +370,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                         block
                         size="large"
                       >
-                        Pay ₹{invoice.totalAmount.toFixed(2)}
+                        Pay ₹{paymentAmount > 0 ? paymentAmount.toFixed(2) : "0.00"}
                       </Button>
                     </Form.Item>
                   </Form>
@@ -290,6 +391,21 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                       padding: "20px 0",
                     }}
                   >
+                    <Form.Item
+                      label="Payment Amount"
+                      style={{ textAlign: "left", marginBottom: 20 }}
+                    >
+                      <Input
+                        type="number"
+                        prefix="₹"
+                        placeholder={`Enter amount (Max: ${remainingAmount.toFixed(2)})`}
+                        value={paymentAmount}
+                        onChange={handlePaymentAmountChange}
+                        step="0.01"
+                        max={remainingAmount}
+                      />
+                    </Form.Item>
+
                     <h4>UPI Payment QR Code</h4>
                     {qrCodeImageUrl && (
                       <div
@@ -312,7 +428,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
 
                     <div style={{ marginBottom: 20 }}>
                       <h3 style={{ fontSize: "18px", marginBottom: "5px" }}>
-                        ₹{invoice.totalAmount.toFixed(2)}
+                        ₹{paymentAmount.toFixed(2)}
                       </h3>
                       <p
                         style={{
@@ -334,6 +450,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                       loading={loading}
                       block
                       onClick={handleQRPayment}
+                      disabled={paymentAmount <= 0 || paymentAmount > remainingAmount}
                     >
                       Payment Completed
                     </Button>

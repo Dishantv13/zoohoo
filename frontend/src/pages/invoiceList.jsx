@@ -310,6 +310,7 @@ export default function InvoiceList() {
         const statusColors = {
           PENDING: "orange",
           CONFIRMED: "blue",
+          PARTIALLY_PAID: "gold",
           PAID: "green",
           CANCELLED: "red",
         };
@@ -414,6 +415,32 @@ export default function InvoiceList() {
         </Flex>
       ),
     },
+    {
+      title: "Amount Paid",
+      dataIndex: "amountPaid",
+      width: 120,
+      key: "amountPaid",
+      render: (v = 0) => (
+        <Flex align="center" gap="small">
+          <Tag color="green">₹{Number(v).toFixed(2)}</Tag>
+        </Flex>
+      ),
+    },
+    {
+      title: "Remaining",
+      dataIndex: "remainingAmount",
+      width: 120,
+      key: "remainingAmount",
+      render: (v = 0, record) => {
+        const remaining = Number(v) || 0;
+        const color = remaining === 0 ? "green" : remaining > 0 ? "orange" : "default";
+        return (
+          <Flex align="center" gap="small">
+            <Tag color={color}>₹{remaining.toFixed(2)}</Tag>
+          </Flex>
+        );
+      },
+    },
 
     {
       title: "Action",
@@ -464,17 +491,20 @@ export default function InvoiceList() {
           );
         }
 
-        if (isCreatedByAdmin) {
+        if (isCreatedByAdmin || record.status === "PARTIALLY_PAID") {
+          const hasPartialPayment = record.amountPaid > 0 && record.remainingAmount > 0;
+          const payButtonText = hasPartialPayment ? "Pay Remaining" : "Pay";
+          
           return (
             <Space wrap>
-              <Tooltip title="Pay Invoice">
+              <Tooltip title={hasPartialPayment ? `Pay Remaining ₹${record.remainingAmount.toFixed(2)}` : "Pay Invoice"}>
                 <Button
                   type="primary"
                   size="small"
                   icon={<CreditCardOutlined />}
                   onClick={() => handlePaymentClick(record)}
                 >
-                  Pay
+                  {payButtonText}
                 </Button>
               </Tooltip>
 
@@ -619,7 +649,7 @@ export default function InvoiceList() {
   return (
     <>
       <Row gutter={25} style={{ marginBottom: 24 }}>
-        <Col span={4}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Overdue Invoices"
@@ -629,7 +659,7 @@ export default function InvoiceList() {
             />
           </Card>
         </Col>
-        <Col span={4}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Pending Amount"
@@ -640,7 +670,7 @@ export default function InvoiceList() {
           </Card>
         </Col>
 
-        <Col span={4}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Confirmed Amount"
@@ -650,7 +680,7 @@ export default function InvoiceList() {
             />
           </Card>
         </Col>
-        <Col span={4}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Paid Amount"
@@ -660,7 +690,7 @@ export default function InvoiceList() {
             />
           </Card>
         </Col>
-        <Col span={4}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Total Amount"
@@ -693,6 +723,7 @@ export default function InvoiceList() {
                 { value: "PENDING", label: "🟡 Pending" },
                 { value: "CONFIRMED", label: "🔵 Confirmed" },
                 { value: "PAID", label: "🟢 Paid" },
+                { value: "PARTIALLY_PAID", label: "🟠 Partially Paid" },
               ]}
             />
             <Button
@@ -835,7 +866,46 @@ export default function InvoiceList() {
                 <strong>Total Amount:</strong> ₹
                 {selectedInvoice.totalAmount?.toFixed(2)}
               </p>
+              {selectedInvoice.amountPaid > 0 && (
+                <>
+                  <p style={{ color: "#52c41a" }}>
+                    <strong>Amount Paid:</strong> ₹
+                    {selectedInvoice.amountPaid?.toFixed(2)}
+                  </p>
+                  <p style={{ color: selectedInvoice.remainingAmount > 0 ? "#ff9800" : "#52c41a", fontWeight: "bold" }}>
+                    <strong>Remaining Amount:</strong> ₹
+                    {selectedInvoice.remainingAmount?.toFixed(2) || "0.00"}
+                  </p>
+                </>
+              )}
             </div>
+
+            {selectedInvoice.paymentHistory && selectedInvoice.paymentHistory.length > 0 && (
+              <div className="detail-section">
+                <h3>Payment History</h3>
+                {selectedInvoice.paymentHistory.map((payment, idx) => (
+                  <div key={idx} style={{ 
+                    padding: "10px", 
+                    marginBottom: "8px", 
+                    background: "#f0f2f5", 
+                    borderRadius: "4px" 
+                  }}>
+                    <p style={{ marginBottom: "4px" }}>
+                      <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
+                      <span style={{ marginLeft: "15px" }}>
+                        <strong>Method:</strong> {payment.paymentMethod}
+                      </span>
+                    </p>
+                    <p style={{ marginBottom: "4px", fontSize: "12px", color: "#666" }}>
+                      <strong>Date:</strong> {new Date(payment.paidAt).toLocaleString()}
+                    </p>
+                    <p style={{ marginBottom: "0", fontSize: "12px", color: "#666" }}>
+                      <strong>Transaction ID:</strong> {payment.transactionId}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </Drawer>

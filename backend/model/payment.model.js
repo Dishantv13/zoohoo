@@ -16,7 +16,7 @@ const paymentSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["CARD", "QR_CODE"],
+      enum: ["CARD", "QR_CODE", "CASH"],
       required: true,
     },
 

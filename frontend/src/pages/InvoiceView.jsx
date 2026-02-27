@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Table, Divider, Typography, Button, Tag } from "antd";
+import { Card, Row, Col, Table, Divider, Typography, Button, Tag, Timeline } from "antd";
 import { useParams } from "react-router-dom";
 import { apiService } from "../service/apiService";
 
@@ -101,11 +101,13 @@ const InvoiceView = () => {
               color={
                 invoice.status === "PAID"
                   ? "green"
-                  : invoice.status === "PENDING"
+                  : invoice.status === "PARTIALLY_PAID"
                     ? "orange"
-                    : invoice.status === "CONFIRMED"
-                      ? "blue"
-                      : "default"
+                    : invoice.status === "PENDING"
+                      ? "default"
+                      : invoice.status === "CONFIRMED"
+                        ? "blue"
+                        : "default"
               }
             >
               {invoice.status || "N/A"}
@@ -184,8 +186,53 @@ const InvoiceView = () => {
               <Text strong>Grand Total:</Text>
               <Text strong>₹{invoice.totalAmount}</Text>
             </Row>
+
+            {invoice.amountPaid > 0 && (
+              <>
+                <Divider style={{ margin: "10px 0", borderColor: "#52c41a" }} />
+                <Row justify="space-between">
+                  <Text strong style={{ color: "#52c41a" }}>Amount Paid:</Text>
+                  <Text strong style={{ color: "#52c41a" }}>₹{invoice.amountPaid}</Text>
+                </Row>
+                
+                <Row justify="space-between">
+                  <Text strong style={{ color: invoice.remainingAmount > 0 ? "#ff9800" : "#52c41a" }}>
+                    Remaining Amount:
+                  </Text>
+                  <Text strong style={{ color: invoice.remainingAmount > 0 ? "#ff9800" : "#52c41a" }}>
+                    ₹{invoice.remainingAmount || 0}
+                  </Text>
+                </Row>
+              </>
+            )}
           </Col>
         </Row>
+
+        {invoice.paymentHistory && invoice.paymentHistory.length > 0 && (
+          <>
+            <Divider />
+            <Title level={5}>Payment History</Title>
+            <Timeline
+              items={invoice.paymentHistory.map((payment, index) => ({
+                color: "green",
+                children: (
+                  <div key={index}>
+                    <Row justify="space-between" style={{ marginBottom: 4 }}>
+                      <Text strong>Amount: ₹{payment.amount}</Text>
+                      <Text type="secondary">
+                        {new Date(payment.paidAt).toLocaleString()}
+                      </Text>
+                    </Row>
+                    <Row justify="space-between">
+                      <Text type="secondary">Method: {payment.paymentMethod}</Text>
+                      <Text type="secondary">TXN: {payment.transactionId}</Text>
+                    </Row>
+                  </div>
+                ),
+              }))}
+            />
+          </>
+        )}
 
         <Divider />
 

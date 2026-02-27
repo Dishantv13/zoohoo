@@ -147,7 +147,7 @@ export default function CustomerManagement() {
     } catch (error) {
       notification.error({
         message: "Error",
-        description: error.response?.data?.data?.message || "Operation failed",
+        description: error.response?.data?.message || "Operation failed",
       });
     }
   };
@@ -164,7 +164,7 @@ export default function CustomerManagement() {
       notification.error({
         message: "Error",
         description:
-          error.response?.data?.data?.message || "Failed to delete customer",
+          error.response?.data?.message || "Failed to delete customer",
       });
     }
   };

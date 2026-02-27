@@ -12,14 +12,11 @@ import {
 } from "../service/invoice.service.js";
 
 import { asyncHandler } from "../util/asyncHandler.js";
-import { successResponse, errorResponse } from "../util/response.js";
+import { successResponse } from "../util/response.js";
 
 const createInvoice = asyncHandler(async (req, res) => {
   const invoice = await createInvoiceService(req.user._id, req.body);
 
-  if (!invoice) {
-    return errorResponse(res, 400, "Failed to create invoice");
-  }
   successResponse(res, invoice, 201, "Invoice created successfully");
 });
 
@@ -29,18 +26,11 @@ const getInvoices = asyncHandler(async (req, res) => {
     limit: req.query.limit,
     status: req.query.status,
   });
-  if (!result) {
-    return errorResponse(res, 400, "Failed to retrieve invoices");
-  }
   successResponse(res, result, 200, "Invoices retrieved successfully");
 });
 
 const getInvoiceById = asyncHandler(async (req, res) => {
   const invoice = await getInvoiceByIdService(req.user._id, req.params.id);
-
-  if (!invoice) {
-    return errorResponse(res, 404, "Invoice not found");
-  }
 
   successResponse(res, invoice, 200, "Invoice retrieved successfully");
 });
@@ -51,10 +41,6 @@ const updateInvoice = asyncHandler(async (req, res) => {
     req.params.id,
     req.body,
   );
-  if (!invoice) {
-    return errorResponse(res, 400, "Failed to update invoice");
-  }
-
   successResponse(res, invoice, 200, "Invoice updated successfully");
 });
 
@@ -64,9 +50,6 @@ const updateInvoiceStatus = asyncHandler(async (req, res) => {
     req.params.id,
     req.body.status,
   );
-  if (!invoice) {
-    return errorResponse(res, 400, "Failed to update invoice status");
-  }
   successResponse(res, invoice, 200, "Invoice status updated successfully");
 });
 
@@ -86,9 +69,6 @@ const getAdminAllInvoices = asyncHandler(async (req, res) => {
     status: req.query.status,
     customerId: req.query.customerId,
   });
-  if (!result) {
-    return errorResponse(res, 400, "Failed to retrieve invoices");
-  }
   successResponse(res, result, 200, "Company invoices retrieved successfully");
 });
 
@@ -102,9 +82,6 @@ const getCustomerInvoicesByAdmin = asyncHandler(async (req, res) => {
       status: req.query.status,
     },
   );
-  if (!result) {
-    return errorResponse(res, 400, "Failed to retrieve customer invoices");
-  }
   successResponse(res, result, 200, "Customer invoices retrieved successfully");
 });
 

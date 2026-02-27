@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "http://localhost:5000/api/customers",
   withCredentials: false,
 });
 
@@ -11,6 +11,10 @@ const authApi = axios.create({
 
 const invoiceApi = axios.create({
   baseURL: "http://localhost:5000/api/invoices",
+});
+
+const paymentApi = axios.create({
+  baseURL: "http://localhost:5000/api/payments",
 });
 
 const setupInterceptors = (instance) => {
@@ -29,7 +33,7 @@ const setupInterceptors = (instance) => {
 setupInterceptors(api);
 setupInterceptors(authApi);
 setupInterceptors(invoiceApi);
-
+setupInterceptors(paymentApi);
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -46,14 +50,24 @@ api.interceptors.response.use(
 
 export const apiService = {
   // Customer APIs
-  customerProfile: () => api.get("/customers/profile"),
-  updateCustomerProfile: (data) => api.put("/customers/profile", data),
-  changePassword: (data) => api.put("/customers/change-password", data),
-  deleteCustomerProfile: () => api.delete("/customers/profile"),
+  customerProfile: () => api.get("/profile"),
+  updateCustomerProfile: (data) => api.put("/update-profile", data),
+  changePassword: (data) => api.put("/change-password", data),
+  deleteCustomerProfile: () => api.delete("/delete-profile"),
+
+  // Admin Customer Management APIs
+  createCustomer: (data) => api.post("/create-customers", data),
+  getCustomers: (params) => api.get("/get-customers", { params }),
+  updateCustomer: (customerId, data) =>
+    api.put(`/update-customers/${customerId}`, data),
+  deleteCustomer: (customerId) => api.delete(`/delete-customers/${customerId}`),
 
   // Payment APIs
-  cardPayment: (data) => api.post("/payments/card", data),
-  qrPayment: (data) => api.post("/payments/qr", data),
+  cardPayment: (data) => paymentApi.post("/card", data),
+  qrPayment: (data) => paymentApi.post("/qr", data),
+  cashPayment: (data) => paymentApi.post("/cash", data),
+  getPaymentStatus: (invoiceId) => paymentApi.get(`/${invoiceId}/status`),
+  getPaymentHistory: (invoiceId) => paymentApi.get(`/${invoiceId}/history`),
 
   // Authentication APIs
   register: (data) => authApi.post("/register", data),
@@ -61,13 +75,6 @@ export const apiService = {
   logout: () => authApi.post("/logout"),
   adminRegister: (data) => authApi.post("/admin/register", data),
   getCurrentUser: () => authApi.get("/me"),
-
-  // Admin Customer Management APIs
-  createCustomer: (data) => authApi.post("/customers", data),
-  getCustomers: (params) => authApi.get("/customers", { params }),
-  updateCustomer: (customerId, data) =>
-    authApi.put(`/customers/${customerId}`, data),
-  deleteCustomer: (customerId) => authApi.delete(`/customers/${customerId}`),
 
   // Invoice APIs
   createInvoice: (data) => invoiceApi.post("/", data),
@@ -82,7 +89,7 @@ export const apiService = {
   getAdminAllInvoices: (params) => invoiceApi.get("/admin/all", { params }),
   getCustomerInvoices: (customerId, params) =>
     invoiceApi.get(`/admin/customer/${customerId}`, { params }),
-  exportInvoice: (params) => 
+  exportInvoice: (params) =>
     invoiceApi.get("/export", { params, responseType: "blob" }),
 };
 

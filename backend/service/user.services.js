@@ -3,66 +3,6 @@ import { Company } from "../model/company.model.js";
 import jwt from "jsonwebtoken";
 import ApiError from "../util/apiError.js";
 
-const loginService = async (userData) => {
-  const { email, password } = userData;
-
-  const user = await User.findOne({
-    email: email.toLowerCase(),
-  })
-    .select("+password")
-    .populate("companyId");
-
-  if (!user) {
-    throw new ApiError(404, "Invalid email or password");
-  }
-
-  if (!user.isActive) {
-    throw new ApiError(400, "Your account has been deactivated");
-  }
-
-  const isMatch = await user.matchPassword(password);
-
-  if (!isMatch) {
-    throw new ApiError(404, "Invalid email or password");
-  }
-
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
-  });
-
-  return {
-    success: true,
-    message: "User Login successful",
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      companyId: user.companyId?._id,
-      company: user.companyId,
-    },
-  };
-};
-
-const logOutService = async (userId) => {
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  return {
-    success: true,
-    message: "User logged out successfully",
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    },
-  };
-};
-
 const registerService = async (userData) => {
   const { name, email, password, phonenumber, address } = userData;
 
@@ -88,8 +28,6 @@ const registerService = async (userData) => {
   });
 
   return {
-    success: true,
-    message: "User registered successfully",
     token,
     user: {
       id: user._id,
@@ -97,81 +35,6 @@ const registerService = async (userData) => {
       email: user.email,
       address: user.address,
     },
-  };
-};
-
-const getCurrentUserProfileService = async (userId) => {
-  const user = await User.findById(userId).select("-password");
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  return user;
-};
-
-const updateUserProfileService = async (userId, updateData) => {
-  const { name, email, phonenumber, address } = updateData;
-
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { name, email, phonenumber, address },
-    { new: true, runValidators: true },
-  ).select("-password");
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  return user;
-};
-
-const deleteProfileService = async (userId) => {
-  const user = await User.findByIdAndDelete(userId);
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  return { success: true, message: "Account deleted" };
-};
-
-const changePasswordService = async (userId, data) => {
-  const { currentPassword, newPassword } = data;
-
-  if (!currentPassword || !newPassword) {
-    throw new ApiError(400, "Please provide current and new password");
-  }
-
-  if (newPassword.length < 6) {
-    throw new ApiError(400, "New password must be at least 6 characters");
-  }
-
-  if (currentPassword === newPassword) {
-    throw new ApiError(
-      400,
-      "New password cannot be the same as current password",
-    );
-  }
-
-  const user = await User.findById(userId).select("+password");
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  const isPasswordMatch = await user.matchPassword(currentPassword);
-
-  if (!isPasswordMatch) {
-    throw new ApiError(400, "Current password is incorrect");
-  }
-
-  user.password = newPassword;
-  await user.save();
-
-  return {
-    success: true,
-    message: "Password updated successfully",
   };
 };
 
@@ -252,8 +115,6 @@ const adminRegisterService = async (userData) => {
   });
 
   return {
-    success: true,
-    message: "Admin and company registered successfully",
     token,
     user: {
       id: admin._id,
@@ -271,45 +132,96 @@ const adminRegisterService = async (userData) => {
   };
 };
 
-const createCustomerService = async (adminId, customerData) => {
-  const { name, email, password, phonenumber } = customerData;
+const loginService = async (userData) => {
+  const { email, password } = userData;
 
-  if (!name || !email || !password) {
-    throw new ApiError(400, "Please provide name, email and password");
-  }
-
-  const admin = await User.findById(adminId);
-  if (!admin || admin.role !== "admin") {
-    throw new ApiError(403, "Only admin can create customers");
-  }
-
-  const customerExists = await User.findOne({
+  const user = await User.findOne({
     email: email.toLowerCase(),
-    companyId: admin.companyId,
-  });
-  if (customerExists) {
-    throw new ApiError(409, "Email already registered");
+  })
+    .select("+password")
+    .populate("companyId");
+
+  if (!user) {
+    throw new ApiError(404, "Invalid email or password");
   }
 
-  const customer = await User.create({
-    name,
-    email: email.toLowerCase(),
-    password,
-    phonenumber,
-    role: "customer",
-    companyId: admin.companyId,
-    isActive: true,
+  if (!user.isActive) {
+    throw new ApiError(400, "Your account has been deactivated");
+  }
+
+  const isMatch = await user.matchPassword(password);
+
+  if (!isMatch) {
+    throw new ApiError(404, "Invalid email or password");
+  }
+
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
   });
 
   return {
-    message: "Customer created successfully",
-    id: customer._id,
-    name: customer.name,
-    email: customer.email,
-    phonenumber: customer.phonenumber,
-    role: customer.role,
-    isActive: customer.isActive,
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId?._id,
+      company: user.companyId,
+    },
   };
+};
+
+const logOutService = async (userId) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return {
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+    },
+  };
+};
+
+const getCurrentUserProfileService = async (userId) => {
+  const user = await User.findById(userId).select("-password");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return user;
+};
+
+const updateUserProfileService = async (userId, updateData) => {
+  const { name, email, phonenumber, address } = updateData;
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { name, email, phonenumber, address },
+    { new: true, runValidators: true },
+  ).select("-password");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return user;
+};
+
+const deleteProfileService = async (userId) => {
+  const user = await User.findByIdAndDelete(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return null;
 };
 
 const getCompanyCustomersService = async (adminId, options = {}) => {
@@ -355,7 +267,6 @@ const getCompanyCustomersService = async (adminId, options = {}) => {
 
   return {
     customers,
-    message: "Customers retrieved successfully",
     pagination: {
       page,
       limit,
@@ -364,6 +275,46 @@ const getCompanyCustomersService = async (adminId, options = {}) => {
       hasNext: totalPages > 0 && page < totalPages,
       hasPrev: page > 1 && totalPages > 0,
     },
+  };
+};
+
+const createCustomerService = async (adminId, customerData) => {
+  const { name, email, password, phonenumber } = customerData;
+
+  if (!name || !email || !password) {
+    throw new ApiError(400, "Please provide name, email and password");
+  }
+
+  const admin = await User.findById(adminId);
+  if (!admin || admin.role !== "admin") {
+    throw new ApiError(403, "Only admin can create customers");
+  }
+
+  const customerExists = await User.findOne({
+    email: email.toLowerCase(),
+    companyId: admin.companyId,
+  });
+  if (customerExists) {
+    throw new ApiError(409, "Email already registered");
+  }
+
+  const customer = await User.create({
+    name,
+    email: email.toLowerCase(),
+    password,
+    phonenumber,
+    role: "customer",
+    companyId: admin.companyId,
+    isActive: true,
+  });
+
+  return {
+    id: customer._id,
+    name: customer.name,
+    email: customer.email,
+    phonenumber: customer.phonenumber,
+    role: customer.role,
+    isActive: customer.isActive,
   };
 };
 
@@ -408,20 +359,56 @@ const deleteCustomerService = async (adminId, customerId) => {
 
   await User.findByIdAndDelete(customerId);
 
-  return { success: true, message: "Customer deleted successfully" };
+  return null;
+};
+
+const changePasswordService = async (userId, data) => {
+  const { currentPassword, newPassword } = data;
+
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(400, "Please provide current and new password");
+  }
+
+  if (newPassword.length < 6) {
+    throw new ApiError(400, "New password must be at least 6 characters");
+  }
+
+  if (currentPassword === newPassword) {
+    throw new ApiError(
+      400,
+      "New password cannot be the same as current password",
+    );
+  }
+
+  const user = await User.findById(userId).select("+password");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordMatch = await user.matchPassword(currentPassword);
+
+  if (!isPasswordMatch) {
+    throw new ApiError(400, "Current password is incorrect");
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  return null;
 };
 
 export {
-  loginService,
-  logOutService,
   registerService,
   adminRegisterService,
-  createCustomerService,
-  getCompanyCustomersService,
-  updateCustomerService,
-  deleteCustomerService,
+  loginService,
+  logOutService,
   getCurrentUserProfileService,
   updateUserProfileService,
   deleteProfileService,
+  getCompanyCustomersService,
+  createCustomerService,
+  updateCustomerService,
+  deleteCustomerService,
   changePasswordService,
 };

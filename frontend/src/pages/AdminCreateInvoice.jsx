@@ -169,7 +169,6 @@ export default function AdminCreateInvoice() {
           type="text"
           value={text}
           onChange={(e) => updateItem(index, "name", e.target.value)}
-          //   className="invoice-input"
           placeholder="Enter item name"
         />
       ),
@@ -183,7 +182,7 @@ export default function AdminCreateInvoice() {
           type="number"
           value={text}
           onChange={(e) => updateItem(index, "quantity", e.target.value)}
-          //   className="invoice-input"
+  
         />
       ),
     },
@@ -196,7 +195,6 @@ export default function AdminCreateInvoice() {
           type="number"
           value={text}
           onChange={(e) => updateItem(index, "rate", e.target.value)}
-          //   className="invoice-input"
         />
       ),
     },

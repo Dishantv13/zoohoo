@@ -22,7 +22,7 @@ const invoiceSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["PENDING", "CONFIRMED", "PAID", "CANCELLED"],
+      enum: ["PENDING", "CONFIRMED", "PARTIALLY_PAID", "PAID", "CANCELLED"],
       default: "PENDING",
     },
     createdBy: {
@@ -67,18 +67,42 @@ const invoiceSchema = new Schema(
     totalAmount: {
       type: Number,
     },
-
-    paymentDetails: {
-      paymentMethod: {
-        type: String,
-        enum: ["CARD", "QR_CODE"],
-      },
-      transactionId: String,
-      paidAt: Date,
-      amountPaid: Number,
+    amountPaid: {
+        type: Number,   
+        default: 0,
     },
+    remainingAmount: {
+        type: Number,
+        default: function() {
+            return this.totalAmount - this.amountPaid;
+        },
+    },
+    paymentHistory: [
+      {
+        amount: Number,
+        paymentMethod: {
+          type: String,
+          enum: ["CARD", "QR_CODE", "CASH"],
+        },
+        transactionId: String,
+        paidAt: Date,
+        paidBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      },
+    ],
   },
   { timestamps: true },
 );
+
+invoiceSchema.pre("save", function () {
+    if(this.totalAmount && this.amountPaid >= 0) {
+        this.remainingAmount = this.totalAmount - this.amountPaid;
+    }
+    if(this.remainingAmount < 0) {
+        this.remainingAmount = 0;
+    }
+});
 
 export const Invoice = mongoose.model("Invoice", invoiceSchema);

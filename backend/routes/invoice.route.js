@@ -12,25 +12,26 @@ import {
   exportInvoice,
 } from "../controller/invoice.controller.js";
 import { protect, adminOnly } from "../middleware/auth.js";
-
 import { exportRateLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
 
-router.route("/").post(protect, createInvoice);
-router.route("/").get(protect, getInvoices);
+router.use(protect);
 
-router.route("/export").get(protect, exportRateLimiter, exportInvoice);
+router.route("/").post(createInvoice);
+router.route("/").get(getInvoices);
 
-router.route("/admin/all").get(protect, adminOnly, getAdminAllInvoices);
+router.route("/:id").get(getInvoiceById);
+router.route("/:id").put(updateInvoice);
+router.route("/:id/status").patch(updateInvoiceStatus);
+router.route("/:id").delete(deleteInvoice);
+router.route("/:id/download").get(downloadInvoice);
+
+router.route("/admin/all").get(adminOnly, getAdminAllInvoices);
 router
   .route("/admin/customer/:customerId")
-  .get(protect, adminOnly, getCustomerInvoicesByAdmin);
+  .get(adminOnly, getCustomerInvoicesByAdmin);
 
-router.route("/:id").get(protect, getInvoiceById);
-router.route("/:id").put(protect, updateInvoice);
-router.route("/:id/status").patch(protect, updateInvoiceStatus);
-router.route("/:id").delete(protect, deleteInvoice);
-router.route("/:id/download").get(protect, downloadInvoice);
+router.route("/export").get(exportRateLimiter, exportInvoice);
 
 export default router;

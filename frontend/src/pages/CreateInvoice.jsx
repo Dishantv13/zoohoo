@@ -94,7 +94,7 @@ export default function CreateInvoice() {
           notification.error({
             message: "Failed",
             description:
-              error.response?.data?.data?.message || "Failed To Load Invoice",
+              error.response?.data?.message || "Failed To Load Invoice",
           });
           navigate("/invoices");
         })

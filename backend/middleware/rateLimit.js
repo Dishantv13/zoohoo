@@ -1,20 +1,18 @@
 import rateLimit from "express-rate-limit";
-import ApiResponse from "../util/apiResponse.js";
+import ApiError from "../util/apiError.js";
 
 const authRateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
-    res
-      .status(429)
-      .json(
-        new ApiResponse(
-          429,
-          "Too many requests from this IP, please try again after 10 minutes",
-        ),
-      );
+  handler: (req, res, next) => {
+    next(
+      new ApiError(
+        429,
+        "Too many login attempts from this IP, please try again after 10 minutes",
+      ),
+    );
   },
 });
 
@@ -23,15 +21,13 @@ const apiRateLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
-    res
-      .status(429)
-      .json(
-        new ApiResponse(
-          429,
-          "Too many requests from this IP, please try again after 10 minutes",
-        ),
-      );
+  handler: (req, res, next) => {
+    next(
+      new ApiError(
+        429,
+        "Too many API requests from this IP, please try again after 10 minutes",
+      ),
+    );
   },
 });
 
@@ -40,20 +36,14 @@ const exportRateLimiter = rateLimit({
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
-    res
-      .status(429)
-      .json(
-        new ApiResponse(
-          429,
-          "Too many export requests from this IP, please try again after 10 minutes",
-        ),
-      );
+  handler: (req, res, next) => {
+    next(
+      new ApiError(
+        429,
+        "Too many export requests from this IP, please try again after 10 minutes",
+      ),
+    );
   },
 });
 
-export { 
-    authRateLimiter, 
-    apiRateLimiter, 
-    exportRateLimiter 
-};
+export { authRateLimiter, apiRateLimiter, exportRateLimiter };

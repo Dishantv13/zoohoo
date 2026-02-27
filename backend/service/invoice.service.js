@@ -34,7 +34,7 @@ const createInvoiceService = async (userId, data) => {
   }
 
   if (!companyId) {
-    throw new ApiError(404, "Company not found for this user");
+    throw new ApiError(400, "User does not belong to any company");
   }
 
   const parsedTaxRate = Number(tax);
@@ -124,16 +124,8 @@ const getInvoicesServices = async (userId, options = {}) => {
       $group: {
         _id: userId,
         totalAmount: { $sum: "$totalAmount" },
-        paidAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "PAID"] }, "$totalAmount", 0],
-          },
-        },
-        pendingAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "PENDING"] }, "$totalAmount", 0],
-          },
-        },
+        paidAmount: { $sum: "$amountPaid" },
+        pendingAmount: { $sum: "$remainingAmount" },
         confirmedAmount: {
           $sum: {
             $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
@@ -207,7 +199,6 @@ const getInvoiceByIdService = async (userId, invoiceId) => {
   if (!isCreator && !isCustomer) {
     throw new ApiError(403, "Not authorized to access this invoice");
   }
-
   return invoice;
 };
 
@@ -282,7 +273,6 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
     { $set: updateData },
     { new: true },
   );
-
   return updatedInvoice;
 };
 
@@ -645,16 +635,8 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
       $group: {
         _id: companyId,
         totalAmount: { $sum: "$totalAmount" },
-        paidAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "PAID"] }, "$totalAmount", 0],
-          },
-        },
-        pendingAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "PENDING"] }, "$totalAmount", 0],
-          },
-        },
+        paidAmount: { $sum: "$amountPaid" },
+        pendingAmount: { $sum: "$remainingAmount" },
         confirmedAmount: {
           $sum: {
             $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],

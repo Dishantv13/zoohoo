@@ -53,13 +53,13 @@ export default function App() {
         },
         {
           key: "2",
-          icon: <UnorderedListOutlined />,
-          label: <Link to="/admin/invoices">Invoice Management</Link>,
+          icon: <FileAddOutlined />,
+          label: <Link to="/create-invoice">Create Invoice</Link>,
         },
         {
           key: "3",
-          icon: <FileAddOutlined />,
-          label: <Link to="/create-invoice">Create Invoice</Link>,
+          icon: <UnorderedListOutlined />,
+          label: <Link to="/admin/invoices">Invoice Management</Link>,
         },
       ]
     : [
@@ -105,9 +105,9 @@ export default function App() {
     if (user?.role === "admin") {
       if (pathname === "/" || pathname === "/admin/customers") {
         return ["1"];
-      } else if (pathname === "/admin/invoices") {
-        return ["2"];
       } else if (pathname === "/create-invoice") {
+        return ["2"];
+      } else if (pathname === "/admin/invoices") {
         return ["3"];
       }
     } else {

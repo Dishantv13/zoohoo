@@ -4,14 +4,24 @@ import {
   updateUserProfile,
   deleteProfile,
   changePassword,
+  createCustomer,
+  getCompanyCustomers,
+  updateCustomer,
+  deleteCustomer,
 } from "../controller/user.controller.js";
-import { protect } from "../middleware/auth.js";
+import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = Router();
+router.use(protect);
 
-router.route("/profile").delete(protect, deleteProfile);
-router.route("/profile").get(protect, getCurrentUserProfile);
-router.route("/profile").put(protect, updateUserProfile);
-router.route("/change-password").put(protect, changePassword);
+router.route("/profile").get(getCurrentUserProfile);
+router.route("/update-profile").put(updateUserProfile);
+router.route("/delete-profile").delete(deleteProfile);
+router.route("/change-password").put(changePassword);
+
+router.route("/create-customers").post(adminOnly, createCustomer);
+router.route("/get-customers").get(adminOnly, getCompanyCustomers);
+router.route("/update-customers/:customerId").put(adminOnly, updateCustomer);
+router.route("/delete-customers/:customerId").delete(adminOnly, deleteCustomer);
 
 export default router;

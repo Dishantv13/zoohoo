@@ -15,11 +15,8 @@ import {
   Statistic,
   Row,
   Col,
-  Alert,
   Spin,
-  Modal,
   Form,
-  DatePicker,
   Flex,
   Tooltip,
 } from "antd";
@@ -30,8 +27,10 @@ import {
   WarningOutlined,
   SearchOutlined,
   DownloadOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { apiService } from "../service/apiService";
+import CashPaymentModal from "../components/CashPaymentModal";
 import dayjs from "dayjs";
 import "./InvoiceManagement.css";
 
@@ -44,6 +43,10 @@ export default function AdminInvoiceManagement() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isCashPaymentModalVisible, setIsCashPaymentModalVisible] =
+    useState(false);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
+    useState(null);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const [page, setPage] = useState(1);
@@ -109,19 +112,20 @@ export default function AdminInvoiceManagement() {
           status: statusFilters.status,
         });
       }
+      const responseData = response.data.data || {};
 
-      setInvoices(response.data.data.data || []);
+      setInvoices(responseData.data || []);
       setPagination({
-        current: response.data.data.pagination.page,
-        pageSize: response.data.data.pagination.limit,
-        total: response.data.data.pagination.totalItems,
+        current: responseData.pagination.page,
+        pageSize: responseData.pagination.limit,
+        total: responseData.pagination.totalItems,
       });
-      setSummary(response.data.data.summary);
+      setSummary(responseData.summary);
     } catch (error) {
       notification.error({
         message: "Error",
         description:
-          error.response?.data?.data?.message || "Failed to fetch invoices",
+          error.response?.data?.message || "Failed to fetch invoices",
       });
     } finally {
       setLoading(false);
@@ -219,10 +223,24 @@ export default function AdminInvoiceManagement() {
     navigate("/create-invoice", { state: { invoice } });
   };
 
+  const handleCashPayment = (invoice) => {
+    setSelectedInvoiceForPayment(invoice);
+    setIsCashPaymentModalVisible(true);
+  };
+
+  const handleCashPaymentSuccess = () => {
+    notification.success({
+      message: "Success",
+      description: "Cash payment recorded successfully",
+    });
+    fetchInvoices(page, selectedCustomer);
+  };
+
   const statusColors = {
     PAID: "green",
     CONFIRMED: "blue",
     PENDING: "orange",
+    PARTIALLY_PAID: "gold",
     CANCELLED: "red",
   };
 
@@ -373,12 +391,41 @@ export default function AdminInvoiceManagement() {
       ),
     },
     {
+      title: "Amount Paid",
+      dataIndex: "amountPaid",
+      key: "amountPaid",
+      width: 150,
+      render: (amount = 0) => (
+        <Flex align="center" gap="small">
+          <Tag color="cyan">₹{amount?.toFixed(2)}</Tag>
+        </Flex>
+      ),
+    },
+    {
+      title: "Remaining",
+      dataIndex: "remainingAmount",
+      key: "remainingAmount",
+      width: 150,
+      render: (amount = 0) => {
+        const color = amount === 0 ? "green" : amount > 0 ? "gold" : "default";
+        return (
+          <Flex align="center" gap="small">
+            <Tag color={color}>₹{amount?.toFixed(2)}</Tag>
+          </Flex>
+        );
+      },
+    },
+    {
       title: "Actions",
       key: "actions",
       fixed: "right",
       width: 250,
       render: (_, record) => {
         const isCreatedByAdmin = record.createdBy?._id !== record.customer?._id;
+        const canReceiveCashPayment =
+          record.status === "PENDING" ||
+          record.status === "CONFIRMED" ||
+          record.status === "PARTIALLY_PAID";
 
         if (record.status === "PAID") {
           return (
@@ -458,6 +505,23 @@ export default function AdminInvoiceManagement() {
                 </Button>
               </Tooltip>
 
+              {canReceiveCashPayment && (
+                <Tooltip title="Record Cash Payment">
+                  <Button
+                    size="small"
+                    icon={<DollarOutlined />}
+                    onClick={() => handleCashPayment(record)}
+                    style={{
+                      borderRadius: "5px",
+                      color: "#52c41a",
+                      borderColor: "#52c41a",
+                    }}
+                  >
+                    Cash
+                  </Button>
+                </Tooltip>
+              )}
+
               <Tooltip title="Download Invoice PDF">
                 <Button
                   icon={<FilePdfOutlined />}
@@ -477,6 +541,8 @@ export default function AdminInvoiceManagement() {
             </Space>
           );
         }
+
+        // For customer-created invoices, admin can still record cash payments
         return (
           <Space wrap>
             <Tooltip title="View Invoice">
@@ -492,6 +558,23 @@ export default function AdminInvoiceManagement() {
                 View
               </Button>
             </Tooltip>
+
+            {canReceiveCashPayment && (
+              <Tooltip title="Record Cash Payment">
+                <Button
+                  size="small"
+                  icon={<DollarOutlined />}
+                  onClick={() => handleCashPayment(record)}
+                  style={{
+                    borderRadius: "5px",
+                    color: "#52c41a",
+                    borderColor: "#52c41a",
+                  }}
+                >
+                  Cash
+                </Button>
+              </Tooltip>
+            )}
 
             <Tooltip title="Download Invoice PDF">
               <Button
@@ -529,6 +612,7 @@ export default function AdminInvoiceManagement() {
           <Card>
             <Statistic
               title="Overdue Invoices"
+              prefix={<WarningOutlined />}
               value={summary.overdueCount || 0}
               valueStyle={{ color: "#ff4d4f" }}
             />
@@ -615,6 +699,7 @@ export default function AdminInvoiceManagement() {
                 { label: "Confirmed", value: "CONFIRMED" },
                 { label: "Paid", value: "PAID" },
                 { label: "Cancelled", value: "CANCELLED" },
+                { label: "Partially Paid", value: "PARTIALLY_PAID" },
               ]}
             />
             <Button
@@ -753,10 +838,84 @@ export default function AdminInvoiceManagement() {
                 <strong>Total Amount:</strong> ₹
                 {selectedInvoice.totalAmount?.toFixed(2)}
               </p>
+              {selectedInvoice.amountPaid > 0 && (
+                <>
+                  <p style={{ color: "#52c41a" }}>
+                    <strong>Amount Paid:</strong> ₹
+                    {selectedInvoice.amountPaid?.toFixed(2)}
+                  </p>
+                  <p
+                    style={{
+                      color:
+                        selectedInvoice.remainingAmount > 0
+                          ? "#ff9800"
+                          : "#52c41a",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    <strong>Remaining Amount:</strong> ₹
+                    {selectedInvoice.remainingAmount?.toFixed(2) || "0.00"}
+                  </p>
+                </>
+              )}
             </div>
+
+            {selectedInvoice.paymentHistory &&
+              selectedInvoice.paymentHistory.length > 0 && (
+                <div className="detail-section">
+                  <h3>Payment History</h3>
+                  {selectedInvoice.paymentHistory.map((payment, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: "10px",
+                        marginBottom: "8px",
+                        background: "#f0f2f5",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <p style={{ marginBottom: "4px" }}>
+                        <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
+                        <span style={{ marginLeft: "15px" }}>
+                          <strong>Method:</strong> {payment.paymentMethod}
+                        </span>
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "4px",
+                          fontSize: "12px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Date:</strong>{" "}
+                        {new Date(payment.paidAt).toLocaleString()}
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "0",
+                          fontSize: "12px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Transaction ID:</strong> {payment.transactionId}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
           </div>
         )}
       </Drawer>
+
+      <CashPaymentModal
+        invoice={selectedInvoiceForPayment}
+        visible={isCashPaymentModalVisible}
+        onClose={() => {
+          setIsCashPaymentModalVisible(false);
+          setSelectedInvoiceForPayment(null);
+        }}
+        onPaymentSuccess={handleCashPaymentSuccess}
+      />
     </div>
   );
 }
