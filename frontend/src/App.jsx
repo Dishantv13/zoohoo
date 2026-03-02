@@ -23,6 +23,7 @@ import CustomerManagement from "./pages/CustomerManagement.jsx";
 import AdminInvoiceManagement from "./pages/AdminInvoiceManagement.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { logout, getCurrentUser } from "./features/auth/authSlice.js";
+import Report from "./pages/Report.jsx";
 import InvoiceView from "./pages/InvoiceView.jsx";
 import "./index.css";
 
@@ -42,43 +43,50 @@ export default function App() {
   }, [token, user, loading, dispatch]);
 
   const showLayout =
-    isAuthenticated && !["/login", "/register", "/admin/register"].includes(pathname);
+    isAuthenticated &&
+    !["/login", "/register", "/admin/register"].includes(pathname);
 
-  const menuItems = user?.role === "admin"
-    ? [
-        {
-          key: "1",
-          icon: <TeamOutlined />,
-          label: <Link to="/admin/customers">Manage Customers</Link>,
-        },
-        {
-          key: "2",
-          icon: <FileAddOutlined />,
-          label: <Link to="/create-invoice">Create Invoice</Link>,
-        },
-        {
-          key: "3",
-          icon: <UnorderedListOutlined />,
-          label: <Link to="/admin/invoices">Invoice Management</Link>,
-        },
-      ]
-    : [
-        {
-          key: "1",
-          icon: <UserOutlined />,
-          label: <Link to="/customers">Customer Profile</Link>,
-        },
-        {
-          key: "2",
-          icon: <FileAddOutlined />,
-          label: <Link to="/create-invoice">Create Invoice</Link>,
-        },
-        {
-          key: "3",
-          icon: <UnorderedListOutlined />,
-          label: <Link to="/invoices">Invoice</Link>,
-        },
-      ];
+  const menuItems =
+    user?.role === "admin"
+      ? [
+          {
+            key: "1",
+            icon: <TeamOutlined />,
+            label: <Link to="/admin/customers">Manage Customers</Link>,
+          },
+          {
+            key: "2",
+            icon: <FileAddOutlined />,
+            label: <Link to="/create-invoice">Create Invoice</Link>,
+          },
+          {
+            key: "3",
+            icon: <UnorderedListOutlined />,
+            label: <Link to="/admin/invoices">Invoice Management</Link>,
+          },
+          {
+            key: "4",
+            icon: <UnorderedListOutlined />,
+            label: <Link to="/report">Report</Link>,
+          },
+        ]
+      : [
+          {
+            key: "1",
+            icon: <UserOutlined />,
+            label: <Link to="/customers">Customer Profile</Link>,
+          },
+          {
+            key: "2",
+            icon: <FileAddOutlined />,
+            label: <Link to="/create-invoice">Create Invoice</Link>,
+          },
+          {
+            key: "3",
+            icon: <UnorderedListOutlined />,
+            label: <Link to="/invoices">Invoice</Link>,
+          },
+        ];
 
   const userMenuItems = [
     {
@@ -109,13 +117,18 @@ export default function App() {
         return ["2"];
       } else if (pathname === "/admin/invoices") {
         return ["3"];
+      } else if (pathname === "/report") {
+        return ["4"];
       }
     } else {
       if (pathname === "/" || pathname === "/customers") {
         return ["1"];
       } else if (pathname === "/create-invoice") {
         return ["2"];
-      } else if (pathname === "/invoices" || pathname.startsWith("/invoices/")) {
+      } else if (
+        pathname === "/invoices" ||
+        pathname.startsWith("/invoices/")
+      ) {
         return ["3"];
       }
     }
@@ -178,7 +191,11 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                {user?.role === "admin" ? <CustomerManagement /> : <Customers />}
+                {user?.role === "admin" ? (
+                  <CustomerManagement />
+                ) : (
+                  <Customers />
+                )}
               </ProtectedRoute>
             }
           />
@@ -207,10 +224,22 @@ export default function App() {
             }
           />
           <Route
+            path="/report"
+            element={
+              <ProtectedRoute>
+                <Report />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/create-invoice"
             element={
               <ProtectedRoute>
-                {user?.role === "admin" ? <AdminCreateInvoice /> : <CreateInvoice />}
+                {user?.role === "admin" ? (
+                  <AdminCreateInvoice />
+                ) : (
+                  <CreateInvoice />
+                )}
               </ProtectedRoute>
             }
           />

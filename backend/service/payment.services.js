@@ -1,9 +1,11 @@
 import { Invoice } from "../model/invoice.model.js";
 import { Payment } from "../model/payment.model.js";
+import { User } from "../model/user.model.js";
 import ApiError from "../util/apiError.js";
 
 const processCardPaymentService = async (userId, data) => {
-  const { invoiceId, cardNumber, cardHolder, expiryDate, cvv, paymentAmount } = data;
+  const { invoiceId, cardNumber, cardHolder, expiryDate, cvv, paymentAmount } =
+    data;
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
@@ -13,7 +15,7 @@ const processCardPaymentService = async (userId, data) => {
   if (invoice.customer && invoice.customer.toString() !== userId.toString()) {
     throw new ApiError(403, "You are not authorized to pay this invoice");
   }
-  
+
   if (invoice.status === "PAID") {
     throw new ApiError(400, "Invoice is already paid");
   }
@@ -45,15 +47,15 @@ const processCardPaymentService = async (userId, data) => {
   await new Promise((resolve) => setTimeout(resolve, 1500));
 
   const transactionId = `TXN-CARD-${Date.now()}`;
-  
+
   invoice.amountPaid += paymentAmount;
   invoice.remainingAmount = invoice.totalAmount - invoice.amountPaid;
 
-  if(invoice.remainingAmount <= 0) {
+  if (invoice.remainingAmount <= 0) {
     invoice.remainingAmount = 0;
     invoice.status = "PAID";
-  } else if(invoice.amountPaid > 0) {
-  invoice.status = "PARTIALLY_PAID";
+  } else if (invoice.amountPaid > 0) {
+    invoice.status = "PARTIALLY_PAID";
   }
 
   invoice.paymentHistory.push({
@@ -101,7 +103,7 @@ const processQrPaymentService = async (userId, data) => {
     throw new ApiError(400, "Invoice is already paid");
   }
 
-  if(!paymentAmount || paymentAmount <= 0) {
+  if (!paymentAmount || paymentAmount <= 0) {
     throw new ApiError(400, "Invalid payment amount");
   }
 
@@ -120,14 +122,14 @@ const processQrPaymentService = async (userId, data) => {
   invoice.amountPaid += paymentAmount;
   invoice.remainingAmount = invoice.totalAmount - invoice.amountPaid;
 
-  if(invoice.remainingAmount <= 0) {
+  if (invoice.remainingAmount <= 0) {
     invoice.remainingAmount = 0;
     invoice.status = "PAID";
-  } else if(invoice.amountPaid > 0) {
+  } else if (invoice.amountPaid > 0) {
     invoice.status = "PARTIALLY_PAID";
   }
 
-  invoice.paymentHistory.push({ 
+  invoice.paymentHistory.push({
     amount: paymentAmount,
     paymentMethod: "QR_CODE",
     transactionId,
@@ -177,10 +179,14 @@ const processCashPaymentService = async (adminId, data) => {
 
   const currentAmountPaid = Number(invoice.amountPaid.toFixed(2)) || 0;
   const totalAmount = Number(invoice.totalAmount.toFixed(2)) || 0;
-  const currentRemainingAmount = Number(invoice.remainingAmount.toFixed(2)) || totalAmount;
+  const currentRemainingAmount =
+    Number(invoice.remainingAmount.toFixed(2)) || totalAmount;
 
   if (paymentAmount > currentRemainingAmount) {
-    throw new ApiError(400, `Payment amount ₹${paymentAmount} exceeds remaining invoice amount ₹${currentRemainingAmount}`);
+    throw new ApiError(
+      400,
+      `Payment amount ₹${paymentAmount} exceeds remaining invoice amount ₹${currentRemainingAmount}`,
+    );
   }
 
   const transactionId = `TXN-CASH-${Date.now()}`;
@@ -229,13 +235,18 @@ const processCashPaymentService = async (adminId, data) => {
 const getPaymentStatusService = async (userId, data) => {
   const { invoiceId } = data;
   const invoice = await Invoice.findById(invoiceId);
+  const currentUser = await User.findById(userId).select("role");
 
   if (!invoice) {
     throw new ApiError(404, "Invoice not found");
   }
 
-  if (invoice.customer && invoice.customer.toString() !== userId.toString() &&
-      invoice.createdBy.toString() !== userId.toString()) {
+  if (
+    currentUser?.role !== "admin" &&
+    invoice.customer &&
+    invoice.customer.toString() !== userId.toString() &&
+    invoice.createdBy.toString() !== userId.toString()
+  ) {
     throw new ApiError(403, "Not authorized to view this invoice");
   }
 
@@ -251,14 +262,22 @@ const getPaymentStatusService = async (userId, data) => {
 };
 
 const getInvoicePaymentHistoryService = async (userId, invoiceId) => {
-  const invoice = await Invoice.findById(invoiceId).populate('paymentHistory.paidBy', 'name email');
+  const invoice = await Invoice.findById(invoiceId).populate(
+    "paymentHistory.paidBy",
+    "name email",
+  );
+  const currentUser = await User.findById(userId).select("role");
 
   if (!invoice) {
     throw new ApiError(404, "Invoice not found");
   }
 
-  if (invoice.customer && invoice.customer.toString() !== userId.toString() &&
-      invoice.createdBy.toString() !== userId.toString()) {
+  if (
+    currentUser?.role !== "admin" &&
+    invoice.customer &&
+    invoice.customer.toString() !== userId.toString() &&
+    invoice.createdBy.toString() !== userId.toString()
+  ) {
     throw new ApiError(403, "Not authorized to view this invoice");
   }
 
@@ -269,13 +288,16 @@ const getInvoicePaymentHistoryService = async (userId, invoiceId) => {
     amountPaid: invoice.amountPaid,
     remainingAmount: invoice.remainingAmount,
     status: invoice.status,
-    paymentHistory: invoice.paymentHistory.map(payment => ({
-      amount: payment.amount,
-      paymentMethod: payment.paymentMethod,
-      transactionId: payment.transactionId,
-      paidAt: payment.paidAt,
-      paidBy: payment.paidBy,
-    })),
+    paymentHistory: invoice.paymentHistory
+      .sort((a, b) => b.paidAt - a.paidAt)
+      .slice(0, 4)
+      .map((payment) => ({
+        amount: payment.amount,
+        paymentMethod: payment.paymentMethod,
+        transactionId: payment.transactionId,
+        paidAt: payment.paidAt,
+        paidBy: payment.paidBy,
+      })),
   };
 };
 

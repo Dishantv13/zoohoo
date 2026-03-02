@@ -42,6 +42,7 @@ const invoiceSlice = createSlice({
     loading: false,
     pagination: defaultPagination,
     summary: {
+      totalInvoices: 0,
       totalAmount: 0,
       paidAmount: 0,
       pendingAmount: 0,

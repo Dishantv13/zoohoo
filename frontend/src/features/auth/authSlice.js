@@ -7,6 +7,7 @@ export const register = createAsyncThunk(
     try {
       const response = await apiService.register(data);
       localStorage.setItem("token", response.data.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data.user));
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -22,6 +23,7 @@ export const login = createAsyncThunk(
     try {
       const response = await apiService.login(data);
       localStorage.setItem("token", response.data.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data.user));
       return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Login failed");
@@ -35,6 +37,7 @@ export const logout = createAsyncThunk(
     try {
       await apiService.logout();
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       return { success: true };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Logout failed");
@@ -47,6 +50,7 @@ export const getCurrentUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiService.getCurrentUser();
+      localStorage.setItem("user", JSON.stringify(response.data.data));
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -62,6 +66,7 @@ export const adminRegister = createAsyncThunk(
     try {
       const response = await apiService.adminRegister(data);
       localStorage.setItem("token", response.data.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.data.user));
       return response.data.data;
     } catch (error) {
       return rejectWithValue(

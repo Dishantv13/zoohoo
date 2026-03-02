@@ -491,13 +491,6 @@ export default function CustomerManagement() {
                     formatter={formatCurrency}
                   />
                 </Col>
-                <Col span={12}>
-                  <Statistic
-                    title="Confirmed Amount"
-                    value={customerSummary?.confirmedAmount || 0}
-                    formatter={formatCurrency}
-                  />
-                </Col>
               </Row>
             </Card>
           </div>

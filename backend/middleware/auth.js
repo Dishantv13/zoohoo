@@ -17,16 +17,25 @@ const protect = asyncHandler(async (req, res, next) => {
       throw new ApiError(401, "Not authorized to access this route");
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id);
+      const user = await User.findById(decoded.id);
 
-    if (!user) {
-      throw new ApiError(404, "User not found");
+      if (!user) {
+        throw new ApiError(404, "User not found");
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        throw new ApiError(401, "Token expired. Please login again.");
+      } else if (error.name === "JsonWebTokenError") {
+        throw new ApiError(401, "Invalid token. Please login again.");
+      }
+      throw error;
     }
-
-    req.user = user;
-    next();
 });
 
 const adminOnly = (req, res, next) => {

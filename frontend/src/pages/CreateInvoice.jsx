@@ -184,11 +184,8 @@ export default function CreateInvoice() {
       <Row gutter={20}>
         <Col xs={24} sm={4}>
           <Form.Item name="status" label="Status" initialValue="PENDING">
-            <Select placeholder="Select status">
+            <Select placeholder="Select status" disabled>
               <Select.Option value="PENDING">Pending</Select.Option>
-              <Select.Option value="CONFIRMED">Confirmed</Select.Option>
-              <Select.Option value="PAID">Paid</Select.Option>
-              <Select.Option value="CANCELLED">Cancelled</Select.Option>
             </Select>
           </Form.Item>
         </Col>

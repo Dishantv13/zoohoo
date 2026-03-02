@@ -299,10 +299,8 @@ export default function AdminCreateInvoice() {
                 initialValue="PENDING"
                 rules={[{ required: true, message: "Please select status" }]}
               >
-                <Select>
+                <Select placeholder="Select status" disabled>
                   <Select.Option value="PENDING">Pending</Select.Option>
-                  <Select.Option value="CONFIRMED">Confirmed</Select.Option>
-                  <Select.Option value="PAID">Paid</Select.Option>
                 </Select>
               </Form.Item>
             </Col>

@@ -146,6 +146,7 @@ const getInvoicesServices = async (userId, options = {}) => {
             ],
           },
         },
+        totalInvoices: { $sum: 1 },
       },
     },
   ]);
@@ -179,6 +180,7 @@ const getInvoicesServices = async (userId, options = {}) => {
       pendingAmount: 0,
       confirmedAmount: 0,
       overdueCount: 0,
+      totalInvoices: 0,
     },
   };
 };
@@ -749,16 +751,8 @@ const getCustomerInvoicesByAdminService = async (
       $group: {
         _id: customerObjId,
         totalAmount: { $sum: "$totalAmount" },
-        paidAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "PAID"] }, "$totalAmount", 0],
-          },
-        },
-        pendingAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "PENDING"] }, "$totalAmount", 0],
-          },
-        },
+        paidAmount: { $sum: "$amountPaid" },
+        pendingAmount: { $sum: "$remainingAmount" },
         confirmedAmount: {
           $sum: {
             $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],

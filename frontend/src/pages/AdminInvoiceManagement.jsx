@@ -42,7 +42,6 @@ export default function AdminInvoiceManagement() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isCashPaymentModalVisible, setIsCashPaymentModalVisible] =
     useState(false);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
@@ -60,7 +59,6 @@ export default function AdminInvoiceManagement() {
     totalAmount: 0,
     paidAmount: 0,
     pendingAmount: 0,
-    confirmedAmount: 0,
     overdueCount: 0,
     totalInvoices: 0,
   });
@@ -136,9 +134,24 @@ export default function AdminInvoiceManagement() {
     fetchInvoices(page, selectedCustomer);
   }, [page, pageSize, statusFilters.status, selectedCustomer]);
 
-  const handleViewDetails = (invoice) => {
-    setSelectedInvoice(invoice);
+  const handleViewDetails = async (invoice) => {
     setIsDrawerVisible(true);
+    setSelectedInvoice({ ...invoice, paymentHistory: [] });
+
+    try {
+      const response = await apiService.getPaymentHistory(invoice._id);
+      const paymentHistory = response?.data?.data?.paymentHistory || [];
+
+      setSelectedInvoice({
+        ...invoice,
+        paymentHistory,
+      });
+    } catch (error) {
+      notification.warning({
+        message: "Payment History",
+        description: "Unable to load payment history for this invoice",
+      });
+    }
   };
 
   const handleDownload = async (invoiceId, invoiceNumber) => {
@@ -238,7 +251,6 @@ export default function AdminInvoiceManagement() {
 
   const statusColors = {
     PAID: "green",
-    CONFIRMED: "blue",
     PENDING: "orange",
     PARTIALLY_PAID: "gold",
     CANCELLED: "red",
@@ -423,9 +435,7 @@ export default function AdminInvoiceManagement() {
       render: (_, record) => {
         const isCreatedByAdmin = record.createdBy?._id !== record.customer?._id;
         const canReceiveCashPayment =
-          record.status === "PENDING" ||
-          record.status === "CONFIRMED" ||
-          record.status === "PARTIALLY_PAID";
+          record.status === "PENDING" || record.status === "PARTIALLY_PAID";
 
         if (record.status === "PAID") {
           return (
@@ -474,7 +484,7 @@ export default function AdminInvoiceManagement() {
           );
         }
 
-        if (isCreatedByAdmin) {
+        if (isCreatedByAdmin && record.status !== "PARTIALLY_PAID") {
           return (
             <Space wrap>
               <Tooltip title="View Invoice">
@@ -631,16 +641,6 @@ export default function AdminInvoiceManagement() {
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
-              title="Confirmed Amount"
-              value={(summary.confirmedAmount || 0).toFixed(2)}
-              prefix="₹"
-              valueStyle={{ color: "#13c2c2" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={4}>
-          <Card>
-            <Statistic
               title="Paid Amount"
               value={(summary.paidAmount || 0).toFixed(2)}
               prefix="₹"
@@ -696,7 +696,6 @@ export default function AdminInvoiceManagement() {
               }}
               options={[
                 { label: "Pending", value: "PENDING" },
-                { label: "Confirmed", value: "CONFIRMED" },
                 { label: "Paid", value: "PAID" },
                 { label: "Cancelled", value: "CANCELLED" },
                 { label: "Partially Paid", value: "PARTIALLY_PAID" },
@@ -744,7 +743,10 @@ export default function AdminInvoiceManagement() {
 
       <Drawer
         title="Invoice Details"
-        onClose={() => setIsDrawerVisible(false)}
+        onClose={() => {
+          setIsDrawerVisible(false);
+          setSelectedInvoice(null);
+        }}
         open={isDrawerVisible}
         width={500}
       >

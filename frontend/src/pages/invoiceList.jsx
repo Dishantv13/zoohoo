@@ -12,7 +12,6 @@ import {
   Statistic,
   Row,
   Col,
-  Dropdown,
   Modal,
   Select,
   Tooltip,
@@ -62,9 +61,20 @@ export default function InvoiceList() {
     navigate(`/invoices/${invoice._id}`);
   };
 
-  const handleViewDetails = (invoice) => {
-    setSelectedInvoice(invoice);
+  const handleViewDetails = async (invoice) => {
     setIsDrawerVisible(true);
+    setSelectedInvoice({ ...invoice, paymentHistory: [] });
+
+    try {
+      const response = await apiService.getPaymentHistory(invoice._id);
+      const paymentHistory = response.data?.data?.paymentHistory || [];
+      setSelectedInvoice({ ...invoice, paymentHistory });
+    } catch (error) {
+      notification.warning({
+        message: "Error",
+        description: "Failed to fetch payment history",
+      });
+    }
   };
 
   const handleDelete = async (id) => {
@@ -222,7 +232,7 @@ export default function InvoiceList() {
   const totalAmount = summaryData.totalAmount || 0;
   const paidAmount = summaryData.paidAmount || 0;
   const pendingAmount = summaryData.pendingAmount || 0;
-  const confirmedAmount = summaryData.confirmedAmount || 0;
+  const totalInvoices = summaryData.totalInvoices || 0;
   const overdueCount = summaryData.overdueCount || 0;
 
   const filteredInvoices = statusFilter
@@ -231,7 +241,6 @@ export default function InvoiceList() {
 
   const statusColors = {
     PAID: "green",
-    CONFIRMED: "blue",
     PENDING: "orange",
     CANCELLED: "red",
   };
@@ -309,7 +318,6 @@ export default function InvoiceList() {
       render: (status) => {
         const statusColors = {
           PENDING: "orange",
-          CONFIRMED: "blue",
           PARTIALLY_PAID: "gold",
           PAID: "green",
           CANCELLED: "red",
@@ -433,7 +441,8 @@ export default function InvoiceList() {
       key: "remainingAmount",
       render: (v = 0, record) => {
         const remaining = Number(v) || 0;
-        const color = remaining === 0 ? "green" : remaining > 0 ? "orange" : "default";
+        const color =
+          remaining === 0 ? "green" : remaining > 0 ? "orange" : "default";
         return (
           <Flex align="center" gap="small">
             <Tag color={color}>₹{remaining.toFixed(2)}</Tag>
@@ -492,12 +501,19 @@ export default function InvoiceList() {
         }
 
         if (isCreatedByAdmin || record.status === "PARTIALLY_PAID") {
-          const hasPartialPayment = record.amountPaid > 0 && record.remainingAmount > 0;
+          const hasPartialPayment =
+            record.amountPaid > 0 && record.remainingAmount > 0;
           const payButtonText = hasPartialPayment ? "Pay Remaining" : "Pay";
-          
+
           return (
             <Space wrap>
-              <Tooltip title={hasPartialPayment ? `Pay Remaining ₹${record.remainingAmount.toFixed(2)}` : "Pay Invoice"}>
+              <Tooltip
+                title={
+                  hasPartialPayment
+                    ? `Pay Remaining ₹${record.remainingAmount.toFixed(2)}`
+                    : "Pay Invoice"
+                }
+              >
                 <Button
                   type="primary"
                   size="small"
@@ -536,25 +552,6 @@ export default function InvoiceList() {
           );
         }
 
-        const statusMenuItems = [
-          {
-            key: "PENDING",
-            label: "Pending",
-            onClick: () => handleStatusChange(record._id, "PENDING"),
-          },
-          {
-            key: "CONFIRMED",
-            label: "Confirmed",
-            onClick: () => handleStatusChange(record._id, "CONFIRMED"),
-          },
-          {
-            key: "CANCELLED",
-            label: "🗑️ Cancel & Delete",
-            danger: true,
-            onClick: () => handleStatusChange(record._id, "CANCELLED"),
-          },
-        ];
-
         return (
           <Space wrap>
             <Tooltip title="Pay Invoice">
@@ -566,25 +563,6 @@ export default function InvoiceList() {
               >
                 Pay
               </Button>
-            </Tooltip>
-
-            <Tooltip title="Change Status">
-              <Dropdown
-                menu={{ items: statusMenuItems }}
-                placement="bottomLeft"
-              >
-                <Button
-                  size="small"
-                  style={{
-                    borderRadius: "5px",
-                    backgroundColor: "#b07d17",
-                    borderColor: "#faad14",
-                    color: "white",
-                  }}
-                >
-                  Status
-                </Button>
-              </Dropdown>
             </Tooltip>
 
             <Tooltip title="View Invoice">
@@ -649,6 +627,15 @@ export default function InvoiceList() {
   return (
     <>
       <Row gutter={25} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={3}>
+          <Card>
+            <Statistic
+              title="Total Invoices"
+              value={totalInvoices || 0}
+              valueStyle={{ color: "#1890ff" }}
+            />
+          </Card>
+        </Col>
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
@@ -670,16 +657,6 @@ export default function InvoiceList() {
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={4}>
-          <Card>
-            <Statistic
-              title="Confirmed Amount"
-              value={confirmedAmount.toFixed(2)}
-              prefix="₹"
-              valueStyle={{ color: "#1890ff", fontSize: "20px" }}
-            />
-          </Card>
-        </Col>
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
@@ -721,7 +698,6 @@ export default function InvoiceList() {
               options={[
                 { value: "ALL", label: "📋 All Status" },
                 { value: "PENDING", label: "🟡 Pending" },
-                { value: "CONFIRMED", label: "🔵 Confirmed" },
                 { value: "PAID", label: "🟢 Paid" },
                 { value: "PARTIALLY_PAID", label: "🟠 Partially Paid" },
               ]}
@@ -776,7 +752,10 @@ export default function InvoiceList() {
 
       <Drawer
         title="Invoice Details"
-        onClose={() => setIsDrawerVisible(false)}
+        onClose={() => {
+          setIsDrawerVisible(false);
+          setSelectedInvoice(null);
+        }}
         open={isDrawerVisible}
         width={500}
       >
@@ -872,7 +851,15 @@ export default function InvoiceList() {
                     <strong>Amount Paid:</strong> ₹
                     {selectedInvoice.amountPaid?.toFixed(2)}
                   </p>
-                  <p style={{ color: selectedInvoice.remainingAmount > 0 ? "#ff9800" : "#52c41a", fontWeight: "bold" }}>
+                  <p
+                    style={{
+                      color:
+                        selectedInvoice.remainingAmount > 0
+                          ? "#ff9800"
+                          : "#52c41a",
+                      fontWeight: "bold",
+                    }}
+                  >
                     <strong>Remaining Amount:</strong> ₹
                     {selectedInvoice.remainingAmount?.toFixed(2) || "0.00"}
                   </p>
@@ -880,32 +867,49 @@ export default function InvoiceList() {
               )}
             </div>
 
-            {selectedInvoice.paymentHistory && selectedInvoice.paymentHistory.length > 0 && (
-              <div className="detail-section">
-                <h3>Payment History</h3>
-                {selectedInvoice.paymentHistory.map((payment, idx) => (
-                  <div key={idx} style={{ 
-                    padding: "10px", 
-                    marginBottom: "8px", 
-                    background: "#f0f2f5", 
-                    borderRadius: "4px" 
-                  }}>
-                    <p style={{ marginBottom: "4px" }}>
-                      <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
-                      <span style={{ marginLeft: "15px" }}>
-                        <strong>Method:</strong> {payment.paymentMethod}
-                      </span>
-                    </p>
-                    <p style={{ marginBottom: "4px", fontSize: "12px", color: "#666" }}>
-                      <strong>Date:</strong> {new Date(payment.paidAt).toLocaleString()}
-                    </p>
-                    <p style={{ marginBottom: "0", fontSize: "12px", color: "#666" }}>
-                      <strong>Transaction ID:</strong> {payment.transactionId}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            {selectedInvoice.paymentHistory &&
+              selectedInvoice.paymentHistory.length > 0 && (
+                <div className="detail-section">
+                  <h3>Payment History</h3>
+                  {selectedInvoice.paymentHistory.map((payment, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: "10px",
+                        marginBottom: "8px",
+                        background: "#f0f2f5",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <p style={{ marginBottom: "4px" }}>
+                        <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
+                        <span style={{ marginLeft: "15px" }}>
+                          <strong>Method:</strong> {payment.paymentMethod}
+                        </span>
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "4px",
+                          fontSize: "12px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Date:</strong>{" "}
+                        {new Date(payment.paidAt).toLocaleString()}
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "0",
+                          fontSize: "12px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Transaction ID:</strong> {payment.transactionId}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
           </div>
         )}
       </Drawer>

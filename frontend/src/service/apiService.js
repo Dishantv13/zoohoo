@@ -1,8 +1,11 @@
 import axios from "axios";
 
 const api = axios.create({
+  baseURL: "http://localhost:5000/api",
+});
+
+const customerApi = axios.create({
   baseURL: "http://localhost:5000/api/customers",
-  withCredentials: false,
 });
 
 const authApi = axios.create({
@@ -17,6 +20,10 @@ const paymentApi = axios.create({
   baseURL: "http://localhost:5000/api/payments",
 });
 
+const dashboardApi = axios.create({
+  baseURL: "http://localhost:5000/api/dashboard",
+});
+
 const setupInterceptors = (instance) => {
   instance.interceptors.request.use(
     (config) => {
@@ -28,39 +35,43 @@ const setupInterceptors = (instance) => {
     },
     (error) => Promise.reject(error),
   );
+
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      const status = error?.response?.status;
+      if (status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+      }
+      return Promise.reject(error);
+    },
+  );
 };
 
 setupInterceptors(api);
+setupInterceptors(customerApi);
 setupInterceptors(authApi);
 setupInterceptors(invoiceApi);
 setupInterceptors(paymentApi);
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error?.response?.status;
-    if (status === 401) {
-      localStorage.removeItem("token");
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
-    }
-    return Promise.reject(error);
-  },
-);
+setupInterceptors(dashboardApi);
 
 export const apiService = {
   // Customer APIs
-  customerProfile: () => api.get("/profile"),
-  updateCustomerProfile: (data) => api.put("/update-profile", data),
-  changePassword: (data) => api.put("/change-password", data),
-  deleteCustomerProfile: () => api.delete("/delete-profile"),
+  customerProfile: () => customerApi.get("/profile"),
+  updateCustomerProfile: (data) => customerApi.put("/update-profile", data),
+  changePassword: (data) => customerApi.put("/change-password", data),
+  deleteCustomerProfile: () => customerApi.delete("/delete-profile"),
 
   // Admin Customer Management APIs
-  createCustomer: (data) => api.post("/create-customers", data),
-  getCustomers: (params) => api.get("/get-customers", { params }),
+  createCustomer: (data) => customerApi.post("/create-customers", data),
+  getCustomers: (params) => customerApi.get("/get-customers", { params }),
   updateCustomer: (customerId, data) =>
-    api.put(`/update-customers/${customerId}`, data),
-  deleteCustomer: (customerId) => api.delete(`/delete-customers/${customerId}`),
+    customerApi.put(`/update-customers/${customerId}`, data),
+  deleteCustomer: (customerId) => customerApi.delete(`/delete-customers/${customerId}`),
 
   // Payment APIs
   cardPayment: (data) => paymentApi.post("/card", data),
@@ -91,6 +102,9 @@ export const apiService = {
     invoiceApi.get(`/admin/customer/${customerId}`, { params }),
   exportInvoice: (params) =>
     invoiceApi.get("/export", { params, responseType: "blob" }),
+
+  // report APIS
+  getDashboardData: (params) => dashboardApi.get("/report", { params }),
 };
 
 export default apiService;
