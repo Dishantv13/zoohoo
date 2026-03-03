@@ -182,7 +182,6 @@ export default function AdminCreateInvoice() {
           type="number"
           value={text}
           onChange={(e) => updateItem(index, "quantity", e.target.value)}
-  
         />
       ),
     },

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, Col, Row, Typography, DatePicker, Spin, Statistic } from "antd";
 import {
   BarChartOutlined,
@@ -16,16 +16,16 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const Report = () => {
-  const [activeReport, setActiveReport] = useState("monthly");
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [activeReport, setActiveReport] = useState("");
   const [dates, setDates] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const fetchReport = async (filters = {}) => {
+  const fetchSummary = async (filters = {}) => {
     try {
       setLoading(true);
       const response = await apiService.getDashboardData(filters);
-      setReport(response.data.data);
+      setSummary(response.data.data);
     } catch (error) {
       console.error(error);
     } finally {
@@ -34,26 +34,30 @@ const Report = () => {
   };
 
   useEffect(() => {
-    fetchReport();
+    fetchSummary();
   }, []);
 
   const handleDateChange = (value) => {
     if (!value) {
       setDates([]);
-      fetchReport();
+      fetchSummary();
       return;
     }
 
-    const filters = {
+    setDates(value);
+    fetchSummary({
       startDate: value[0].startOf("day").toISOString(),
       endDate: value[1].endOf("day").toISOString(),
-    };
-
-    setDates(value);
-    fetchReport(filters);
+    });
   };
 
-  if (loading || !report) return <Spin size="large" />;
+  const handleReportChange = (reportKey) => {
+    setActiveReport(reportKey);
+    setDates([]);
+    fetchSummary();
+  };
+
+  if (loading && !summary) return <Spin size="large" />;
 
   const reportMenu = [
     {
@@ -84,7 +88,7 @@ const Report = () => {
 
   const reports = {
     monthly: <MonthlyRevenueReport dates={dates} />,
-    yearly: <YearlyRevenueReport />,
+    yearly: <YearlyRevenueReport dates={dates} />,
     today: <TodayRevenueReport dates={dates} />,
     topCustomer: <TopCustomerReport dates={dates} />,
   };
@@ -104,7 +108,7 @@ const Report = () => {
             <Col xs={24} sm={12} lg={6} key={item.key}>
               <Card
                 hoverable
-                onClick={() => setActiveReport(item.key)}
+                onClick={() => handleReportChange(item.key)}
                 style={{
                   borderRadius: 10,
                   cursor: "pointer",
@@ -134,33 +138,33 @@ const Report = () => {
       </Row>
 
       <Row gutter={16}>
-        <Col span={6}>
+        <Col span={8}>
           <Card>
             <Statistic
               title="Total Revenue"
-              value={report?.totalRevenue || 0}
+              value={summary?.totalRevenue || 0}
               precision={2}
               prefix="₹"
             />
           </Card>
         </Col>
 
-        <Col span={6}>
+        <Col span={8}>
           <Card>
             <Statistic
-              title="Today's Revenue"
-              value={report?.todayRevenue || 0}
+              title="Today Revenue"
+              value={summary?.todayRevenue || 0}
               precision={2}
               prefix="₹"
             />
           </Card>
         </Col>
 
-        <Col span={6}>
+        <Col span={8}>
           <Card>
             <Statistic
-              title="Pending Invoices"
-              value={report?.pendingInvoices || 0}
+              title="Pending Invoice"
+              value={summary?.pendingInvoices || 0}
               valueStyle={{ color: "#cf1322" }}
             />
           </Card>

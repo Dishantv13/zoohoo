@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Table, Divider, Typography, Button, Tag, Timeline } from "antd";
+import {
+  Card,
+  Row,
+  Col,
+  Table,
+  Divider,
+  Typography,
+  Button,
+  Tag,
+  Timeline,
+} from "antd";
 import { useParams } from "react-router-dom";
 import { apiService } from "../service/apiService";
 
@@ -191,15 +201,31 @@ const InvoiceView = () => {
               <>
                 <Divider style={{ margin: "10px 0", borderColor: "#52c41a" }} />
                 <Row justify="space-between">
-                  <Text strong style={{ color: "#52c41a" }}>Amount Paid:</Text>
-                  <Text strong style={{ color: "#52c41a" }}>₹{invoice.amountPaid}</Text>
+                  <Text strong style={{ color: "#52c41a" }}>
+                    Amount Paid:
+                  </Text>
+                  <Text strong style={{ color: "#52c41a" }}>
+                    ₹{invoice.amountPaid}
+                  </Text>
                 </Row>
-                
+
                 <Row justify="space-between">
-                  <Text strong style={{ color: invoice.remainingAmount > 0 ? "#ff9800" : "#52c41a" }}>
+                  <Text
+                    strong
+                    style={{
+                      color:
+                        invoice.remainingAmount > 0 ? "#ff9800" : "#52c41a",
+                    }}
+                  >
                     Remaining Amount:
                   </Text>
-                  <Text strong style={{ color: invoice.remainingAmount > 0 ? "#ff9800" : "#52c41a" }}>
+                  <Text
+                    strong
+                    style={{
+                      color:
+                        invoice.remainingAmount > 0 ? "#ff9800" : "#52c41a",
+                    }}
+                  >
                     ₹{invoice.remainingAmount || 0}
                   </Text>
                 </Row>
@@ -224,7 +250,9 @@ const InvoiceView = () => {
                       </Text>
                     </Row>
                     <Row justify="space-between">
-                      <Text type="secondary">Method: {payment.paymentMethod}</Text>
+                      <Text type="secondary">
+                        Method: {payment.paymentMethod}
+                      </Text>
                       <Text type="secondary">TXN: {payment.transactionId}</Text>
                     </Row>
                   </div>

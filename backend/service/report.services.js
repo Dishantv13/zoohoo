@@ -3,41 +3,76 @@ import { Company } from "../model/company.model.js";
 
 import ApiError from "../util/apiError.js";
 
-const dashboardServices = async (adminId, option = {}) => {
-  const company = await Company.findOne({ adminId: adminId });
+const getCompanyByAdmin = async (adminId) => {
+  const company = await Company.findOne({ adminId });
 
   if (!company) {
     throw new ApiError(404, "Company not found for the admin");
   }
 
-  const invoiceMatchFilter = { companyId: company._id };
-  const { startDate, endDate } = option;
+  return company;
+};
 
-  let paymentDateMatch = null;
-  if (startDate && endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+const normalizeDate = (dateValue) => {
+  const date = new Date(dateValue);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
-    paymentDateMatch = {
-      "paymentHistory.paidAt": {
-        $gte: start,
-        $lte: end,
-      },
-    };
+const getDateRangeFilter = ({ startDate, endDate, month, year }) => {
+  if (month !== undefined && month !== null && month !== "") {
+    const monthNumber = Number(month);
+    const yearNumber = year ? Number(year) : new Date().getFullYear();
+
+    if (
+      !Number.isInteger(monthNumber) ||
+      monthNumber < 1 ||
+      monthNumber > 12 ||
+      !Number.isInteger(yearNumber)
+    ) {
+      throw new ApiError(400, "Invalid month or year value");
+    }
+
+    const rangeStart = new Date(yearNumber, monthNumber - 1, 1, 0, 0, 0, 0);
+    const rangeEnd = new Date(yearNumber, monthNumber, 0, 23, 59, 59, 999);
+
+    return { $gte: rangeStart, $lte: rangeEnd };
   }
 
-  const revenueBasePipeline = [
+  if (startDate && endDate) {
+    const rangeStart = normalizeDate(startDate);
+    const rangeEnd = normalizeDate(endDate);
+
+    if (!rangeStart || !rangeEnd) {
+      throw new ApiError(400, "Invalid startDate or endDate");
+    }
+
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeEnd.setHours(23, 59, 59, 999);
+
+    return { $gte: rangeStart, $lte: rangeEnd };
+  }
+
+  return null;
+};
+
+const dashboardServices = async (adminId, option = {}) => {
+  const company = await getCompanyByAdmin(adminId);
+  const invoiceMatchFilter = { companyId: company._id };
+  const paymentDateRange = getDateRangeFilter(option);
+
+  const revenuePipeline = [
     { $match: invoiceMatchFilter },
     { $unwind: "$paymentHistory" },
   ];
 
-  if (paymentDateMatch) {
-    revenueBasePipeline.push({ $match: paymentDateMatch });
+  if (paymentDateRange) {
+    revenuePipeline.push({
+      $match: { "paymentHistory.paidAt": paymentDateRange },
+    });
   }
 
-  const totalRevenue = await Invoice.aggregate([
-    ...revenueBasePipeline,
+  const totalRevenueResult = await Invoice.aggregate([
+    ...revenuePipeline,
     { $group: { _id: null, totalRevenue: { $sum: "$paymentHistory.amount" } } },
   ]);
 
@@ -46,33 +81,140 @@ const dashboardServices = async (adminId, option = {}) => {
     status: { $in: ["PENDING", "PARTIALLY_PAID"] },
   });
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const todayRevenueData = await todayRevenueServices(adminId, {});
+  const monthlyRevenueData = await monthlyRevenueServices(adminId, option);
+  const yearlyRevenueData = await yearlyRevenueServices(adminId, option);
+  const topCustomersData = await topCustomersServices(adminId, option);
 
-  const todayRevenue = await Invoice.aggregate([
+  return {
+    totalRevenue: totalRevenueResult[0]?.totalRevenue || 0,
+    pendingInvoices,
+    todayRevenue: todayRevenueData.totalRevenue || 0,
+    todayRevenueChart: todayRevenueData.hourlyRevenue || [],
+    monthlyRevenue: monthlyRevenueData,
+    yearlyRevenue: yearlyRevenueData,
+    topCustomers: topCustomersData,
+  };
+};
+
+const monthlyRevenueServices = async (adminId, option = {}) => {
+  const company = await getCompanyByAdmin(adminId);
+  const invoiceMatchFilter = { companyId: company._id };
+  const paymentDateRange = getDateRangeFilter(option);
+
+  const revenueBasePipeline = [
     { $match: invoiceMatchFilter },
     { $unwind: "$paymentHistory" },
+  ];
+
+  if (paymentDateRange) {
+    revenueBasePipeline.push({
+      $match: { "paymentHistory.paidAt": paymentDateRange },
+    });
+  }
+
+  const monthlyRevenue = await Invoice.aggregate([
+    ...revenueBasePipeline,
     {
-      $match: {
-        "paymentHistory.paidAt": {
-          $gte: startOfToday,
-          $lte: endOfToday,
+      $group: {
+        _id: {
+          month: { $month: "$paymentHistory.paidAt" },
+          year: { $year: "$paymentHistory.paidAt" },
         },
+        totalRevenue: { $sum: "$paymentHistory.amount" },
       },
     },
-    { $group: { _id: null, totalRevenue: { $sum: "$paymentHistory.amount" } } },
+    { $sort: { "_id.year": 1, "_id.month": 1 } },
+    { $limit: 5 },
   ]);
 
-  const todayRevenueChartRaw = await Invoice.aggregate([
+  return monthlyRevenue.map((item) => ({
+    month: item._id.month,
+    year: item._id.year,
+    totalRevenue: item.totalRevenue,
+  }));
+};
+
+const yearlyRevenueServices = async (adminId, option = {}) => {
+  const company = await getCompanyByAdmin(adminId);
+  const invoiceMatchFilter = { companyId: company._id };
+  const paymentDateRange = getDateRangeFilter(option);
+
+  const revenueBasePipeline = [
+    { $match: invoiceMatchFilter },
+    { $unwind: "$paymentHistory" },
+  ];
+
+  if (paymentDateRange) {
+    revenueBasePipeline.push({
+      $match: { "paymentHistory.paidAt": paymentDateRange },
+    });
+  }
+
+  if (option.year) {
+    const yearNumber = Number(option.year);
+    if (!Number.isInteger(yearNumber)) {
+      throw new ApiError(400, "Invalid year value");
+    }
+
+    const yearStart = new Date(yearNumber, 0, 1, 0, 0, 0, 0);
+    const yearEnd = new Date(yearNumber, 11, 31, 23, 59, 59, 999);
+
+    revenueBasePipeline.push({
+      $match: {
+        "paymentHistory.paidAt": {
+          $gte: yearStart,
+          $lte: yearEnd,
+        },
+      },
+    });
+  }
+
+  const yearlyRevenue = await Invoice.aggregate([
+    ...revenueBasePipeline,
+    {
+      $group: {
+        _id: {
+          year: { $year: "$paymentHistory.paidAt" },
+        },
+        totalRevenue: { $sum: "$paymentHistory.amount" },
+      },
+    },
+    { $sort: { "_id.year": 1 } },
+    { $limit: 5 },
+  ]);
+
+  return yearlyRevenue.map((item) => ({
+    year: item._id.year,
+    totalRevenue: item.totalRevenue,
+  }));
+};
+
+const todayRevenueServices = async (adminId, option = {}) => {
+  const company = await getCompanyByAdmin(adminId);
+  const invoiceMatchFilter = { companyId: company._id };
+
+  const selectedDate = normalizeDate(
+    option.date || option.endDate || option.startDate || new Date(),
+  );
+  if (!selectedDate) {
+    throw new ApiError(400, "Invalid date value");
+  }
+
+  const selectedDateStart = new Date(selectedDate);
+  selectedDateStart.setHours(0, 0, 0, 0);
+
+  const selectedDateEnd = new Date(selectedDate);
+  selectedDateEnd.setHours(23, 59, 59, 999);
+
+  const chartData = await Invoice.aggregate([
     { $match: invoiceMatchFilter },
     { $unwind: "$paymentHistory" },
     {
       $match: {
         "paymentHistory.paidAt": {
-          $gte: startOfToday,
-          $lte: endOfToday,
+          $gte: selectedDateStart,
+          $lte: selectedDateEnd,
         },
       },
     },
@@ -92,48 +234,60 @@ const dashboardServices = async (adminId, option = {}) => {
     { $sort: { "_id.hour": 1 } },
   ]);
 
-  const fullDayRevenue = Array.from({ length: 24 }, (_, hour) => {
-    const found = todayRevenueChartRaw.find((item) => item._id.hour === hour);
+  const revenueMap = new Map(
+    chartData.map((item) => [item._id.hour, item.totalRevenue]),
+  );
 
+  const hourlyRevenue = Array.from({ length: 24 }, (_, index) => {
+    const hourInDb = index;
     return {
-      hour,
-      totalRevenue: found ? found.totalRevenue : 0,
+      hour: index + 1,
+      totalRevenue: revenueMap.get(hourInDb) || 0,
     };
   });
 
-  const monthlyRevenue = await Invoice.aggregate([
-    ...revenueBasePipeline,
-    {
-      $group: {
-        _id: {
-          month: { $month: "$paymentHistory.paidAt" },
-          year: { $year: "$paymentHistory.paidAt" },
-        },
-        totalRevenue: { $sum: "$paymentHistory.amount" },
-      },
-    },
-    { $sort: { "_id.year": 1, "_id.month": 1 } },
-    { $limit: 6 },
-  ]);
+  const selectedDateLabel = selectedDateStart.toISOString().split("T")[0];
+  const totalRevenue = hourlyRevenue.reduce(
+    (sum, item) => sum + item.totalRevenue,
+    0,
+  );
 
-  const yearlyRevenue = await Invoice.aggregate([
-    ...revenueBasePipeline,
-    {
-      $group: {
-        _id: {
-          year: { $year: "$paymentHistory.paidAt" },
-        },
-        totalRevenue: { $sum: "$paymentHistory.amount" },
+  return {
+    selectedDate: selectedDateLabel,
+    totalRevenue,
+    hourlyRevenue,
+  };
+};
+
+const topCustomersServices = async (adminId, option = {}) => {
+  const company = await getCompanyByAdmin(adminId);
+
+  const invoiceMatchFilter = { companyId: company._id };
+  const paymentDateRange = getDateRangeFilter(option);
+
+  const revenueBasePipeline = [
+    { $match: invoiceMatchFilter },
+    { $unwind: "$paymentHistory" },
+  ];
+
+  if (paymentDateRange) {
+    revenueBasePipeline.push({
+      $match: {
+        "paymentHistory.paidAt": paymentDateRange,
       },
-    },
-    { $sort: { "_id.year": 1 } },
-    { $limit: 5 },
-  ]);
+    });
+  }
 
   const topCustomers = await Invoice.aggregate([
-    { $match: { ...invoiceMatchFilter } },
-    { $group: { _id: "$customer", totalSpent: { $sum: "$amountPaid" } } },
-    { $sort: { totalSpent: -1 } },
+    ...revenueBasePipeline,
+    {
+      $group: {
+        _id: "$customer",
+        totalAmount: { $sum: "$paymentHistory.amount" },
+      },
+    },
+    { $match: { _id: { $ne: null } } },
+    { $sort: { totalAmount: -1 } },
     { $limit: 5 },
     {
       $lookup: {
@@ -146,29 +300,19 @@ const dashboardServices = async (adminId, option = {}) => {
     { $unwind: "$customerInfo" },
     {
       $project: {
-        totalSpent: 1,
+        totalAmount: 1,
         customer: "$customerInfo.name",
         email: "$customerInfo.email",
       },
     },
   ]);
-
-  return {
-    totalRevenue: totalRevenue[0]?.totalRevenue || 0,
-    pendingInvoices: pendingInvoices,
-    todayRevenue: todayRevenue[0]?.totalRevenue || 0,
-    todayRevenueChart: fullDayRevenue,
-    monthlyRevenue: monthlyRevenue.map((item) => ({
-      month: item._id.month,
-      year: item._id.year,
-      totalRevenue: item.totalRevenue,
-    })),
-    yearlyRevenue: yearlyRevenue.map((item) => ({
-      year: item._id.year,
-      totalRevenue: item.totalRevenue,
-    })),
-    topCustomers: topCustomers,
-  };
+  return topCustomers;
 };
 
-export { dashboardServices };
+export {
+  dashboardServices,
+  monthlyRevenueServices,
+  yearlyRevenueServices,
+  todayRevenueServices,
+  topCustomersServices,
+};

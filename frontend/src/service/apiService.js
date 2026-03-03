@@ -24,6 +24,10 @@ const dashboardApi = axios.create({
   baseURL: "http://localhost:5000/api/dashboard",
 });
 
+const chatApi = axios.create({
+  baseURL: "http://localhost:5000/api/chat",
+});
+
 const setupInterceptors = (instance) => {
   instance.interceptors.request.use(
     (config) => {
@@ -58,7 +62,7 @@ setupInterceptors(authApi);
 setupInterceptors(invoiceApi);
 setupInterceptors(paymentApi);
 setupInterceptors(dashboardApi);
-
+setupInterceptors(chatApi);
 export const apiService = {
   // Customer APIs
   customerProfile: () => customerApi.get("/profile"),
@@ -71,7 +75,8 @@ export const apiService = {
   getCustomers: (params) => customerApi.get("/get-customers", { params }),
   updateCustomer: (customerId, data) =>
     customerApi.put(`/update-customers/${customerId}`, data),
-  deleteCustomer: (customerId) => customerApi.delete(`/delete-customers/${customerId}`),
+  deleteCustomer: (customerId) =>
+    customerApi.delete(`/delete-customers/${customerId}`),
 
   // Payment APIs
   cardPayment: (data) => paymentApi.post("/card", data),
@@ -105,6 +110,26 @@ export const apiService = {
 
   // report APIS
   getDashboardData: (params) => dashboardApi.get("/report", { params }),
+  getMonthlyRevenue: (params) =>
+    dashboardApi.get("/report/monthly-revenue", { params }),
+  getYearlyRevenue: (params) =>
+    dashboardApi.get("/report/yearly-revenue", { params }),
+  getTodayRevenue: (params) =>
+    dashboardApi.get("/report/today-revenue", { params }),
+  getTopCustomers: (params) =>
+    dashboardApi.get("/report/top-customers", { params }),
+
+  // Chat APIs
+  getConversations: (params) => chatApi.get("/conversations", { params }),
+  getMessages: (conversationId, params) =>
+    chatApi.get(`/conversations/${conversationId}/messages`, { params }),
+  createConversation: (data) => chatApi.post("/conversations", data),
+  sendMessage: (data) => chatApi.post("/messages", data),
+  markAsRead: (data) => chatApi.put("/messages/read", data),
+  getUnreadCount: (conversationId) =>
+    chatApi.get(`/conversations/${conversationId}/unread`),
+  searchConversations: (params) =>
+    chatApi.get("/conversations/search", { params }),
 };
 
 export default apiService;

@@ -21,6 +21,8 @@ import Register from "./pages/Register.jsx";
 import AdminRegister from "./pages/AdminRegister.jsx";
 import CustomerManagement from "./pages/CustomerManagement.jsx";
 import AdminInvoiceManagement from "./pages/AdminInvoiceManagement.jsx";
+// import AdminChatPage from "./pages/AdminChatPage.jsx";
+// import CustomerChatPage from "./pages/CustomerChatPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { logout, getCurrentUser } from "./features/auth/authSlice.js";
 import Report from "./pages/Report.jsx";
@@ -69,6 +71,10 @@ export default function App() {
             icon: <UnorderedListOutlined />,
             label: <Link to="/report">Report</Link>,
           },
+        //   {
+        //     key: "5",
+        //     label: <Link to="/admin/chat">Admin Chat</Link>,
+        //   },
         ]
       : [
           {
@@ -86,6 +92,11 @@ export default function App() {
             icon: <UnorderedListOutlined />,
             label: <Link to="/invoices">Invoice</Link>,
           },
+        //   {
+        //     key: "4",
+        //     icon: <UserOutlined />,
+        //     label: <Link to="/customer/chat">Support Chat</Link>,
+        //   },
         ];
 
   const userMenuItems = [
@@ -119,7 +130,11 @@ export default function App() {
         return ["3"];
       } else if (pathname === "/report") {
         return ["4"];
-      }
+      } 
+    //   else if (pathname === "/admin/chat") {
+    //     return ["5"];
+    //   }
+
     } else {
       if (pathname === "/" || pathname === "/customers") {
         return ["1"];
@@ -130,7 +145,10 @@ export default function App() {
         pathname.startsWith("/invoices/")
       ) {
         return ["3"];
-      }
+      } 
+    //   else if (pathname === "/customer/chat") {
+    //     return ["4"];
+    //   }
     }
     return [];
   })();
@@ -207,6 +225,22 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* <Route
+            path="/admin/chat"
+            element={
+              <ProtectedRoute>
+                <AdminChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/chat"
+            element={
+              <ProtectedRoute>
+                <CustomerChatPage />
+              </ProtectedRoute>
+            }
+          /> */}
           <Route
             path="/admin/customers"
             element={

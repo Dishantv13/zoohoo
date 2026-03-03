@@ -2,10 +2,8 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
   LineElement,
   PointElement,
-  Title,
   Tooltip,
   Legend,
 } from "chart.js";
@@ -13,9 +11,7 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
   LineElement,
-  Title,
   Tooltip,
   Legend,
   PointElement,
@@ -33,7 +29,7 @@ const TodayRevenueReport = ({ dates }) => {
   const fetchReport = async (filters = {}) => {
     try {
       setLoading(true);
-      const response = await apiService.getDashboardData(filters);
+      const response = await apiService.getTodayRevenue(filters);
       setReport(response.data.data);
     } catch (error) {
       console.error(error);
@@ -47,14 +43,12 @@ const TodayRevenueReport = ({ dates }) => {
 
     if (dates && dates.length === 2) {
       filters = {
-        startDate: dates[0].startOf("day").toISOString(),
-        endDate: dates[1].endOf("day").toISOString(),
+        date: dates[1].toISOString(),
       };
     } else {
       const today = dayjs();
       filters = {
-        startDate: today.startOf("day").toISOString(),
-        endDate: today.endOf("day").toISOString(),
+        date: today.toISOString(),
       };
     }
 
@@ -67,17 +61,15 @@ const TodayRevenueReport = ({ dates }) => {
     <>
       <Row style={{ marginTop: 20 }}>
         <Col span={24}>
-          <Card title="Today's Revenue Graph">
+          <Card title="Today Revenue Graph (1 to 24 hours)">
             <Line
               data={{
-                labels:
-                  report?.todayRevenueChart?.map((item) => `${item.hour}:00`) ||
-                  [],
+                labels: report?.hourlyRevenue?.map((item) => item.hour) || [],
                 datasets: [
                   {
                     label: "Revenue",
                     data:
-                      report?.todayRevenueChart?.map(
+                      report?.hourlyRevenue?.map(
                         (item) => item.totalRevenue || 0,
                       ) || [],
                     fill: false,
@@ -89,6 +81,23 @@ const TodayRevenueReport = ({ dates }) => {
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: "top",
+                  },
+                  tooltip: {
+                    backgroundColor: "#001529",
+                    titleColor: "#fff",
+                    bodyColor: "#fff",
+                    padding: 12,
+                    callbacks: {
+                      label: function (context) {
+                        return ` ₹ ${context.raw}`;
+                      },
+                    },
+                  },
+                },
                 scales: {
                   x: {
                     grid: {
@@ -96,6 +105,12 @@ const TodayRevenueReport = ({ dates }) => {
                     },
                   },
                   y: {
+                    ticks: {
+                      color: "#595959",
+                      callback: function (value) {
+                        return "₹ " + value;
+                      },
+                    },
                     beginAtZero: true,
                   },
                 },

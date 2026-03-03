@@ -3,23 +3,11 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
-  Title,
   Tooltip,
   Legend,
 } from "chart.js";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  PointElement,
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import { useEffect, useState } from "react";
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
@@ -32,7 +20,7 @@ const TopCustomerReport = ({ dates }) => {
   const fetchReport = async (filters = {}) => {
     try {
       setLoading(true);
-      const response = await apiService.getDashboardData(filters);
+      const response = await apiService.getTopCustomers(filters);
       setReport(response.data.data);
     } catch (error) {
       console.error(error);
@@ -46,8 +34,8 @@ const TopCustomerReport = ({ dates }) => {
 
     if (dates && dates.length === 2) {
       filters = {
-        startDate: dates[0].startOf("day").toISOString(),
-        endDate: dates[1].endOf("day").toISOString(),
+        month: dates[0].month() + 1,
+        year: dates[0].year(),
       };
     }
 
@@ -64,14 +52,13 @@ const TopCustomerReport = ({ dates }) => {
             <Bar
               height={280}
               data={{
-                labels:
-                  report?.topCustomers?.map((item) => item.customer) || [],
+                labels: report?.map((item) => item.customer) || [],
                 datasets: [
                   {
                     label: "Total Spent",
                     data:
-                      report?.topCustomers?.map((item) =>
-                        Number(item.totalSpent || 0).toFixed(2),
+                      report?.map((item) =>
+                        Number(item.totalAmount || 0).toFixed(2),
                       ) || [],
                     backgroundColor: "rgba(206, 126, 8, 0.6)",
                     borderColor: "rgb(0, 0, 0)",
@@ -104,6 +91,14 @@ const TopCustomerReport = ({ dates }) => {
                   x: {
                     grid: {
                       display: false,
+                    },
+                    title: {
+                      display: true,
+                      text: "Customers",
+                      color: "rgba(206, 126, 8, 1)",
+                      font: {
+                        size: 20,
+                      },
                     },
                     ticks: {
                       color: "#595959",
