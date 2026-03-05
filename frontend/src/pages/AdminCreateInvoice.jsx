@@ -24,6 +24,11 @@ import {
 import dayjs from "dayjs";
 import { apiService } from "../service/apiService";
 import "./CreateInvoice.css";
+import { useGetCustomersQuery } from "../features/customer/customerApi";
+import {
+  useUpdateInvoiceMutation,
+  useCreateInvoiceMutation,
+} from "../features/invoice/invoiceApi";
 
 export default function AdminCreateInvoice() {
   const { user } = useSelector((state) => state.auth);
@@ -31,7 +36,6 @@ export default function AdminCreateInvoice() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [items, setItems] = useState([{ name: "", quantity: 1, rate: 0 }]);
-  const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [discount, setDiscount] = useState(0);
@@ -46,20 +50,11 @@ export default function AdminCreateInvoice() {
       </Card>
     );
   }
+  const { data: customersData, error: customersError } = useGetCustomersQuery({
+    limit: 1000,
+  });
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await apiService.getCustomers({ limit: 1000 });
-        const customersData =
-          response.data.data?.customers || response.data || [];
-        setCustomers(Array.isArray(customersData) ? customersData : []);
-      } catch (error) {
-        message.error("Failed to fetch customers");
-      }
-    };
-    fetchCustomers();
-  }, []);
+  const customersList = customersData?.data?.customers || customersData || [];
 
   useEffect(() => {
     if (location.state?.invoice) {
@@ -112,6 +107,9 @@ export default function AdminCreateInvoice() {
     setItems(newItems);
   };
 
+  const [createInvoice] = useCreateInvoiceMutation();
+  const [updateInvoice] = useUpdateInvoiceMutation();
+
   const onFinish = async (values) => {
     if (!selectedCustomer) {
       message.error("Please select a customer");
@@ -124,6 +122,7 @@ export default function AdminCreateInvoice() {
     }
 
     setLoading(true);
+
     try {
       const invoiceData = {
         customer: selectedCustomer,
@@ -137,12 +136,18 @@ export default function AdminCreateInvoice() {
       };
 
       if (isEditMode) {
-        await apiService.updateInvoice(editInvoiceId, invoiceData);
+        await updateInvoice({
+          id: editInvoiceId,
+          ...invoiceData,
+        }).unwrap();
+
         message.success("Invoice updated successfully");
         navigate("/admin/invoices");
       } else {
-        await apiService.createInvoice(invoiceData);
+        await createInvoice(invoiceData).unwrap();
+
         message.success("Invoice created successfully");
+
         form.resetFields();
         setItems([{ name: "", quantity: 1, rate: 0 }]);
         setSelectedCustomer(null);
@@ -151,7 +156,7 @@ export default function AdminCreateInvoice() {
       }
     } catch (error) {
       message.error(
-        error.response?.data?.data?.message ||
+        error?.data?.message ||
           `Failed to ${isEditMode ? "update" : "create"} invoice`,
       );
     } finally {
@@ -245,12 +250,13 @@ export default function AdminCreateInvoice() {
                       .toLowerCase()
                       .includes(input.toLowerCase())
                   }
-                  options={(Array.isArray(customers) ? customers : []).map(
-                    (c) => ({
-                      label: `${c.name} (${c.email})`,
-                      value: c._id,
-                    }),
-                  )}
+                  options={(Array.isArray(customersList)
+                    ? customersList
+                    : []
+                  ).map((c) => ({
+                    label: `${c.name} (${c.email})`,
+                    value: c._id,
+                  }))}
                 />
               </Form.Item>
             </Col>

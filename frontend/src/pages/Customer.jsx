@@ -19,6 +19,12 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "../service/apiService";
+import {
+  useCustomerProfileQuery,
+  useUpdateCustomerProfileMutation,
+  useChangePasswordMutation,
+  useDeleteCustomerProfileMutation,
+} from "../features/customer/customerApi";
 
 export default function Customers() {
   const [form] = Form.useForm();
@@ -28,56 +34,45 @@ export default function Customers() {
   const [passwordModal, setPasswordModal] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
+  const { data, refetch, isLoading } = useCustomerProfileQuery();
 
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true);
-      const res = await apiService.customerProfile();
-      form.setFieldsValue(res.data.data);
-    } catch (error) {
-      notification.error({
-        message: "Failed",
-        description: "Unable to load profile",
-      });
-    } finally {
-      setLoading(false);
+  const [updateCustomerProfile, { isLoading: updateLoading }] =
+    useUpdateCustomerProfileMutation();
+  const [changePassword] = useChangePasswordMutation();
+  const [deleteCustomerProfile] = useDeleteCustomerProfileMutation();
+
+  useEffect(() => {
+    if (data?.data) {
+      form.setFieldsValue(data.data);
     }
-  };
+  }, [data, form]);
 
   const onFinish = async (values) => {
     try {
       setLoading(true);
-      await apiService.updateCustomerProfile(values);
+      await updateCustomerProfile(values).unwrap();
 
       notification.success({
         message: "Success",
         description: "Profile updated successfully",
       });
-
       setIsEditing(false);
-      fetchUserProfile();
+      refetch();
     } catch (error) {
       notification.error({
         message: "Failed",
-        description: "Profile update failed",
+        description: error.data?.message || "Profile update failed",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const onChangePassword = async (values) => {
     try {
       setLoading(true);
-
-      await apiService.changePassword({
+      await changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
-      });
-
+      }).unwrap();
       notification.success({
         message: "Password Changed",
         description: "Please login again",
@@ -85,19 +80,15 @@ export default function Customers() {
 
       setPasswordModal(false);
       passwordForm.resetFields();
-
       localStorage.removeItem("token");
       navigate("/login");
     } catch (error) {
       notification.error({
         message: "Failed",
-        description: error.response?.data?.message || "Password change failed",
+        description: error.data?.message || "Password change failed",
       });
-    } finally {
-      setLoading(false);
     }
   };
-
   const handleDeleteAccount = () => {
     Modal.confirm({
       title: "Delete Account",
@@ -107,7 +98,7 @@ export default function Customers() {
       onOk: async () => {
         try {
           setLoading(true);
-          await apiService.deleteCustomerProfile();
+          await deleteCustomerProfile().unwrap();
 
           notification.success({
             message: "Account Deleted",
@@ -121,8 +112,6 @@ export default function Customers() {
             message: "Failed",
             description: "Account deletion failed",
           });
-        } finally {
-          setLoading(false);
         }
       },
     });
@@ -158,7 +147,7 @@ export default function Customers() {
           </Space>
         }
       >
-        <Spin spinning={loading}>
+        <Spin spinning={isLoading || updateLoading}>
           <Form
             layout="vertical"
             form={form}

@@ -31,6 +31,14 @@ import {
   EyeOutlined,
 } from "@ant-design/icons";
 import { apiService } from "../service/apiService";
+import {
+  useGetCustomersQuery,
+  useAdminCreateCustomerMutation,
+  useAdminUpdateCustomerMutation,
+  useAdminDeleteCustomerMutation,
+} from "../features/customer/customerApi";
+
+import { useGetCustomerInvoicesQuery } from "../features/invoice/invoiceApi";
 import "./Dashboard.css";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
@@ -41,8 +49,6 @@ const currencyFormatter = new Intl.NumberFormat("en-IN", {
 
 export default function CustomerManagement() {
   const { user } = useSelector((state) => state.auth);
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -50,12 +56,8 @@ export default function CustomerManagement() {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [customerSummary, setCustomerSummary] = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [totalCustomers, setTotalCustomers] = useState(0);
 
   if (!user || user.role !== "admin") {
     return (
@@ -65,97 +67,70 @@ export default function CustomerManagement() {
     );
   }
 
-  const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const response = await apiService.getCustomers({
-        page: page,
-        limit: pageSize,
-        search: searchTerm,
-        status: statusFilter,
-      });
+  const { data, isLoading, error } = useGetCustomersQuery({
+    page,
+    limit: pageSize,
+    search: searchTerm,
+    status: statusFilter,
+  });
 
-      const customersData =
-        response.data.data?.customers || response.data || [];
+  const customersList = data?.data?.customers || [];
 
-      const filteredData = customersData.map((customer) => ({
-        ...customer,
-        id: customer._id,
-      }));
-
-      setTotalCustomers(response.data.data?.pagination?.totalCustomers || 0);
-      setCustomers(filteredData);
-    } catch (error) {
-      console.error("Fetch customers error:", error);
-      notification.error({
-        message: "Error",
-        description:
-          error.response?.data?.data?.message ||
-          error.message ||
-          "Failed to fetch customers",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const paginationData = {
+    current: data?.data?.pagination?.currentPage || 1,
+    pageSize: data?.data?.pagination?.limit || 10,
+    total: data?.data?.pagination?.total || 0,
   };
+
+  const filterData = customersList.map((customer) => ({
+    ...customer,
+    id: customer._id,
+  }));
 
   const handleTableChange = (paginationInfo) => {
     setPage(paginationInfo.current);
     setPageSize(paginationInfo.pageSize);
   };
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [page, pageSize, searchTerm, statusFilter]);
-
+  const [updateCustomer] = useAdminUpdateCustomerMutation();
+  const [deleteCustomer] = useAdminDeleteCustomerMutation();
+  const [createCustomer] = useAdminCreateCustomerMutation();
   const handleSubmit = async (values) => {
     try {
       if (isEditMode) {
-        const response = await apiService.updateCustomer(
-          selectedCustomer.id,
-          values,
-        );
-        const updatedCustomer = {
-          ...response.data.data,
-          id: response.data.data._id,
-        };
-        setCustomers(
-          customers.map((c) =>
-            c.id === selectedCustomer.id ? updatedCustomer : c,
-          ),
-        );
+        await updateCustomer({
+          customerId: selectedCustomer._id,
+          data: values,
+        }).unwrap();
+
         notification.success({
           message: "Success",
           description: "Customer updated successfully",
         });
       } else {
-        const response = await apiService.createCustomer(values);
-        const newCustomer = {
-          ...response.data.data,
-          id: response.data.data._id,
-        };
-        setCustomers([...customers, newCustomer]);
+        await createCustomer(values).unwrap();
+
         notification.success({
           message: "Success",
           description: "Customer created successfully",
         });
       }
+
       setIsModalVisible(false);
       form.resetFields();
-      setIsEditMode(false);
       setSelectedCustomer(null);
+      setIsEditMode(false);
     } catch (error) {
       notification.error({
         message: "Error",
-        description: error.response?.data?.message || "Operation failed",
+        description: error?.data?.message || "Operation failed",
       });
     }
   };
-
   const handleDelete = async (customerId) => {
     try {
-      await apiService.deleteCustomer(customerId);
-      setCustomers(customers.filter((c) => c.id !== customerId));
+      await deleteCustomer(customerId).unwrap();
+
       notification.success({
         message: "Success",
         description: "Customer deleted successfully",
@@ -163,8 +138,7 @@ export default function CustomerManagement() {
     } catch (error) {
       notification.error({
         message: "Error",
-        description:
-          error.response?.data?.message || "Failed to delete customer",
+        description: error?.data?.message || "Failed to delete customer",
       });
     }
   };
@@ -175,6 +149,7 @@ export default function CustomerManagement() {
     form.setFieldsValue({
       name: record.name,
       phonenumber: record.phonenumber,
+      email: record.email,
       isActive: record.isActive,
     });
     setIsModalVisible(true);
@@ -190,30 +165,15 @@ export default function CustomerManagement() {
   const handleViewDetails = (record) => {
     setSelectedCustomer(record);
     setIsDrawerVisible(true);
-    fetchCustomerSummary(record.id);
   };
 
-  const fetchCustomerSummary = async (customerId) => {
-    setSummaryLoading(true);
-    try {
-      const response = await apiService.getCustomerInvoices(customerId, {
-        page: 1,
-        limit: 1,
-      });
-      setCustomerSummary(response.data.data?.summary || null);
-    } catch (error) {
-      setCustomerSummary(null);
-      notification.error({
-        message: "Error",
-        description:
-          error.response?.data?.data?.message ||
-          error.message ||
-          "Failed to fetch customer summary",
-      });
-    } finally {
-      setSummaryLoading(false);
-    }
-  };
+  const { data: invoiceData, isLoading: invoiceLoading } =
+    useGetCustomerInvoicesQuery(
+      { customerId: selectedCustomer?._id, page: 1, limit: 1 },
+      { skip: !selectedCustomer?._id },
+    );
+
+    const customerSummary = invoiceData?.data?.summary || {};
 
   const formatCurrency = (value) =>
     currencyFormatter.format(Number(value) || 0);
@@ -270,7 +230,7 @@ export default function CustomerManagement() {
           <Popconfirm
             title="Delete Customer"
             description="Are you sure you want to delete this customer?"
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record._id)}
             okText="Yes"
             cancelText="No"
           >
@@ -319,13 +279,13 @@ export default function CustomerManagement() {
       >
         <Table
           columns={columns}
-          dataSource={customers.map((c) => ({ ...c, key: c.id }))}
-          loading={loading}
+          dataSource={filterData}
+          loading={isLoading}
           onChange={handleTableChange}
           pagination={{
-            current: page,
-            pageSize: pageSize,
-            total: totalCustomers,
+            current: paginationData.current,
+            pageSize: paginationData.pageSize,
+            total: paginationData.total,
             showQuickJumper: true,
             showSizeChanger: true,
             pageSizeOptions: [5, 10, 20, 50],
@@ -365,22 +325,23 @@ export default function CustomerManagement() {
             />
           </Form.Item>
 
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: "Please enter email" },
+              { type: "email", message: "Invalid email format" },
+            ]}
+          >
+            <Input
+              prefix={<MailOutlined />}
+              placeholder="Enter customer email"
+              disabled={isEditMode}
+            />
+          </Form.Item>
+
           {!isEditMode && (
             <>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: "Please enter email" },
-                  { type: "email", message: "Invalid email format" },
-                ]}
-              >
-                <Input
-                  prefix={<MailOutlined />}
-                  placeholder="Enter customer email"
-                />
-              </Form.Item>
-
               <Form.Item
                 name="password"
                 label="Password"
@@ -426,7 +387,6 @@ export default function CustomerManagement() {
         width={600}
         onClose={() => {
           setIsDrawerVisible(false);
-          setCustomerSummary(null);
         }}
         open={isDrawerVisible}
       >
@@ -455,7 +415,7 @@ export default function CustomerManagement() {
             <Card
               title="Invoice Summary"
               size="medium"
-              loading={summaryLoading}
+              loading={invoiceLoading}
             >
               <Row gutter={[16, 16]}>
                 <Col span={12}>

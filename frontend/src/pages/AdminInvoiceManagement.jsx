@@ -33,12 +33,17 @@ import { apiService } from "../service/apiService";
 import CashPaymentModal from "../components/CashPaymentModal";
 import dayjs from "dayjs";
 import "./InvoiceManagement.css";
+import {
+  useGetInvoicesQuery,
+  useDownloadInvoiceMutation,
+  useExportInvoiceMutation,
+} from "../features/invoice/invoiceApi";
+import { useGetCustomersQuery } from "../features/customer/customerApi";
+import { useGetPaymentHistoryQuery } from "../features/payment/paymentApi";
 
 export default function AdminInvoiceManagement() {
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
-  const [invoices, setInvoices] = useState([]);
-  const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -50,18 +55,6 @@ export default function AdminInvoiceManagement() {
   const [form] = Form.useForm();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
-  const [summary, setSummary] = useState({
-    totalAmount: 0,
-    paidAmount: 0,
-    pendingAmount: 0,
-    overdueCount: 0,
-    totalInvoices: 0,
-  });
   const [statusFilters, setStatusFilters] = useState({
     status: null,
   });
@@ -79,142 +72,87 @@ export default function AdminInvoiceManagement() {
     );
   }
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await apiService.getCustomers({ limit: 1000 });
-        const customersData =
-          response.data.data?.customers || response.data || [];
-        setCustomers(Array.isArray(customersData) ? customersData : []);
-      } catch (error) {
-        console.error("Failed to fetch customers:", error);
-      }
-    };
-    fetchCustomers();
-  }, []);
+  const { data: customersData, error: customersError } = useGetCustomersQuery({
+    limit: 1000,
+  });
 
-  const fetchInvoices = async (page = 1, customerId = null) => {
-    setLoading(true);
-    try {
-      let response;
-      if (customerId) {
-        response = await apiService.getCustomerInvoices(customerId, {
-          page,
-          limit: pageSize,
-          status: statusFilters.status,
-        });
-      } else {
-        response = await apiService.getAdminAllInvoices({
-          page,
-          limit: pageSize,
-          status: statusFilters.status,
-        });
-      }
-      const responseData = response.data.data || {};
+  const customersList = customersData?.data?.customers || customersData || [];
 
-      setInvoices(responseData.data || []);
-      setPagination({
-        current: responseData.pagination.page,
-        pageSize: responseData.pagination.limit,
-        total: responseData.pagination.totalItems,
-      });
-      setSummary(responseData.summary);
-    } catch (error) {
-      notification.error({
-        message: "Error",
-        description:
-          error.response?.data?.message || "Failed to fetch invoices",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const { data } = useGetInvoicesQuery({
+    page,
+    limit: pageSize,
+    status: statusFilters.status,
+    customerId: selectedCustomer,
+  });
+
+  const invoicesData = data?.data?.data || [];
+
+  const paginationData = {
+    current: data?.data?.pagination?.page || 1,
+    pageSize: data?.data?.pagination?.limit || 10,
+    total: data?.data?.pagination?.totalItems || 0,
   };
 
-  useEffect(() => {
-    fetchInvoices(page, selectedCustomer);
-  }, [page, pageSize, statusFilters.status, selectedCustomer]);
+  const summaryData = {
+    totalInvoices: data?.data?.summary?.totalInvoices || 0,
+    overdueCount: data?.data?.summary?.overdueCount || 0,
+    pendingAmount: data?.data?.summary?.pendingAmount || 0,
+    paidAmount: data?.data?.summary?.paidAmount || 0,
+    totalAmount: data?.data?.summary?.totalAmount || 0,
+  };
 
-  const handleViewDetails = async (invoice) => {
+  const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
+    selectedInvoice?._id,
+    { skip: !selectedInvoice?._id },
+  );
+
+  const paymentHistory = paymentHistoryData?.data?.paymentHistory || [];
+
+  const handleViewDetails = (invoice) => {
+    setSelectedInvoice({
+      ...invoice,
+    });
     setIsDrawerVisible(true);
-    setSelectedInvoice({ ...invoice, paymentHistory: [] });
-
-    try {
-      const response = await apiService.getPaymentHistory(invoice._id);
-      const paymentHistory = response?.data?.data?.paymentHistory || [];
-
-      setSelectedInvoice({
-        ...invoice,
-        paymentHistory,
-      });
-    } catch (error) {
-      notification.warning({
-        message: "Payment History",
-        description: "Unable to load payment history for this invoice",
-      });
-    }
   };
 
+  const [downloadInvoice, { isLoading: downloadLoading }] =
+    useDownloadInvoiceMutation();
   const handleDownload = async (invoiceId, invoiceNumber) => {
-    try {
-      setLoading(true);
-      const response = await apiService.downloadInvoice(invoiceId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `invoice-${invoiceNumber || "unknown"}.pdf`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.parentElement.removeChild(link);
-    } catch (error) {
-      notification.error({
-        message: "Error",
-        description: "Failed to download invoice",
-      });
-    } finally {
-      setLoading(false);
-    }
+    const blob = await downloadInvoice(invoiceId).unwrap();
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `invoice-${invoiceNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
+  const [exportInvoices, { isLoading }] = useExportInvoiceMutation();
   const handleExportInvoices = async () => {
     try {
-      setLoading(true);
       const params = {};
 
       if (selectedCustomer) {
         params.customerId = selectedCustomer;
       }
-      if (statusFilters.status) {
+
+      if (statusFilters?.status) {
         params.status = statusFilters.status;
       }
 
-      const response = await apiService.exportInvoice(params);
-
-      const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
+      const blob = await exportInvoices(params).unwrap();
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
+
       link.href = url;
-
-      let filename = "invoices";
-      if (selectedCustomer) {
-        const customer = customers.find((c) => c._id === selectedCustomer);
-        filename += `_${customer?.name?.replace(/\s+/g, "_") || "customer"}`;
-      }
-      if (statusFilters.status) {
-        filename += `_${statusFilters.status.toLowerCase()}`;
-      }
-      filename += `_${new Date().toISOString().split("T")[0]}.xlsx`;
-
-      link.download = filename;
+      link.download = `invoices_${Date.now()}.xlsx`;
 
       document.body.appendChild(link);
       link.click();
       link.remove();
+
       window.URL.revokeObjectURL(url);
 
       notification.success({
@@ -223,12 +161,11 @@ export default function AdminInvoiceManagement() {
       });
     } catch (error) {
       console.error("Export error:", error);
+
       notification.error({
-        message: "Failed",
-        description: "Failed to export invoices",
+        message: "Export Failed",
+        description: error?.data?.message || "Failed to export invoices",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -468,6 +405,7 @@ export default function AdminInvoiceManagement() {
               <Tooltip title="Download Invoice PDF">
                 <Button
                   size="small"
+                  disabled={downloadLoading}
                   icon={<FilePdfOutlined />}
                   onClick={() =>
                     handleDownload(record._id, record.invoiceNumber)
@@ -535,7 +473,7 @@ export default function AdminInvoiceManagement() {
               <Tooltip title="Download Invoice PDF">
                 <Button
                   icon={<FilePdfOutlined />}
-                  disabled={loading}
+                  disabled={downloadLoading}
                   size="small"
                   onClick={() =>
                     handleDownload(record._id, record.invoiceNumber)
@@ -590,7 +528,7 @@ export default function AdminInvoiceManagement() {
               <Button
                 size="small"
                 icon={<FilePdfOutlined />}
-                disabled={loading}
+                disabled={downloadLoading}
                 onClick={() => handleDownload(record._id, record.invoiceNumber)}
                 style={{
                   borderRadius: "5px",
@@ -613,7 +551,7 @@ export default function AdminInvoiceManagement() {
           <Card>
             <Statistic
               title="Total Invoices"
-              value={summary.totalInvoices || 0}
+              value={summaryData.totalInvoices || 0}
               valueStyle={{ color: "#1890ff" }}
             />
           </Card>
@@ -623,7 +561,7 @@ export default function AdminInvoiceManagement() {
             <Statistic
               title="Overdue Invoices"
               prefix={<WarningOutlined />}
-              value={summary.overdueCount || 0}
+              value={summaryData.overdueCount || 0}
               valueStyle={{ color: "#ff4d4f" }}
             />
           </Card>
@@ -632,7 +570,7 @@ export default function AdminInvoiceManagement() {
           <Card>
             <Statistic
               title="Pending Amount"
-              value={(summary.pendingAmount || 0).toFixed(2)}
+              value={(summaryData.pendingAmount || 0).toFixed(2)}
               prefix="₹"
               valueStyle={{ color: "#faad14" }}
             />
@@ -642,7 +580,7 @@ export default function AdminInvoiceManagement() {
           <Card>
             <Statistic
               title="Paid Amount"
-              value={(summary.paidAmount || 0).toFixed(2)}
+              value={(summaryData.paidAmount || 0).toFixed(2)}
               prefix="₹"
               valueStyle={{ color: "#13c2c2" }}
             />
@@ -652,7 +590,7 @@ export default function AdminInvoiceManagement() {
           <Card>
             <Statistic
               title="Total Amount"
-              value={(summary.totalAmount || 0).toFixed(2)}
+              value={(summaryData.totalAmount || 0).toFixed(2)}
               prefix="₹"
               valueStyle={{ color: "#52c41a" }}
             />
@@ -680,7 +618,7 @@ export default function AdminInvoiceManagement() {
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
-              options={customers.map((c) => ({
+              options={customersList.map((c) => ({
                 label: `${c.name} (${c.email})`,
                 value: c._id,
               }))}
@@ -704,8 +642,7 @@ export default function AdminInvoiceManagement() {
             <Button
               icon={<DownloadOutlined />}
               onClick={handleExportInvoices}
-              loading={loading}
-              disabled={invoices.length === 0 || loading}
+              disabled={invoicesData.length === 0 || isLoading}
               style={{
                 borderRadius: "5px",
                 backgroundColor: "#52c41a",
@@ -721,13 +658,13 @@ export default function AdminInvoiceManagement() {
         <Spin spinning={loading}>
           <Table
             columns={columns}
-            dataSource={invoices.map((inv) => ({ ...inv, key: inv._id }))}
+            dataSource={invoicesData}
             rowKey="_id"
             onChange={handleTableChange}
             pagination={{
-              current: page,
-              pageSize: pageSize,
-              total: pagination.total,
+              current: paginationData.current,
+              pageSize: paginationData.pageSize,
+              total: paginationData.total,
               showQuickJumper: true,
               showSizeChanger: true,
               pageSizeOptions: [5, 10, 20, 50],
@@ -862,49 +799,48 @@ export default function AdminInvoiceManagement() {
               )}
             </div>
 
-            {selectedInvoice.paymentHistory &&
-              selectedInvoice.paymentHistory.length > 0 && (
-                <div className="detail-section">
-                  <h3>Payment History</h3>
-                  {selectedInvoice.paymentHistory.map((payment, idx) => (
-                    <div
-                      key={idx}
+            {paymentHistory && paymentHistory.length > 0 && (
+              <div className="detail-section">
+                <h3>Payment History</h3>
+                {paymentHistory.map((payment, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: "10px",
+                      marginBottom: "8px",
+                      background: "#f0f2f5",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <p style={{ marginBottom: "4px" }}>
+                      <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
+                      <span style={{ marginLeft: "15px" }}>
+                        <strong>Method:</strong> {payment.paymentMethod}
+                      </span>
+                    </p>
+                    <p
                       style={{
-                        padding: "10px",
-                        marginBottom: "8px",
-                        background: "#f0f2f5",
-                        borderRadius: "4px",
+                        marginBottom: "4px",
+                        fontSize: "12px",
+                        color: "#666",
                       }}
                     >
-                      <p style={{ marginBottom: "4px" }}>
-                        <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
-                        <span style={{ marginLeft: "15px" }}>
-                          <strong>Method:</strong> {payment.paymentMethod}
-                        </span>
-                      </p>
-                      <p
-                        style={{
-                          marginBottom: "4px",
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        <strong>Date:</strong>{" "}
-                        {new Date(payment.paidAt).toLocaleString()}
-                      </p>
-                      <p
-                        style={{
-                          marginBottom: "0",
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        <strong>Transaction ID:</strong> {payment.transactionId}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+                      <strong>Date:</strong>{" "}
+                      {new Date(payment.paidAt).toLocaleString()}
+                    </p>
+                    <p
+                      style={{
+                        marginBottom: "0",
+                        fontSize: "12px",
+                        color: "#666",
+                      }}
+                    >
+                      <strong>Transaction ID:</strong> {payment.transactionId}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </Drawer>

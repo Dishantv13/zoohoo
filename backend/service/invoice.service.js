@@ -585,19 +585,6 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
     .lineTo(totalsX + 200, signatureY + 15)
     .stroke();
 
-  //   doc
-  //     .fontSize(8)
-  //     .fillColor("#6b7280")
-  //     .text(
-  //       "This is a computer-generated invoice and does not require a physical signature.",
-  //       margin,
-  //       doc.page.height - 20,
-  //       {
-  //         align: "center",
-  //         width: contentWidth,
-  //       },
-  //     );
-
   doc.end();
 };
 
@@ -824,7 +811,7 @@ const exportInvoiceServices = async (userId, option = {}) => {
   let query = {};
 
   if (user.role === "admin") {
-    if (option.customerId) {
+    if (option.customerId && mongoose.Types.ObjectId.isValid(option.customerId)) {
       query = {
         $or: [
           { customer: option.customerId },

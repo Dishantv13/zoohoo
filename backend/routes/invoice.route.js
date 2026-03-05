@@ -17,7 +17,7 @@ import { exportRateLimiter } from "../middleware/rateLimit.js";
 const router = Router();
 
 router.use(protect);
-
+router.route("/export").get(exportRateLimiter, exportInvoice);
 router.route("/").post(createInvoice);
 router.route("/").get(getInvoices);
 
@@ -32,6 +32,5 @@ router
   .route("/admin/customer/:customerId")
   .get(adminOnly, getCustomerInvoicesByAdmin);
 
-router.route("/export").get(exportRateLimiter, exportInvoice);
 
 export default router;

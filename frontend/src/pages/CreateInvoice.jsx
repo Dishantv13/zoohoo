@@ -17,6 +17,11 @@ import { useEffect, useState } from "react";
 import { apiService } from "../service/apiService";
 import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import {
+  useGetInvoiceByIdQuery,
+  useUpdateInvoiceMutation,
+  useCreateInvoiceMutation,
+} from "../features/invoice/invoiceApi";
 
 export default function CreateInvoice() {
   const [form] = Form.useForm();
@@ -54,88 +59,82 @@ export default function CreateInvoice() {
     });
   };
 
-  useEffect(() => {
-    if (currentUserId && !isEditing) {
-      form.setFieldsValue({
-        customer: currentUserId,
-        tax: 18,
-      });
-    }
-  }, [currentUserId, isEditing, form]);
+const { data: invoiceResponse, isLoading } = useGetInvoiceByIdQuery(id, {
+  skip: !isEditing,
+});
 
-  useEffect(() => {
+const invoice = invoiceResponse?.data;
+
+console.log("Fetched Invoice:", invoice);
+
+useEffect(() => {
+  if (invoice && isEditing) {
+    const formData = {
+      customer: invoice.customer._id,
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceDate: dayjs(invoice.invoiceDate),
+      dueDate: dayjs(invoice.dueDate),
+      status: invoice.status,
+      items: invoice.items,
+      tax: invoice.parseTaxRate,
+      discount: invoice.parseDiscount,
+      subTotal: invoice.subtotal,
+      discountAmount: invoice.discount,
+      taxAmount: invoice.tax,
+      amountAfterDiscount: invoice.amountAfterDiscount,
+      totalAmount: invoice.totalAmount,
+    };
+
+    form.setFieldsValue(formData);
+    setTimeout(() => calculateTotals(formData), 0);
+  }
+}, [invoice, isEditing, form]);
+
+const [updateInvoice] = useUpdateInvoiceMutation();
+const [createInvoice] = useCreateInvoiceMutation();
+
+const onFinish = async (values) => {
+  try {
+    const finalValues = {
+      ...values,
+      tax: values.tax || 18,
+      discount: values.discount || 0,
+      invoiceDate: values.invoiceDate.format("YYYY-MM-DD"),
+      dueDate: values.dueDate.format("YYYY-MM-DD"),
+    };
+
     if (isEditing) {
-      setLoading(true);
-      apiService
-        .getInvoiceById(id)
-        .then((response) => {
-          const data = response.data.data;
-          console.log("Fetched invoice:", data);
-          const formData = {
-            customer: data.customer._id,
-            invoiceNumber: data.invoiceNumber,
-            invoiceDate: dayjs(data.invoiceDate),
-            dueDate: dayjs(data.dueDate),
-            status: data.status,
-            items: data.items,
-            tax: data.parseTaxRate,
-            discount: data.parseDiscount,
-            subTotal: data.subtotal,
-            discountAmount: data.discount,
-            taxAmount: data.tax,
-            amountAfterDiscount: data.amountAfterDiscount,
-            totalAmount: data.totalAmount,
-          };
+      await updateInvoice({
+        id,
+        ...finalValues,
+      }).unwrap();
 
-          form.setFieldsValue(formData);
-          setTimeout(() => calculateTotals(formData), 0);
-        })
-        .catch((error) => {
-          notification.error({
-            message: "Failed",
-            description:
-              error.response?.data?.message || "Failed To Load Invoice",
-          });
-          navigate("/invoices");
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [id, isEditing, form, navigate]);
+      notification.success({
+        message: "Success",
+        description: "Invoice updated successfully",
+      });
 
-  const onFinish = async (values) => {
-    try {
-      const finalValues = {
-        ...values,
-        tax: values.tax || 18,
-        discount: values.discount || 0,
-        invoiceDate: values.invoiceDate.format("YYYY-MM-DD"),
-        dueDate: values.dueDate.format("YYYY-MM-DD"),
-      };
+    } else {
 
-      if (isEditing) {
-        await apiService.updateInvoice(id, finalValues);
-        notification.success({
-          message: "Success",
-          description: "Invoice updated successfully",
-        });
-      } else {
-        await apiService.createInvoice(finalValues);
-        notification.success({
-          message: "Success",
-          description: "Invoice created successfully",
-        });
-      }
+      await createInvoice(finalValues).unwrap();
 
-      form.resetFields();
-      navigate("/invoices");
-    } catch (error) {
-      notification.error({
-        message: "Failed",
-        description:
-          error.response?.data?.data?.message || "Something went wrong",
+      notification.success({
+        message: "Success",
+        description: "Invoice created successfully",
       });
     }
-  };
+
+    form.resetFields();
+    navigate("/invoices");
+
+  } catch (error) {
+    notification.error({
+      message: "Failed",
+      description:
+        error?.data?.message || "Something went wrong",
+    });
+  }
+};
 
   if (loading) return <Spin />;
 

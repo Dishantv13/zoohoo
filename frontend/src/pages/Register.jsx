@@ -110,7 +110,7 @@ export default function Register() {
             <Form.Item
               name="address"
               label="Address"
-              rules={[{ required: true, message: "Please enter your address" }]}
+              rules={[{ required: false, message: "Please enter your address" }]}
             >
               <Input.TextArea
                 prefix={<EnvironmentOutlined />}

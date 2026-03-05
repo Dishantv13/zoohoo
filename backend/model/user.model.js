@@ -22,7 +22,6 @@ const userSchema = new Schema(
     },
     address: {
       type: String,
-      required: [true, "address is required"],
     },
     password: {
       type: String,

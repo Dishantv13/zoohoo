@@ -92,11 +92,11 @@ export default function App() {
             icon: <UnorderedListOutlined />,
             label: <Link to="/invoices">Invoice</Link>,
           },
-          {
-            key: "4",
-            icon: <UserOutlined />,
-            label: <Link to="/customer/chat">Support Chat</Link>,
-          },
+        //   {
+        //     key: "4",
+        //     icon: <UserOutlined />,
+        //     label: <Link to="/customer/chat">Support Chat</Link>,
+        //   },
         ];
 
   const userMenuItems = [
