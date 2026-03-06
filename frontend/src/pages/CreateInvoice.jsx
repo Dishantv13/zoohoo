@@ -29,7 +29,6 @@ export default function CreateInvoice() {
   const currentUserId = currentUser?._id || currentUser?.id || null;
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const isEditing = !!id;
 
   const calculateTotals = (values) => {
@@ -59,84 +58,91 @@ export default function CreateInvoice() {
     });
   };
 
-const { data: invoiceResponse, isLoading } = useGetInvoiceByIdQuery(id, {
-  skip: !isEditing,
-});
+  const { data: invoiceResponse, isLoading } = useGetInvoiceByIdQuery(id, {
+    skip: !isEditing,
+  });
 
-const invoice = invoiceResponse?.data;
+  const invoice = invoiceResponse?.data;
 
-console.log("Fetched Invoice:", invoice);
+  useEffect(() => {
+    if (invoice && isEditing) {
+      const formData = {
+        customer: invoice.customer._id,
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceDate: dayjs(invoice.invoiceDate),
+        dueDate: dayjs(invoice.dueDate),
+        status: invoice.status,
+        items: invoice.items,
+        tax: invoice.parseTaxRate,
+        discount: invoice.parseDiscount,
+        subTotal: invoice.subtotal,
+        discountAmount: invoice.discount,
+        taxAmount: invoice.tax,
+        amountAfterDiscount: invoice.amountAfterDiscount,
+        totalAmount: invoice.totalAmount,
+      };
 
-useEffect(() => {
-  if (invoice && isEditing) {
-    const formData = {
-      customer: invoice.customer._id,
-      invoiceNumber: invoice.invoiceNumber,
-      invoiceDate: dayjs(invoice.invoiceDate),
-      dueDate: dayjs(invoice.dueDate),
-      status: invoice.status,
-      items: invoice.items,
-      tax: invoice.parseTaxRate,
-      discount: invoice.parseDiscount,
-      subTotal: invoice.subtotal,
-      discountAmount: invoice.discount,
-      taxAmount: invoice.tax,
-      amountAfterDiscount: invoice.amountAfterDiscount,
-      totalAmount: invoice.totalAmount,
-    };
+      form.setFieldsValue(formData);
+      setTimeout(() => calculateTotals(formData), 0);
+    }
+  }, [invoice, isEditing, form]);
 
-    form.setFieldsValue(formData);
-    setTimeout(() => calculateTotals(formData), 0);
-  }
-}, [invoice, isEditing, form]);
-
-const [updateInvoice] = useUpdateInvoiceMutation();
-const [createInvoice] = useCreateInvoiceMutation();
-
-const onFinish = async (values) => {
-  try {
-    const finalValues = {
-      ...values,
-      tax: values.tax || 18,
-      discount: values.discount || 0,
-      invoiceDate: values.invoiceDate.format("YYYY-MM-DD"),
-      dueDate: values.dueDate.format("YYYY-MM-DD"),
-    };
-
-    if (isEditing) {
-      await updateInvoice({
-        id,
-        ...finalValues,
-      }).unwrap();
-
-      notification.success({
-        message: "Success",
-        description: "Invoice updated successfully",
-      });
-
-    } else {
-
-      await createInvoice(finalValues).unwrap();
-
-      notification.success({
-        message: "Success",
-        description: "Invoice created successfully",
+  useEffect(() => {
+    if (!isEditing && currentUserId) {
+      form.setFieldsValue({
+        customer: currentUserId,
       });
     }
+  }, [currentUserId]);
 
-    form.resetFields();
-    navigate("/invoices");
+  const [updateInvoice] = useUpdateInvoiceMutation();
+  const [createInvoice] = useCreateInvoiceMutation();
 
-  } catch (error) {
-    notification.error({
-      message: "Failed",
-      description:
-        error?.data?.message || "Something went wrong",
-    });
-  }
-};
+  const onFinish = async (values) => {
+    try {
+      const finalValues = {
+        ...values,
+        tax: values.tax || 18,
+        discount: values.discount || 0,
+        invoiceDate: values.invoiceDate.format("YYYY-MM-DD"),
+        dueDate: values.dueDate.format("YYYY-MM-DD"),
+      };
 
-  if (loading) return <Spin />;
+      if (isEditing) {
+        await updateInvoice({
+          id,
+          ...finalValues,
+        }).unwrap();
+
+        notification.success({
+          message: "Success",
+          description: "Invoice updated successfully",
+        });
+      } else {
+        await createInvoice(finalValues).unwrap();
+
+        const currentUserId = currentUser?._id || currentUser?.id || null;
+        if (currentUserId) {
+          form.setFieldsValue({ customer: currentUserId });
+        }
+
+        notification.success({
+          message: "Success",
+          description: "Invoice created successfully",
+        });
+      }
+
+      form.resetFields();
+      navigate("/invoices");
+    } catch (error) {
+      notification.error({
+        message: "Failed",
+        description: error?.data?.message || "Something went wrong",
+      });
+    }
+  };
+
+  if (isLoading) return <Spin />;
 
   return (
     <Form
@@ -150,7 +156,7 @@ const onFinish = async (values) => {
       </Form.Item>
 
       <Form.Item label="Customer">
-        <Input value={currentUser?.name} disabled />
+        <Input value={currentUser?.name} />
       </Form.Item>
 
       {isEditing && (

@@ -22,7 +22,6 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { apiService } from "../service/apiService";
 import "./CreateInvoice.css";
 import { useGetCustomersQuery } from "../features/customer/customerApi";
 import {
@@ -153,6 +152,7 @@ export default function AdminCreateInvoice() {
         setSelectedCustomer(null);
         setDiscount(0);
         setTax(18);
+        navigate("/admin/invoices");
       }
     } catch (error) {
       message.error(

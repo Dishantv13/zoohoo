@@ -24,9 +24,13 @@ import AdminInvoiceManagement from "./pages/AdminInvoiceManagement.jsx";
 // import AdminChatPage from "./pages/AdminChatPage.jsx";
 // import CustomerChatPage from "./pages/CustomerChatPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import { logout, getCurrentUser } from "./features/auth/authSlice.js";
+// import { logout, getCurrentUser } from "./features/auth/authSlice.js";
+import { setCredentials, logoutUser } from "./features/auth/authSlice.js";
+import {
+  useGetCurrentUserQuery,
+  useLogoutMutation,
+} from "./features/auth/authApi";
 import Report from "./pages/Report.jsx";
-import InvoiceView from "./pages/InvoiceView.jsx";
 import "./index.css";
 
 const { Header, Content } = Layout;
@@ -34,19 +38,41 @@ const { Header, Content } = Layout;
 export default function App() {
   const { pathname } = useLocation();
   const dispatch = useDispatch();
-  const { isAuthenticated, user, loading, token } = useSelector(
-    (state) => state.auth,
-  );
+  const { user, token, isAuthenticated } = useSelector((state) => state.auth);
+
+  const { data: currentUserData, isLoading: currentUserLoading } =
+    useGetCurrentUserQuery(undefined, {
+      skip: !token,
+    });
 
   useEffect(() => {
-    if (token && !user && !loading) {
-      dispatch(getCurrentUser());
+    if (currentUserData?.data) {
+      dispatch(
+        setCredentials({
+          user: currentUserData.data,
+          token,
+        }),
+      );
     }
-  }, [token, user, loading, dispatch]);
+  }, [currentUserData, dispatch, token]);
 
-  const showLayout =
-    isAuthenticated &&
-    !["/login", "/register", "/admin/register"].includes(pathname);
+  const [logoutApi] = useLogoutMutation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi().unwrap();
+
+      dispatch(logoutUser());
+
+      message.success("Logout Successful");
+    } catch (error) {
+      message.error("Logout Failed");
+    }
+  };
+
+  const authRoutes = ["/login", "/register", "/admin/register"];
+
+  const showLayout = isAuthenticated && !authRoutes.includes(pathname);
 
   const menuItems =
     user?.role === "admin"
@@ -71,10 +97,10 @@ export default function App() {
             icon: <UnorderedListOutlined />,
             label: <Link to="/report">Report</Link>,
           },
-        //   {
-        //     key: "5",
-        //     label: <Link to="/admin/chat">Admin Chat</Link>,
-        //   },
+          //   {
+          //     key: "5",
+          //     label: <Link to="/admin/chat">Admin Chat</Link>,
+          //   },
         ]
       : [
           {
@@ -92,11 +118,11 @@ export default function App() {
             icon: <UnorderedListOutlined />,
             label: <Link to="/invoices">Invoice</Link>,
           },
-        //   {
-        //     key: "4",
-        //     icon: <UserOutlined />,
-        //     label: <Link to="/customer/chat">Support Chat</Link>,
-        //   },
+          //   {
+          //     key: "4",
+          //     icon: <UserOutlined />,
+          //     label: <Link to="/customer/chat">Support Chat</Link>,
+          //   },
         ];
 
   const userMenuItems = [
@@ -113,10 +139,7 @@ export default function App() {
       style: { color: "red" },
       label: "Logout",
       icon: <LogoutOutlined />,
-      onClick: () => {
-        dispatch(logout());
-        message.success("Logout Successful");
-      },
+      onClick: handleLogout,
     },
   ];
 
@@ -130,11 +153,10 @@ export default function App() {
         return ["3"];
       } else if (pathname === "/report") {
         return ["4"];
-      } 
-    //   else if (pathname === "/admin/chat") {
-    //     return ["5"];
-    //   }
-
+      }
+      //   else if (pathname === "/admin/chat") {
+      //     return ["5"];
+      //   }
     } else {
       if (pathname === "/" || pathname === "/customers") {
         return ["1"];
@@ -145,10 +167,10 @@ export default function App() {
         pathname.startsWith("/invoices/")
       ) {
         return ["3"];
-      } 
-    //   else if (pathname === "/customer/chat") {
-    //     return ["4"];
-    //   }
+      }
+      //   else if (pathname === "/customer/chat") {
+      //     return ["4"];
+      //   }
     }
     return [];
   })();
@@ -164,12 +186,12 @@ export default function App() {
     );
   }
 
-  if (loading && token && !user) {
+  if (currentUserLoading && token && !user) {
     return (
       <Layout
         style={{
           minHeight: "100vh",
-          minWidth: "100vh",
+          minWidth: "100vw",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -181,7 +203,7 @@ export default function App() {
   }
 
   return (
-    <Layout style={{ minHeight: "100vh", minWidth: "100vh" }}>
+    <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
       <Header
         style={{
           display: "flex",
@@ -290,14 +312,6 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <CreateInvoice />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/view-invoices/:id"
-            element={
-              <ProtectedRoute>
-                <InvoiceView />
               </ProtectedRoute>
             }
           />

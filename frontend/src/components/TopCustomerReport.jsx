@@ -8,41 +8,19 @@ import {
 } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-import { useEffect, useState } from "react";
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
-import apiService from "../service/apiService";
+import { useGetTopCustomersQuery } from "../features/report/reportApi";
 
 const TopCustomerReport = ({ dates }) => {
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { data, isLoading } = useGetTopCustomersQuery({
+    month: dates && dates.length === 2 ? dates[0].month() + 1 : undefined,
+    year: dates && dates.length === 2 ? dates[0].year() : undefined,
+  });
 
-  const fetchReport = async (filters = {}) => {
-    try {
-      setLoading(true);
-      const response = await apiService.getTopCustomers(filters);
-      setReport(response.data.data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const topCustomerData = data?.data || [];
 
-  useEffect(() => {
-    let filters = {};
-
-    if (dates && dates.length === 2) {
-      filters = {
-        month: dates[0].month() + 1,
-        year: dates[0].year(),
-      };
-    }
-
-    fetchReport(filters);
-  }, [dates]);
-
-  if (loading || !report) return <Spin size="large" />;
+  if (isLoading) return <Spin size="large" />;
 
   return (
     <>
@@ -52,12 +30,12 @@ const TopCustomerReport = ({ dates }) => {
             <Bar
               height={280}
               data={{
-                labels: report?.map((item) => item.customer) || [],
+                labels: topCustomerData?.map((item) => item.customer) || [],
                 datasets: [
                   {
                     label: "Total Spent",
                     data:
-                      report?.map((item) =>
+                      topCustomerData?.map((item) =>
                         Number(item.totalAmount || 0).toFixed(2),
                       ) || [],
                     backgroundColor: "rgba(206, 126, 8, 0.6)",

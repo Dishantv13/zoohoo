@@ -1,41 +1,45 @@
 import "@ant-design/v5-patch-for-react-19";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Card, Spin, notification } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import { login } from "../features/auth/authSlice";
 import "./Auth.css";
+import { useLoginMutation } from "../features/auth/authApi";
+import { setCredentials } from "../features/auth/authSlice";
 
 export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
   const [form] = Form.useForm();
 
-  const onFinish = async (values) => {
-    const result = await dispatch(login(values));
+  const [login, { isLoading }] = useLoginMutation();
 
-    if (result.type === "auth/login/fulfilled") {
+  const handleLogin = async (data) => {
+    try {
+      const response = await login(data).unwrap();
+      dispatch(
+        setCredentials({
+          user: response.data.user,
+          token: response.data.token,
+        }),
+      );
       notification.success({
-        message: "Login Success",
-        description: "Login Successful",
+        message: "Login Successful",
+        description: "You have successfully logged in.",
       });
       navigate("/");
-    } else {
-      notification.error({
-        message: "Login Failed",
-        description: result.payload || error || "Invalid email or password",
-      });
+    } catch (error) {
+      console.error("Login failed:", error);
     }
   };
 
   return (
     <div className="auth-container">
       <Card className="auth-card" title="Login">
-        <Spin spinning={loading}>
+        <Spin spinning={isLoading}>
           <Form
             form={form}
-            onFinish={onFinish}
+            onFinish={handleLogin}
             layout="vertical"
             autoComplete="off"
           >
@@ -74,7 +78,7 @@ export default function Login() {
                 htmlType="submit"
                 size="large"
                 block
-                loading={loading}
+                loading={isLoading}
               >
                 Login
               </Button>

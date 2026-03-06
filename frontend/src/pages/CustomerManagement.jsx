@@ -30,7 +30,6 @@ import {
   SearchOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { apiService } from "../service/apiService";
 import {
   useGetCustomersQuery,
   useAdminCreateCustomerMutation,
@@ -77,9 +76,9 @@ export default function CustomerManagement() {
   const customersList = data?.data?.customers || [];
 
   const paginationData = {
-    current: data?.data?.pagination?.currentPage || 1,
+    current: data?.data?.pagination?.page || 1,
     pageSize: data?.data?.pagination?.limit || 10,
-    total: data?.data?.pagination?.total || 0,
+    total: data?.data?.pagination?.totalCustomers || 0,
   };
 
   const filterData = customersList.map((customer) => ({
@@ -173,7 +172,7 @@ export default function CustomerManagement() {
       { skip: !selectedCustomer?._id },
     );
 
-    const customerSummary = invoiceData?.data?.summary || {};
+  const customerSummary = invoiceData?.data?.summary || {};
 
   const formatCurrency = (value) =>
     currencyFormatter.format(Number(value) || 0);
@@ -281,6 +280,7 @@ export default function CustomerManagement() {
           columns={columns}
           dataSource={filterData}
           loading={isLoading}
+          rowKey="_id"
           onChange={handleTableChange}
           pagination={{
             current: paginationData.current,

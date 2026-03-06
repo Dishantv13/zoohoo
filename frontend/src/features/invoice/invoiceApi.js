@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const invoiceApi = createApi({
   reducerPath: "invoiceApi",
+  tagTypes: ["Invoice", "InvoiceExport"],
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:5000/api/invoices",
     prepareHeaders: (headers) => {
@@ -57,7 +58,7 @@ export const invoiceApi = createApi({
     updateInvoiceStatus: builder.mutation({
       query: ({ id, status }) => ({
         url: `/${id}/status`,
-        method: "PUT",
+        method: "PATCH",
         body: { status },
       }),
       invalidatesTags: (result, error, { id }) => [
@@ -131,8 +132,8 @@ export const invoiceApi = createApi({
       }),
       providesTags: (result) =>
         result
-          ? [{ type: "Invoice", id: "EXPORT" }]
-          : [{ type: "Invoice", id: "EXPORT" }],
+          ? [{ type: "InvoiceExport", id: "EXPORT" }]
+          : [{ type: "InvoiceExport", id: "EXPORT" }],
 
     }),
   }),

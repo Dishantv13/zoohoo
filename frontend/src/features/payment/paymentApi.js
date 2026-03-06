@@ -1,7 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { invoiceApi } from "../invoice/invoiceApi";
 
 export const paymentApi = createApi({
   reducerPath: "paymentApi",
+  tagTypes: ["Payment", "PaymentStatus", "PaymentHistory"],
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:5000/api/payments",
     prepareHeaders: (headers) => {
@@ -20,14 +22,38 @@ export const paymentApi = createApi({
         body: data,
       }),
       invalidatesTags: [{ type: "Payment", id: "LIST" }],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(
+            invoiceApi.util.invalidateTags([
+              { type: "Invoice", id: "LIST" },
+              { type: "Invoice", id: arg?.invoiceId },
+            ]),
+          );
+        } catch {
+        }
+      },
     }),
     getUPIPayment: builder.mutation({
       query: (data) => ({
-        url: "/upi",
+        url: "/qr",
         method: "POST",
         body: data,
       }),
       invalidatesTags: [{ type: "Payment", id: "LIST" }],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(
+            invoiceApi.util.invalidateTags([
+              { type: "Invoice", id: "LIST" },
+              { type: "Invoice", id: arg?.invoiceId },
+            ]),
+          );
+        } catch {
+        }
+      },
     }),
     getCashPayment: builder.mutation({
       query: (data) => ({
@@ -36,12 +62,24 @@ export const paymentApi = createApi({
         body: data,
       }),
       invalidatesTags: [{ type: "Payment", id: "LIST" }],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(
+            invoiceApi.util.invalidateTags([
+              { type: "Invoice", id: "LIST" },
+              { type: "Invoice", id: arg?.invoiceId },
+            ]),
+          );
+        } catch {
+        }
+      },
     }),
     getPaymentStatus: builder.query({
       query: (invoiceId) => ({
         url: `/${invoiceId}/status`,
       }),
-      providesTags: (result, invoiceId) => [
+      providesTags: (result, error, invoiceId) => [
         { type: "PaymentStatus", id: invoiceId },
       ],
     }),
@@ -49,7 +87,7 @@ export const paymentApi = createApi({
       query: (invoiceId) => ({
         url: `${invoiceId}/history`,
       }),
-      providesTags: (result, invoiceId) =>
+      providesTags: (result, error, invoiceId) =>
         result?.data?.data?.paymentHistory
           ? [
               ...result.data.data.paymentHistory.map(({ _id }) => ({

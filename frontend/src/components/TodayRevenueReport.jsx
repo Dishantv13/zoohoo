@@ -21,41 +21,16 @@ import { Row, Col, Card, Spin } from "antd";
 import { Line } from "react-chartjs-2";
 import apiService from "../service/apiService";
 import dayjs from "dayjs";
+import { useGetTodayRevenueQuery } from "../features/report/reportApi";
 
 const TodayRevenueReport = ({ dates }) => {
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { data, isLoading } = useGetTodayRevenueQuery({
+    date: dates && dates.length === 2 ? dates[1].toISOString() : undefined,
+  });
 
-  const fetchReport = async (filters = {}) => {
-    try {
-      setLoading(true);
-      const response = await apiService.getTodayRevenue(filters);
-      setReport(response.data.data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const todayData = data?.data || [];
 
-  useEffect(() => {
-    let filters = {};
-
-    if (dates && dates.length === 2) {
-      filters = {
-        date: dates[1].toISOString(),
-      };
-    } else {
-      const today = dayjs();
-      filters = {
-        date: today.toISOString(),
-      };
-    }
-
-    fetchReport(filters);
-  }, [dates]);
-
-  if (loading || !report) return <Spin size="large" />;
+  if (isLoading) return <Spin size="large" />;
 
   return (
     <>
@@ -64,12 +39,12 @@ const TodayRevenueReport = ({ dates }) => {
           <Card title="Today Revenue Graph (1 to 24 hours)">
             <Line
               data={{
-                labels: report?.hourlyRevenue?.map((item) => item.hour) || [],
+                labels: todayData?.hourlyRevenue?.map((item) => item.hour) || [],
                 datasets: [
                   {
                     label: "Revenue",
                     data:
-                      report?.hourlyRevenue?.map(
+                      todayData?.hourlyRevenue?.map(
                         (item) => item.totalRevenue || 0,
                       ) || [],
                     fill: false,

@@ -19,13 +19,13 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import { apiService } from "../service/apiService";
+import { useGetCashPaymentMutation } from "../features/payment/paymentApi";
 
 const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [getCashPayment, { loading: cashPaymentLoading }] = useGetCashPaymentMutation();
 
   useEffect(() => {
     if (invoice && visible) {
@@ -37,13 +37,12 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   }, [invoice, visible, form]);
 
   const handleCashPayment = async (values) => {
-    setLoading(true);
     try {
-      const response = await apiService.cashPayment({
+      const response = await getCashPayment({
         invoiceId: invoice._id,
         paymentAmount: Number(values.paymentAmount),
         customerId: invoice.customer?._id,
-      });
+      }).unwrap();
 
       const responseData = response.data.data;
       
@@ -71,8 +70,6 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
           error.response?.data?.message ||
           "Failed to record cash payment. Please try again.",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -108,10 +105,9 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
       footer={null}
       width={650}
       centered
-      destroyOnClose
     >
       {paymentStatus ? (
-        <Spin spinning={loading}>
+        <Spin spinning={cashPaymentLoading} tip="Processing Payment...">
           <Result
             status={paymentStatus.success ? "success" : "error"}
             title={
@@ -378,7 +374,7 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                     <Button
                       type="primary"
                       htmlType="submit"
-                      loading={loading}
+                      loading={cashPaymentLoading}
                       block
                       size="large"
                       icon={<DollarOutlined />}
@@ -395,7 +391,7 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                       block
                       size="large"
                       onClick={handleClose}
-                      disabled={loading}
+                      disabled={cashPaymentLoading}
                     >
                       Cancel
                     </Button>

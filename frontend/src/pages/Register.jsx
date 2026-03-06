@@ -1,6 +1,5 @@
 import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Form,
@@ -21,31 +20,34 @@ import {
   PhoneOutlined,
   EnvironmentOutlined,
 } from "@ant-design/icons";
-import { register } from "../features/auth/authSlice";
 import { phoneValidator } from "../validation/validation";
+import { useRegisterMutation } from "../features/auth/authApi";
 import "./Auth.css";
 
 export default function Register() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
   const [form] = Form.useForm();
   const [phone, setPhone] = useState("");
 
-  const onFinish = async (values) => {
-    const { confirmPassword, ...dataToSend } = values;
-    const result = await dispatch(register(dataToSend));
+  const [registerUser, { isLoading }] = useRegisterMutation();
 
-    if (result.type === "auth/register/fulfilled") {
+  const onFinish = async (data) => {
+    try {
+      const response = await registerUser(data).unwrap();
+
       notification.success({
-        message: "User Register success",
-        description: "User Register Successfull",
+        message: "Registration Successful",
+        description: response?.message || "You have successfully registered.",
       });
-      navigate("/");
-    } else {
+
+      navigate("/login");
+    } catch (error) {
+      console.error("Registration failed:", error);
+
       notification.error({
-        message: "registration failed",
-        description: result.payload || error || "User Registration Failed",
+        message: "Registration Failed",
+        description:
+          error?.data?.message || "Something went wrong. Please try again.",
       });
     }
   };
@@ -53,7 +55,7 @@ export default function Register() {
   return (
     <div className="auth-container">
       <Card className="auth-card" title="Register">
-        <Spin spinning={loading}>
+        <Spin spinning={isLoading}>
           <Form
             form={form}
             onFinish={onFinish}
@@ -110,7 +112,9 @@ export default function Register() {
             <Form.Item
               name="address"
               label="Address"
-              rules={[{ required: false, message: "Please enter your address" }]}
+              rules={[
+                { required: false, message: "Please enter your address" },
+              ]}
             >
               <Input.TextArea
                 prefix={<EnvironmentOutlined />}
@@ -163,7 +167,7 @@ export default function Register() {
                 htmlType="submit"
                 size="large"
                 block
-                loading={loading}
+                loading={isLoading}
                 style={{ marginTop: 5 }}
               >
                 Register

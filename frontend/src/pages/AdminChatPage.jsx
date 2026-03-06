@@ -17,9 +17,7 @@ import {
   SendOutlined,
   UserOutlined,
   NotificationOutlined,
-  DeleteOutlined,
   CheckOutlined,
-  DesktopOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState, useRef } from "react";
 import apiService from "../service/apiService";

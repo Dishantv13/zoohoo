@@ -1,5 +1,4 @@
 import "@ant-design/v5-patch-for-react-19";
-import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Form,
@@ -21,34 +20,33 @@ import {
   GlobalOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
-import { adminRegister } from "../features/auth/authSlice";
 import {
   phoneValidator,
   gstValidator,
   panValidator,
 } from "../validation/validation";
+import { useAdminRegisterMutation } from "../features/auth/authApi";
 import "./Auth.css";
 
 export default function AdminRegister() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
   const [form] = Form.useForm();
+  const [adminRegisterUser, { isLoading }] = useAdminRegisterMutation();
 
-  const onFinish = async (values) => {
-    const result = await dispatch(adminRegister(values));
-
-    if (result.type === "auth/adminRegister/fulfilled") {
+  const onFinish = async (data) => {
+    try {
+      const response = await adminRegisterUser(data).unwrap();
       notification.success({
         message: "Admin Registration Success",
         description:
+          response?.message ||
           "Your company and admin account have been created successfully",
       });
-      navigate("/");
-    } else {
+      navigate("/login");
+    } catch (error) {
       notification.error({
         message: "Registration Failed",
-        description: result.payload || error || "Admin Registration Failed",
+        description: error?.data?.message || "Admin Registration Failed",
       });
     }
   };
@@ -247,7 +245,7 @@ export default function AdminRegister() {
         className="auth-card"
         title="Admin Registration - Create Your Company"
       >
-        <Spin spinning={loading}>
+        <Spin spinning={isLoading}>
           <Form
             form={form}
             onFinish={onFinish}
@@ -277,7 +275,7 @@ export default function AdminRegister() {
                 htmlType="submit"
                 size="large"
                 block
-                loading={loading}
+                loading={isLoading}
               >
                 Register Admin & Company
               </Button>

@@ -65,8 +65,9 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
         cvv: values.cvv,
         paymentAmount: values.paymentAmount,
       });
+      console.log("Card Payment Response:", response.data);
 
-      const responseData = response.data.data;
+      const responseData = response?.data?.data || {};
 
       setPaymentStatus({
         success: true,
@@ -288,7 +289,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                             }
                             if (value > remainingAmount) {
                               return Promise.reject(
-                                `Amount cannot exceed remaining balance of ₹${remainingAmount.toFixed(2)}`
+                                `Amount cannot exceed remaining balance of ₹${Number(remainingAmount).toFixed(2)}`
                               );
                             }
                             return Promise.resolve();
@@ -299,7 +300,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                       <Input
                         type="number"
                         prefix="₹"
-                        placeholder={`Enter amount (Max: ${remainingAmount.toFixed(2)})`}
+                        placeholder={`Enter amount (Max: ${Number(remainingAmount).toFixed(2)})`}
                         onChange={handlePaymentAmountChange}
                         step="0.01"
                       />

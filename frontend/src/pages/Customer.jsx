@@ -18,7 +18,6 @@ import {
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiService } from "../service/apiService";
 import {
   useCustomerProfileQuery,
   useUpdateCustomerProfileMutation,

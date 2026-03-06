@@ -8,37 +8,18 @@ import {
 } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-import { useEffect, useState } from "react";
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
-import apiService from "../service/apiService";
+import { useGetRevenueByYearQuery } from "../features/report/reportApi";
 
 const YearlyRevenueReport = ({ dates }) => {
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { data, isLoading } = useGetRevenueByYearQuery({
+    year: dates && dates.length === 2 ? dates[0].year() : undefined,
+  });
 
-  const fetchReport = async (filters = {}) => {
-    try {
-      setLoading(true);
-      const response = await apiService.getYearlyRevenue(filters);
-      setReport(response.data.data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const yearlyRevenueData = data?.data || [];
 
-  useEffect(() => {
-    if (dates && dates.length === 2) {
-      fetchReport({ year: dates[0].year() });
-      return;
-    }
-
-    fetchReport();
-  }, [dates]);
-
-  if (loading || !report) return <Spin size="large" />;
+  if (isLoading) return <Spin size="large" />;
 
   return (
     <>
@@ -47,12 +28,12 @@ const YearlyRevenueReport = ({ dates }) => {
           <Card title="Yearly Revenue Graph">
             <Bar
               data={{
-                labels: report?.map((item) => item.year) || [],
+                labels: yearlyRevenueData?.map((item) => item.year) || [],
                 datasets: [
                   {
                     label: "Revenue",
                     data:
-                      report?.map((item) =>
+                      yearlyRevenueData?.map((item) =>
                         Number(item.totalRevenue || 0).toFixed(2),
                       ) || [],
                     backgroundColor: "rgba(195, 2, 2, 0.6)",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, Col, Row, Typography, DatePicker, Spin, Statistic } from "antd";
 import {
   BarChartOutlined,
@@ -10,7 +10,7 @@ import MonthlyRevenueReport from "../components/MonthlyRevenueReport";
 import YearlyRevenueReport from "../components/YearlyRevenueReport";
 import TodayRevenueReport from "../components/TodayRevenueReport";
 import TopCustomerReport from "../components/TopCustomerReport";
-import apiService from "../service/apiService";
+import { useGetDashBoardQuery } from "../features/report/reportApi";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -18,46 +18,33 @@ const { RangePicker } = DatePicker;
 const Report = () => {
   const [activeReport, setActiveReport] = useState("");
   const [dates, setDates] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { data, isLoading } = useGetDashBoardQuery({
+    startDate:
+      dates && dates.length === 2
+        ? dates[0].startOf("day").toISOString()
+        : undefined,
+    endDate:
+      dates && dates.length === 2
+        ? dates[1].endOf("day").toISOString()
+        : undefined,
+  });
 
-  const fetchSummary = async (filters = {}) => {
-    try {
-      setLoading(true);
-      const response = await apiService.getDashboardData(filters);
-      setSummary(response.data.data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSummary();
-  }, []);
+  const dashboardData = data?.data || {};
 
   const handleDateChange = (value) => {
     if (!value) {
       setDates([]);
-      fetchSummary();
       return;
     }
-
     setDates(value);
-    fetchSummary({
-      startDate: value[0].startOf("day").toISOString(),
-      endDate: value[1].endOf("day").toISOString(),
-    });
   };
 
   const handleReportChange = (reportKey) => {
     setActiveReport(reportKey);
     setDates([]);
-    fetchSummary();
   };
 
-  if (loading && !summary) return <Spin size="large" />;
+  if (isLoading && !dashboardData) return <Spin size="large" />;
 
   const reportMenu = [
     {
@@ -142,7 +129,7 @@ const Report = () => {
           <Card>
             <Statistic
               title="Total Revenue"
-              value={summary?.totalRevenue || 0}
+              value={dashboardData?.totalRevenue || 0}
               precision={2}
               prefix="₹"
             />
@@ -153,7 +140,7 @@ const Report = () => {
           <Card>
             <Statistic
               title="Today Revenue"
-              value={summary?.todayRevenue || 0}
+              value={dashboardData?.todayRevenue || 0}
               precision={2}
               prefix="₹"
             />
@@ -164,7 +151,7 @@ const Report = () => {
           <Card>
             <Statistic
               title="Pending Invoice"
-              value={summary?.pendingInvoices || 0}
+              value={dashboardData?.pendingInvoices || 0}
               valueStyle={{ color: "#cf1322" }}
             />
           </Card>

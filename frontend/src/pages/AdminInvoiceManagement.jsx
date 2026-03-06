@@ -29,12 +29,11 @@ import {
   DownloadOutlined,
   DollarOutlined,
 } from "@ant-design/icons";
-import { apiService } from "../service/apiService";
 import CashPaymentModal from "../components/CashPaymentModal";
 import dayjs from "dayjs";
 import "./InvoiceManagement.css";
 import {
-  useGetInvoicesQuery,
+  useGetAdminAllInvoicesQuery,
   useDownloadInvoiceMutation,
   useExportInvoiceMutation,
 } from "../features/invoice/invoiceApi";
@@ -78,7 +77,7 @@ export default function AdminInvoiceManagement() {
 
   const customersList = customersData?.data?.customers || customersData || [];
 
-  const { data } = useGetInvoicesQuery({
+  const { data, refetch } = useGetAdminAllInvoicesQuery({
     page,
     limit: pageSize,
     status: statusFilters.status,
@@ -183,7 +182,7 @@ export default function AdminInvoiceManagement() {
       message: "Success",
       description: "Cash payment recorded successfully",
     });
-    fetchInvoices(page, selectedCustomer);
+    refetch();
   };
 
   const statusColors = {

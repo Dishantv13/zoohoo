@@ -26,6 +26,10 @@ const createInvoiceService = async (userId, data) => {
     throw new ApiError(404, "User not found");
   }
 
+  if(new Date(dueDate) < new Date(invoiceDate)) {
+    throw new ApiError(400, "Due date cannot be before invoice date");
+  }
+
   let companyId;
   if (user.role === "admin") {
     companyId = user.companyId?._id;
@@ -80,6 +84,8 @@ const createInvoiceService = async (userId, data) => {
     amountAfterDiscount: finalAmountAfterDiscount,
     totalAmount: finalTotal,
   });
+
+
   return invoice;
 };
 
@@ -154,8 +160,7 @@ const getInvoicesServices = async (userId, options = {}) => {
   const populated = await Invoice.populate(invoices, [
     {
       path: "customer",
-      select: "name email",
-    },
+      select: "name email",    },
     {
       path: "createdBy",
       select: "name email role",
@@ -230,6 +235,10 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
 
   if (invoice.status === "PAID" && status !== "PAID") {
     throw new ApiError(400, "Paid invoice cannot be updated");
+  }
+
+  if(new Date(dueDate) < new Date(invoiceDate)) {
+    throw new ApiError(400, "Due date cannot be before invoice date");
   }
 
   const parsedTaxRate = Number(tax);

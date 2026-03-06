@@ -1,23 +1,24 @@
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
-import { getCurrentUser } from "../features/auth/authSlice.js";
+import { useSelector } from "react-redux";
+import { useGetCurrentUserQuery } from "../features/auth/authApi";
 
 export default function ProtectedRoute({ children }) {
-  const dispatch = useDispatch();
-  const { isAuthenticated, loading, token, user } = useSelector(
-    (state) => state.auth,
-  );
 
-  useEffect(() => {
-    if (token && !user && !loading) {
-      dispatch(getCurrentUser());
-    }
-  }, [token, user, loading, dispatch]);
+  const token = localStorage.getItem("token");
 
-  if (loading || (token && !user)) {
+  const { data, isLoading } = useGetCurrentUserQuery(null, {
+    skip: !token,
+  });
+
+  const user = data?.data;
+
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/login" />;
 }

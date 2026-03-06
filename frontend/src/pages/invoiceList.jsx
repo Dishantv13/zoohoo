@@ -26,8 +26,7 @@ import {
   EyeOutlined,
 } from "@ant-design/icons";
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { fetchInvoices } from "../features/invoice/invoice.slice";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import PaymentModal from "../components/PaymentModal";
@@ -41,7 +40,6 @@ import { useExportInvoiceMutation } from "../features/invoice/invoiceApi";
 import { useDownloadInvoiceMutation } from "../features/invoice/invoiceApi";
 
 export default function InvoiceList() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState(null);
@@ -51,12 +49,15 @@ export default function InvoiceList() {
   const [pageSize, setPageSize] = useState();
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
-  const [Loading, setLoading] = useState(false);
+
+  const currentUser = useSelector((state) => state.auth.user);
+  const currentUserId = currentUser?._id || currentUser?.id || null;
 
   const { data, isLoading, refetch } = useGetInvoicesQuery({
     page,
     limit: pageSize,
     status: statusFilter,
+    customer: currentUserId,
   });
 
   const invoicesData = data?.data?.data || [];
@@ -103,7 +104,8 @@ export default function InvoiceList() {
     setPaymentModalVisible(true);
   };
 
-  const [exportInvoices, { isLoading: exportLoading }] = useExportInvoiceMutation();
+  const [exportInvoices, { isLoading: exportLoading }] =
+    useExportInvoiceMutation();
   const handleExportInvoices = async () => {
     try {
       const params = {};
@@ -154,7 +156,7 @@ export default function InvoiceList() {
       message: "Success",
       description: "Invoice marked as PAID",
     });
-    dispatch(fetchInvoices({ page, limit: pageSize, status: statusFilter }));
+    refetch();
     setPaymentModalVisible(false);
   };
 
@@ -163,7 +165,8 @@ export default function InvoiceList() {
     setPageSize(paginationInfo.pageSize);
   };
 
-  const [deleteInvoice, { isLoading: deleteLoading}] = useDeleteInvoiceMutation();
+  const [deleteInvoice, { isLoading: deleteLoading }] =
+    useDeleteInvoiceMutation();
   const handleDelete = (invoiceId) => {
     Modal.confirm({
       title: "Delete Invoice?",
@@ -817,49 +820,48 @@ export default function InvoiceList() {
               )}
             </div>
 
-            {paymentHistory &&
-              paymentHistory.length > 0 && (
-                <div className="detail-section">
-                  <h3>Payment History</h3>
-                  {paymentHistory.map((payment, idx) => (
-                    <div
-                      key={idx}
+            {paymentHistory && paymentHistory.length > 0 && (
+              <div className="detail-section">
+                <h3>Payment History</h3>
+                {paymentHistory.map((payment, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: "10px",
+                      marginBottom: "8px",
+                      background: "#f0f2f5",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <p style={{ marginBottom: "4px" }}>
+                      <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
+                      <span style={{ marginLeft: "15px" }}>
+                        <strong>Method:</strong> {payment.paymentMethod}
+                      </span>
+                    </p>
+                    <p
                       style={{
-                        padding: "10px",
-                        marginBottom: "8px",
-                        background: "#f0f2f5",
-                        borderRadius: "4px",
+                        marginBottom: "4px",
+                        fontSize: "12px",
+                        color: "#666",
                       }}
                     >
-                      <p style={{ marginBottom: "4px" }}>
-                        <strong>Amount:</strong> ₹{payment.amount?.toFixed(2)}
-                        <span style={{ marginLeft: "15px" }}>
-                          <strong>Method:</strong> {payment.paymentMethod}
-                        </span>
-                      </p>
-                      <p
-                        style={{
-                          marginBottom: "4px",
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        <strong>Date:</strong>{" "}
-                        {new Date(payment.paidAt).toLocaleString()}
-                      </p>
-                      <p
-                        style={{
-                          marginBottom: "0",
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        <strong>Transaction ID:</strong> {payment.transactionId}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+                      <strong>Date:</strong>{" "}
+                      {new Date(payment.paidAt).toLocaleString()}
+                    </p>
+                    <p
+                      style={{
+                        marginBottom: "0",
+                        fontSize: "12px",
+                        color: "#666",
+                      }}
+                    >
+                      <strong>Transaction ID:</strong> {payment.transactionId}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </Drawer>
