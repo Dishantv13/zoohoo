@@ -19,6 +19,8 @@ const invoiceSchema = new Schema(
   {
     invoiceNumber: {
       type: String,
+      unique: true,
+      required: true,
     },
     status: {
       type: String,
@@ -68,14 +70,14 @@ const invoiceSchema = new Schema(
       type: Number,
     },
     amountPaid: {
-        type: Number,   
-        default: 0,
+      type: Number,
+      default: 0,
     },
     remainingAmount: {
-        type: Number,
-        default: function() {
-            return this.totalAmount - this.amountPaid;
-        },
+      type: Number,
+      default: function () {
+        return this.totalAmount - this.amountPaid;
+      },
     },
     paymentHistory: [
       {
@@ -97,12 +99,12 @@ const invoiceSchema = new Schema(
 );
 
 invoiceSchema.pre("save", function () {
-    if(this.totalAmount && this.amountPaid >= 0) {
-        this.remainingAmount = this.totalAmount - this.amountPaid;
-    }
-    if(this.remainingAmount < 0) {
-        this.remainingAmount = 0;
-    }
+  if (this.totalAmount && this.amountPaid >= 0) {
+    this.remainingAmount = this.totalAmount - this.amountPaid;
+  }
+  if (this.remainingAmount < 0) {
+    this.remainingAmount = 0;
+  }
 });
 
 export const Invoice = mongoose.model("Invoice", invoiceSchema);

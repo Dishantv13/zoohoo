@@ -1,23 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
-// import customerReducer from "../features/customer/customer.slice";
-import invoiceReducer from "../features/invoice/invoice.slice";
-import authReducer from "../features/auth/authSlice";
-import { invoiceApi } from "../features/invoice/invoiceApi";
-import { customerApi } from "../features/customer/customerApi";
-import { paymentApi } from "../features/payment/paymentApi";
-import { reportApi } from "../features/report/reportApi";
-import { authApi } from "../features/auth/authApi";
+import authReducer from "../slice/authSlice";
+import { invoiceApi } from "../service/invoiceApi";
+import { customerApi } from "../service/customerApi";
+import { paymentApi } from "../service/paymentApi";
+import { reportApi } from "../service/reportApi";
+import { authApi } from "../service/authApi";
+import { chatApi } from "../service/chatApi";
 
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    // customers: customerReducer,
-    invoices: invoiceReducer,
     [invoiceApi.reducerPath]: invoiceApi.reducer,
     [customerApi.reducerPath]: customerApi.reducer,
     [paymentApi.reducerPath]: paymentApi.reducer,
     [reportApi.reducerPath]: reportApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
+    [chatApi.reducerPath]: chatApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }).concat(
@@ -26,6 +24,7 @@ const store = configureStore({
       paymentApi.middleware,
       reportApi.middleware,
       authApi.middleware,
+      chatApi.middleware,
     ),
 });
 

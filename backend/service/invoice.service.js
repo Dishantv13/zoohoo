@@ -1,6 +1,7 @@
 import { Invoice } from "../model/invoice.model.js";
 import { User } from "../model/user.model.js";
 import { Company } from "../model/company.model.js";
+import { Counter } from "../model/counter.model.js";
 import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 import excelJS from "exceljs";
@@ -26,7 +27,7 @@ const createInvoiceService = async (userId, data) => {
     throw new ApiError(404, "User not found");
   }
 
-  if(new Date(dueDate) < new Date(invoiceDate)) {
+  if (new Date(dueDate) < new Date(invoiceDate)) {
     throw new ApiError(400, "Due date cannot be before invoice date");
   }
 
@@ -64,11 +65,17 @@ const createInvoiceService = async (userId, data) => {
   const finalTax = Number(taxAmount.toFixed(2));
   const finalTotal = Number(totalAmount.toFixed(2));
 
-  const invoiceCount = await Invoice.countDocuments();
+  //   const invoiceCount = await Invoice.countDocuments();
+
+  const counter = await Counter.findOneAndUpdate(
+    { name: "invoice" },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true },
+  );
 
   const invoice = await Invoice.create({
-    invoiceNumber: `INV-${invoiceCount + 1}`,
-    invoiceCount: invoiceCount + 1,
+    invoiceNumber: `INV-${counter.seq}`,
+    invoiceCount: counter.seq,
     createdBy: userId,
     customer,
     companyId,
@@ -84,7 +91,6 @@ const createInvoiceService = async (userId, data) => {
     amountAfterDiscount: finalAmountAfterDiscount,
     totalAmount: finalTotal,
   });
-
 
   return invoice;
 };
@@ -122,6 +128,11 @@ const getInvoicesServices = async (userId, options = {}) => {
     { $sort: { isPaid: 1, dueDate: 1, createdAt: -1 } },
     { $skip: skip },
     { $limit: limit },
+    {
+      $project: {
+        paymentHistory: 0,
+      },
+    },
   ]);
 
   const summary = await Invoice.aggregate([
@@ -160,7 +171,8 @@ const getInvoicesServices = async (userId, options = {}) => {
   const populated = await Invoice.populate(invoices, [
     {
       path: "customer",
-      select: "name email",    },
+      select: "name email",
+    },
     {
       path: "createdBy",
       select: "name email role",
@@ -237,7 +249,7 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
     throw new ApiError(400, "Paid invoice cannot be updated");
   }
 
-  if(new Date(dueDate) < new Date(invoiceDate)) {
+  if (new Date(dueDate) < new Date(invoiceDate)) {
     throw new ApiError(400, "Due date cannot be before invoice date");
   }
 
@@ -625,6 +637,11 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
     { $sort: { isPaid: 1, dueDate: 1, createdAt: -1 } },
     { $skip: skip },
     { $limit: limit },
+    {
+        $project: {
+            paymentHistory: 0,
+        },
+    }
   ]);
 
   const summary = await Invoice.aggregate([
@@ -820,7 +837,10 @@ const exportInvoiceServices = async (userId, option = {}) => {
   let query = {};
 
   if (user.role === "admin") {
-    if (option.customerId && mongoose.Types.ObjectId.isValid(option.customerId)) {
+    if (
+      option.customerId &&
+      mongoose.Types.ObjectId.isValid(option.customerId)
+    ) {
       query = {
         $or: [
           { customer: option.customerId },

@@ -4,8 +4,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Card, Spin, notification } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import "./Auth.css";
-import { useLoginMutation } from "../features/auth/authApi";
-import { setCredentials } from "../features/auth/authSlice";
+import { useLoginMutation } from "../service/authApi";
+import { setCredentials } from "../slice/authSlice";
 
 export default function Login() {
   const dispatch = useDispatch();

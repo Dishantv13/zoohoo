@@ -9,19 +9,27 @@ import {
   Result,
   Space,
   Alert,
-  DatePicker,
 } from "antd";
 import { CreditCardOutlined, QrcodeOutlined } from "@ant-design/icons";
 import QRCode from "qrcode";
-import { apiService } from "../service/apiService";
+import {
+  useGetCardPaymentMutation,
+  useGetUPIPaymentMutation,
+} from "../service/paymentApi";
 
 const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [activeTab, setActiveTab] = useState("card");
   const [qrCodeImageUrl, setQrCodeImageUrl] = useState("");
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [getCardPayment, { isLoading: isCardPaymentLoading }] =
+    useGetCardPaymentMutation();
+  const [getUPIPayment, { isLoading: isQrPaymentLoading }] =
+    useGetUPIPaymentMutation();
+
+  const loading = isCardPaymentLoading || isQrPaymentLoading;
+  const toAmount = (value) => Number(Number(value || 0).toFixed(2));
 
   useEffect(() => {
     if (invoice) {
@@ -55,26 +63,24 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   }, [activeTab, invoice, paymentAmount]);
 
   const handleCardPayment = async (values) => {
-    setLoading(true);
     try {
-      const response = await apiService.cardPayment({
+      const response = await getCardPayment({
         invoiceId: invoice._id,
         cardNumber: values.cardNumber,
         cardHolder: values.cardHolder,
         expiryDate: values.expiryDate,
         cvv: values.cvv,
-        paymentAmount: values.paymentAmount,
-      });
-      console.log("Card Payment Response:", response.data);
+        paymentAmount: Number(values.paymentAmount),
+      }).unwrap();
 
-      const responseData = response?.data?.data || {};
+      const responseData = response?.data || {};
 
       setPaymentStatus({
         success: true,
         transactionId: responseData.transactionId,
-        amountPaid: Number(responseData.amountPaid.toFixed(2)) || 0,
-        remainingAmount: Number(responseData.remainingAmount.toFixed(2)) || 0,
-        message: response.data.message || "Payment successful",
+        amountPaid: toAmount(responseData.amountPaid),
+        remainingAmount: toAmount(responseData.remainingAmount),
+        message: response?.message || "Payment successful",
       });
 
       setTimeout(() => {
@@ -85,30 +91,28 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
       setPaymentStatus({
         success: false,
         message:
+          error?.data?.message ||
           error.response?.data?.message || "Payment failed. Please try again.",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleQRPayment = async () => {
-    setLoading(true);
     try {
-      const response = await apiService.qrPayment({
+      const response = await getUPIPayment({
         invoiceId: invoice._id,
         qrData: `QR-PAYMENT-${Date.now()}`,
         paymentAmount: paymentAmount,
-      });
+      }).unwrap();
 
-      const responseData = response.data.data;
+      const responseData = response?.data || {};
 
       setPaymentStatus({
         success: true,
         transactionId: responseData.transactionId,
-        amountPaid: Number(responseData.amountPaid.toFixed(2)) || 0,
-        remainingAmount: Number(responseData.remainingAmount.toFixed(2)) || 0,
-        message: response.data.message || "Payment successful",
+        amountPaid: toAmount(responseData.amountPaid),
+        remainingAmount: toAmount(responseData.remainingAmount),
+        message: response?.message || "Payment successful",
       });
 
       setTimeout(() => {
@@ -119,11 +123,10 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
       setPaymentStatus({
         success: false,
         message:
+          error?.data?.message ||
           error.response?.data?.message ||
           "QR payment failed. Please try again.",
       });
-    } finally {
-      setLoading(false);
     }
   };
 

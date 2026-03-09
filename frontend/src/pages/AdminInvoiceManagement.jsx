@@ -1,5 +1,5 @@
 import "@ant-design/v5-patch-for-react-19";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -36,9 +36,9 @@ import {
   useGetAdminAllInvoicesQuery,
   useDownloadInvoiceMutation,
   useExportInvoiceMutation,
-} from "../features/invoice/invoiceApi";
-import { useGetCustomersQuery } from "../features/customer/customerApi";
-import { useGetPaymentHistoryQuery } from "../features/payment/paymentApi";
+} from "../service/invoiceApi";
+import { useGetCustomersQuery } from "../service/customerApi";
+import { useGetPaymentHistoryQuery } from "../service/paymentApi";
 
 export default function AdminInvoiceManagement() {
   const { user } = useSelector((state) => state.auth);
@@ -50,8 +50,6 @@ export default function AdminInvoiceManagement() {
     useState(false);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
-  const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [statusFilters, setStatusFilters] = useState({
@@ -654,7 +652,7 @@ export default function AdminInvoiceManagement() {
           </Space>
         }
       >
-        <Spin spinning={loading}>
+        <Spin spinning={!data}>
           <Table
             columns={columns}
             dataSource={invoicesData}

@@ -78,6 +78,7 @@ const processCardPaymentService = async (userId, data) => {
 
   return {
     invoiceId: invoice._id,
+    invoiceNumber: invoice.invoiceNumber,
     transactionId,
     paymentMethod: "CARD",
     amountPaid: paymentAmount,

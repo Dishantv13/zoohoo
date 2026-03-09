@@ -1,7 +1,6 @@
 import { Conversation } from "../model/conversion.model.js";
 import { Message } from "../model/message.model.js";
 import { User } from "../model/user.model.js";
-import ApiError from "../util/apiError.js";
 import mongoose from "mongoose";
 
 const onlineUsers = new Map();

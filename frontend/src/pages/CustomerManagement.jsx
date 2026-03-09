@@ -1,6 +1,6 @@
 import "@ant-design/v5-patch-for-react-19";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
+import { useSelector } from "react-redux";
 import {
   Table,
   Button,
@@ -35,9 +35,9 @@ import {
   useAdminCreateCustomerMutation,
   useAdminUpdateCustomerMutation,
   useAdminDeleteCustomerMutation,
-} from "../features/customer/customerApi";
+} from "../service/customerApi";
 
-import { useGetCustomerInvoicesQuery } from "../features/invoice/invoiceApi";
+import { useGetCustomerInvoicesQuery } from "../service/invoiceApi";
 import "./Dashboard.css";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {

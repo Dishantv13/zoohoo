@@ -19,13 +19,15 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import { useGetCashPaymentMutation } from "../features/payment/paymentApi";
+import { useGetCashPaymentMutation } from "../service/paymentApi";
 
 const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const [form] = Form.useForm();
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
-  const [getCashPayment, { loading: cashPaymentLoading }] = useGetCashPaymentMutation();
+  const [getCashPayment, { isLoading: cashPaymentLoading }] = useGetCashPaymentMutation();
+
+  const toAmount = (value) => Number(Number(value || 0).toFixed(2));
 
   useEffect(() => {
     if (invoice && visible) {
@@ -44,17 +46,17 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
         customerId: invoice.customer?._id,
       }).unwrap();
 
-      const responseData = response.data.data;
+      const responseData = response?.data || {};
       
       setPaymentStatus({
         success: true,
         transactionId: responseData.transactionId,
-        amountPaid: Number(responseData.amountPaid.toFixed(2)),
-        remainingAmount: Number(responseData.remainingAmount.toFixed(2)),
-        totalAmountPaid: Number(responseData.totalAmountPaid.toFixed(2)),
-        totalAmount: Number(responseData.totalAmount.toFixed(2) || 0 ),
+        amountPaid: toAmount(responseData.amountPaid),
+        remainingAmount: toAmount(responseData.remainingAmount),
+        totalAmountPaid: toAmount(responseData.totalAmountPaid),
+        totalAmount: toAmount(responseData.totalAmount),
         invoiceStatus: responseData.invoiceStatus,
-        message: response.data.message || "Cash payment recorded successfully",
+        message: response?.message || "Cash payment recorded successfully",
       });
 
       setTimeout(() => {
@@ -67,6 +69,7 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
       setPaymentStatus({
         success: false,
         message:
+          error?.data?.message ||
           error.response?.data?.message ||
           "Failed to record cash payment. Please try again.",
       });
@@ -87,9 +90,9 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
 
   if (!invoice) return null;
 
-  const remainingAmount = Number(invoice.remainingAmount.toFixed(2)) || Number(invoice.totalAmount.toFixed(2)) || 0;
-  const totalAmount = Number(invoice.totalAmount.toFixed(2)) || 0;
-  const amountPaid = Number(invoice.amountPaid.toFixed(2)) || 0;
+  const remainingAmount = toAmount(invoice.remainingAmount ?? invoice.totalAmount);
+  const totalAmount = toAmount(invoice.totalAmount);
+  const amountPaid = toAmount(invoice.amountPaid);
   const calculatedRemaining = paymentAmount > 0 ? Math.max(0, remainingAmount - paymentAmount) : remainingAmount;
 
   return (

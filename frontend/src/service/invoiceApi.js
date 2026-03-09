@@ -23,7 +23,7 @@ export const invoiceApi = createApi({
       invalidatesTags: [{ type: "Invoice", id: "LIST" }],
     }),
     getInvoices: builder.query({
-      query: ({page = 1, limit = 10, status}) => ({
+      query: ({ page = 1, limit = 10, status }) => ({
         url: "/",
         params: { page, limit, status },
       }),
@@ -134,7 +134,6 @@ export const invoiceApi = createApi({
         result
           ? [{ type: "InvoiceExport", id: "EXPORT" }]
           : [{ type: "InvoiceExport", id: "EXPORT" }],
-
     }),
   }),
 });
@@ -147,7 +146,7 @@ export const {
   useUpdateInvoiceStatusMutation,
   useDeleteInvoiceMutation,
   useDownloadInvoiceMutation,
-  useGetCustomerInvoicesQuery,  
+  useGetCustomerInvoicesQuery,
   useGetAdminAllInvoicesQuery,
   useExportInvoiceMutation,
 } = invoiceApi;

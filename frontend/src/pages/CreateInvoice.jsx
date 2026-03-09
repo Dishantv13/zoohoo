@@ -13,15 +13,14 @@ import {
 } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
-import { apiService } from "../service/apiService";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import {
   useGetInvoiceByIdQuery,
   useUpdateInvoiceMutation,
   useCreateInvoiceMutation,
-} from "../features/invoice/invoiceApi";
+} from "../service/invoiceApi";
 
 export default function CreateInvoice() {
   const [form] = Form.useForm();
@@ -156,7 +155,7 @@ export default function CreateInvoice() {
       </Form.Item>
 
       <Form.Item label="Customer">
-        <Input value={currentUser?.name} />
+        <Input value={currentUser?.name || ""} disabled />
       </Form.Item>
 
       {isEditing && (

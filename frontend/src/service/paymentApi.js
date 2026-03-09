@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { invoiceApi } from "../invoice/invoiceApi";
+import { invoiceApi } from "./invoiceApi";
 
 export const paymentApi = createApi({
   reducerPath: "paymentApi",
@@ -31,8 +31,7 @@ export const paymentApi = createApi({
               { type: "Invoice", id: arg?.invoiceId },
             ]),
           );
-        } catch {
-        }
+        } catch {}
       },
     }),
     getUPIPayment: builder.mutation({
@@ -51,8 +50,7 @@ export const paymentApi = createApi({
               { type: "Invoice", id: arg?.invoiceId },
             ]),
           );
-        } catch {
-        }
+        } catch {}
       },
     }),
     getCashPayment: builder.mutation({
@@ -71,8 +69,7 @@ export const paymentApi = createApi({
               { type: "Invoice", id: arg?.invoiceId },
             ]),
           );
-        } catch {
-        }
+        } catch {}
       },
     }),
     getPaymentStatus: builder.query({
@@ -101,4 +98,10 @@ export const paymentApi = createApi({
   }),
 });
 
-export const { useGetCardPaymentMutation, useGetUPIPaymentMutation, useGetCashPaymentMutation, useGetPaymentStatusQuery, useGetPaymentHistoryQuery } = paymentApi;
+export const {
+  useGetCardPaymentMutation,
+  useGetUPIPaymentMutation,
+  useGetCashPaymentMutation,
+  useGetPaymentStatusQuery,
+  useGetPaymentHistoryQuery,
+} = paymentApi;

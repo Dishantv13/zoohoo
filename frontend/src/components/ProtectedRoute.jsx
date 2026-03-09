@@ -1,6 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { useGetCurrentUserQuery } from "../features/auth/authApi";
+import { useGetCurrentUserQuery } from "../service/authApi";
 
 export default function ProtectedRoute({ children }) {
 

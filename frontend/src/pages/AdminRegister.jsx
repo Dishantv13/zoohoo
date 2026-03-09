@@ -25,7 +25,7 @@ import {
   gstValidator,
   panValidator,
 } from "../validation/validation";
-import { useAdminRegisterMutation } from "../features/auth/authApi";
+import { useAdminRegisterMutation } from "../service/authApi";
 import "./Auth.css";
 
 export default function AdminRegister() {

@@ -251,10 +251,11 @@ export default function AdminChatPage() {
   };
 
   const getOtherParticipant = (conversation) => {
-    if (!conversation.participant || conversation.participant.length === 0) {
-      return null;
-    }
-    return conversation.participant.find((p) => p._id !== currentUser?._id);
+    if (!conversation.participant) return null;
+
+    return conversation.participant.find(
+      (p) => p._id !== currentUser?._id && p.role !== "admin",
+    );
   };
 
   const formatTime = (timestamp) => {
@@ -359,7 +360,9 @@ export default function AdminChatPage() {
                     title={
                       <Space>
                         <Text strong>
-                          {otherParticipant?.name || "Unknown"}
+                          {otherParticipant?.name ||
+                            otherParticipant?.email ||
+                            "Unknown"}
                         </Text>
                         {unreadCount > 0 && (
                           <Badge
@@ -465,7 +468,7 @@ export default function AdminChatPage() {
                     />
                   ) : (
                     messages.map((msg) => {
-                      const isOwnMessage = msg.sender._id === currentUser?._id;
+                      const isOwnMessage = msg.sender?.role === "admin";
 
                       return (
                         <div

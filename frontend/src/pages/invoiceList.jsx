@@ -34,10 +34,10 @@ import "./InvoiceManagement.css";
 import {
   useGetInvoicesQuery,
   useDeleteInvoiceMutation,
-} from "../features/invoice/invoiceApi";
-import { useGetPaymentHistoryQuery } from "../features/payment/paymentApi";
-import { useExportInvoiceMutation } from "../features/invoice/invoiceApi";
-import { useDownloadInvoiceMutation } from "../features/invoice/invoiceApi";
+} from "../service/invoiceApi";
+import { useGetPaymentHistoryQuery } from "../service/paymentApi";
+import { useExportInvoiceMutation } from "../service/invoiceApi";
+import { useDownloadInvoiceMutation } from "../service/invoiceApi";
 
 export default function InvoiceList() {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ export default function InvoiceList() {
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [pageSize, setPageSize] = useState();
+  const [pageSize, setPageSize] = useState(10);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
 
@@ -292,36 +292,36 @@ export default function InvoiceList() {
         </Flex>
       ),
     },
-    {
-      title: (
-        <div style={{ lineHeight: "1.2", textAlign: "center" }}>
-          <div>Discount Rate</div>
-          <div>(%)</div>
-        </div>
-      ),
-      dataIndex: "parseDiscount",
-      width: 100,
-      key: "discountRate",
-      render: (v = 0) => (
-        <Flex align="center" gap="small" justify="center">
-          <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
-        </Flex>
-      ),
-    },
-    {
-      title: "Discount ₹",
-      dataIndex: "discount",
-      width: 120,
-      key: "discount",
-      render: (v) => {
-        const value = Number(v) || 0;
-        return (
-          <Flex align="center" gap="small">
-            <Tag color="red">₹{value.toFixed(2)}</Tag>
-          </Flex>
-        );
-      },
-    },
+    // {
+    //   title: (
+    //     <div style={{ lineHeight: "1.2", textAlign: "center" }}>
+    //       <div>Discount Rate</div>
+    //       <div>(%)</div>
+    //     </div>
+    //   ),
+    //   dataIndex: "parseDiscount",
+    //   width: 100,
+    //   key: "discountRate",
+    //   render: (v = 0) => (
+    //     <Flex align="center" gap="small" justify="center">
+    //       <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
+    //     </Flex>
+    //   ),
+    // },
+    // {
+    //   title: "Discount ₹",
+    //   dataIndex: "discount",
+    //   width: 120,
+    //   key: "discount",
+    //   render: (v) => {
+    //     const value = Number(v) || 0;
+    //     return (
+    //       <Flex align="center" gap="small">
+    //         <Tag color="red">₹{value.toFixed(2)}</Tag>
+    //       </Flex>
+    //     );
+    //   },
+    // },
     {
       title: (
         <div style={{ lineHeight: "1.2", textAlign: "center" }}>
@@ -338,22 +338,22 @@ export default function InvoiceList() {
         </Flex>
       ),
     },
-    {
-      title: (
-        <div style={{ lineHeight: "1.2", textAlign: "center" }}>
-          <div>Tax Rate</div>
-          <div>(%)</div>
-        </div>
-      ),
-      dataIndex: "parseTaxRate",
-      width: 100,
-      key: "taxRate",
-      render: (v = 0) => (
-        <Flex align="center" gap="small" justify="center">
-          <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
-        </Flex>
-      ),
-    },
+    // {
+    //   title: (
+    //     <div style={{ lineHeight: "1.2", textAlign: "center" }}>
+    //       <div>Tax Rate</div>
+    //       <div>(%)</div>
+    //     </div>
+    //   ),
+    //   dataIndex: "parseTaxRate",
+    //   width: 100,
+    //   key: "taxRate",
+    //   render: (v = 0) => (
+    //     <Flex align="center" gap="small" justify="center">
+    //       <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
+    //     </Flex>
+    //   ),
+    // },
     {
       title: "Tax ₹",
       dataIndex: "tax",

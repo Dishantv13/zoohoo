@@ -13,10 +13,10 @@ export const customerApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    customerProfile: builder.query({
-      query: () => "/profile",
-      providesTags: (result) => [{ type: "Customer", id: result?.data?._id }],
-    }),
+    // customerProfile: builder.query({
+    //   query: () => "/profile",
+    //   providesTags: (result) => [{ type: "Customer", id: result?.data?._id }],
+    // }),
     updateCustomerProfile: builder.mutation({
       query: (data) => ({
         url: "/update-profile",

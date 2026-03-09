@@ -6,13 +6,13 @@ export const authApi = createApi({
     baseUrl: "http://localhost:5000/api/auth",
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("token");
-        if (token) {
-            headers.set("Authorization", `Bearer ${token}`);
-        }
-        return headers;
-    }
-    }),
-    endpoints: (builder) => ({  
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+  endpoints: (builder) => ({
     register: builder.mutation({
       query: (data) => ({
         url: "/register",
@@ -21,23 +21,24 @@ export const authApi = createApi({
       }),
     }),
     login: builder.mutation({
-        query: (data) => ({
-            url: "/login",
-            method: "POST",
-            body: data,
-        }),
+      query: (data) => ({
+        url: "/login",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["User"],
     }),
     logout: builder.mutation({
-        query: () => ({
-            url: "/logout",
-            method: "POST",
-        }),
+      query: () => ({
+        url: "/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["User"],
     }),
-    getCurrentUser: builder.query({ 
-        query: () => ({
-            url: "/me",
-        }),
-        providesTags: ["User"],
+    getCurrentUser: builder.query({
+      query: () => ({
+        url: "/me",
+      }),
     }),
     adminRegister: builder.mutation({
       query: (data) => ({
@@ -54,5 +55,5 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useGetCurrentUserQuery,
-  useAdminRegisterMutation
+  useAdminRegisterMutation,
 } = authApi;

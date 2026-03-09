@@ -18,7 +18,7 @@ export const reportApi = createApi({
         url: "/report",
         params,
       }),
-        providesTags: ["Dashboard"],
+      providesTags: ["Dashboard"],
     }),
     getRevenueByMonth: builder.query({
       query: (params) => ({

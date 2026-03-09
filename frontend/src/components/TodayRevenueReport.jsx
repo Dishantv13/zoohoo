@@ -21,7 +21,7 @@ import { Row, Col, Card, Spin } from "antd";
 import { Line } from "react-chartjs-2";
 import apiService from "../service/apiService";
 import dayjs from "dayjs";
-import { useGetTodayRevenueQuery } from "../features/report/reportApi";
+import { useGetTodayRevenueQuery } from "../service/reportApi";
 
 const TodayRevenueReport = ({ dates }) => {
   const { data, isLoading } = useGetTodayRevenueQuery({

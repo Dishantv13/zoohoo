@@ -24,12 +24,9 @@ import AdminInvoiceManagement from "./pages/AdminInvoiceManagement.jsx";
 // import AdminChatPage from "./pages/AdminChatPage.jsx";
 // import CustomerChatPage from "./pages/CustomerChatPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-// import { logout, getCurrentUser } from "./features/auth/authSlice.js";
-import { setCredentials, logoutUser } from "./features/auth/authSlice.js";
-import {
-  useGetCurrentUserQuery,
-  useLogoutMutation,
-} from "./features/auth/authApi";
+import { setCredentials, logoutUser } from "./slice/authSlice.js";
+import { useGetCurrentUserQuery, useLogoutMutation } from "./service/authApi";
+import { authApi } from "./service/authApi";
 import Report from "./pages/Report.jsx";
 import "./index.css";
 
@@ -63,7 +60,7 @@ export default function App() {
       await logoutApi().unwrap();
 
       dispatch(logoutUser());
-
+      dispatch(authApi.util.resetApiState());
       message.success("Logout Successful");
     } catch (error) {
       message.error("Logout Failed");
@@ -97,10 +94,10 @@ export default function App() {
             icon: <UnorderedListOutlined />,
             label: <Link to="/report">Report</Link>,
           },
-          //   {
-          //     key: "5",
-          //     label: <Link to="/admin/chat">Admin Chat</Link>,
-          //   },
+          // {
+          //   key: "5",
+          //   label: <Link to="/admin/chat">Admin Chat</Link>,
+          // },
         ]
       : [
           {
@@ -153,10 +150,9 @@ export default function App() {
         return ["3"];
       } else if (pathname === "/report") {
         return ["4"];
+      } else if (pathname === "/admin/chat") {
+        return ["5"];
       }
-      //   else if (pathname === "/admin/chat") {
-      //     return ["5"];
-      //   }
     } else {
       if (pathname === "/" || pathname === "/customers") {
         return ["1"];
@@ -254,8 +250,8 @@ export default function App() {
                 <AdminChatPage />
               </ProtectedRoute>
             }
-          />
-          <Route
+          /> */}
+          {/* <Route
             path="/customer/chat"
             element={
               <ProtectedRoute>

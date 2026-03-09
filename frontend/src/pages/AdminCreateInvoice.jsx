@@ -23,11 +23,11 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "./CreateInvoice.css";
-import { useGetCustomersQuery } from "../features/customer/customerApi";
+import { useGetCustomersQuery } from "../service/customerApi";
 import {
   useUpdateInvoiceMutation,
   useCreateInvoiceMutation,
-} from "../features/invoice/invoiceApi";
+} from "../service/invoiceApi";
 
 export default function AdminCreateInvoice() {
   const { user } = useSelector((state) => state.auth);

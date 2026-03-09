@@ -10,7 +10,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
-import { useGetRevenueByMonthQuery } from "../features/report/reportApi";
+import { useGetRevenueByMonthQuery } from "../service/reportApi";
 
 const MonthlyRevenueReport = ({dates}) => {
   const { data, isLoading } = useGetRevenueByMonthQuery({

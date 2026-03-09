@@ -10,7 +10,7 @@ import MonthlyRevenueReport from "../components/MonthlyRevenueReport";
 import YearlyRevenueReport from "../components/YearlyRevenueReport";
 import TodayRevenueReport from "../components/TodayRevenueReport";
 import TopCustomerReport from "../components/TopCustomerReport";
-import { useGetDashBoardQuery } from "../features/report/reportApi";
+import { useGetDashBoardQuery } from "../service/reportApi";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;

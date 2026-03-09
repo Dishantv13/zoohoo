@@ -8,11 +8,7 @@ import {
   Card,
   Spin,
   notification,
-  Typography,
 } from "antd";
-
-const { Text } = Typography;
-
 import {
   UserOutlined,
   LockOutlined,
@@ -21,7 +17,7 @@ import {
   EnvironmentOutlined,
 } from "@ant-design/icons";
 import { phoneValidator } from "../validation/validation";
-import { useRegisterMutation } from "../features/auth/authApi";
+import { useRegisterMutation } from "../service/authApi";
 import "./Auth.css";
 
 export default function Register() {

@@ -1,28 +1,28 @@
 import axios from "axios";
 
-const api = axios.create({
-  baseURL: "http://localhost:5000/api",
-});
+// const api = axios.create({
+//   baseURL: "http://localhost:5000/api",
+// });
 
-const customerApi = axios.create({
-  baseURL: "http://localhost:5000/api/customers",
-});
+// const customerApi = axios.create({
+//   baseURL: "http://localhost:5000/api/customers",
+// });
 
-const authApi = axios.create({
-  baseURL: "http://localhost:5000/api/auth",
-});
+// const authApi = axios.create({
+//   baseURL: "http://localhost:5000/api/auth",
+// });
 
-const invoiceApi = axios.create({
-  baseURL: "http://localhost:5000/api/invoices",
-});
+// const invoiceApi = axios.create({
+//   baseURL: "http://localhost:5000/api/invoices",
+// });
 
-const paymentApi = axios.create({
-  baseURL: "http://localhost:5000/api/payments",
-});
+// const paymentApi = axios.create({
+//   baseURL: "http://localhost:5000/api/payments",
+// });
 
-const dashboardApi = axios.create({
-  baseURL: "http://localhost:5000/api/dashboard",
-});
+// const dashboardApi = axios.create({
+//   baseURL: "http://localhost:5000/api/dashboard",
+// });
 
 const chatApi = axios.create({
   baseURL: "http://localhost:5000/api/chat",
@@ -56,12 +56,12 @@ const setupInterceptors = (instance) => {
   );
 };
 
-setupInterceptors(api);
-setupInterceptors(customerApi);
-setupInterceptors(authApi);
-setupInterceptors(invoiceApi);
-setupInterceptors(paymentApi);
-setupInterceptors(dashboardApi);
+// setupInterceptors(api);
+// setupInterceptors(customerApi);
+// setupInterceptors(authApi);
+// setupInterceptors(invoiceApi);
+// setupInterceptors(paymentApi);
+// setupInterceptors(dashboardApi);
 setupInterceptors(chatApi);
 export const apiService = {
   // Customer APIs

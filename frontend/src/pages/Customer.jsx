@@ -19,26 +19,29 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  useCustomerProfileQuery,
+//   useCustomerProfileQuery,
   useUpdateCustomerProfileMutation,
   useChangePasswordMutation,
   useDeleteCustomerProfileMutation,
-} from "../features/customer/customerApi";
+} from "../service/customerApi";
+
+import { useGetCurrentUserQuery } from "../service/authApi";
 
 export default function Customers() {
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [passwordModal, setPasswordModal] = useState(false);
   const navigate = useNavigate();
 
-  const { data, refetch, isLoading } = useCustomerProfileQuery();
+  const { data, refetch, isLoading } = useGetCurrentUserQuery();
 
   const [updateCustomerProfile, { isLoading: updateLoading }] =
     useUpdateCustomerProfileMutation();
-  const [changePassword] = useChangePasswordMutation();
-  const [deleteCustomerProfile] = useDeleteCustomerProfileMutation();
+  const [changePassword, { isLoading: changePasswordLoading }] =
+    useChangePasswordMutation();
+  const [deleteCustomerProfile, { isLoading: deleteLoading }] =
+    useDeleteCustomerProfileMutation();
 
   useEffect(() => {
     if (data?.data) {
@@ -48,7 +51,6 @@ export default function Customers() {
 
   const onFinish = async (values) => {
     try {
-      setLoading(true);
       await updateCustomerProfile(values).unwrap();
 
       notification.success({
@@ -67,7 +69,6 @@ export default function Customers() {
 
   const onChangePassword = async (values) => {
     try {
-      setLoading(true);
       await changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
@@ -96,7 +97,6 @@ export default function Customers() {
       okType: "danger",
       onOk: async () => {
         try {
-          setLoading(true);
           await deleteCustomerProfile().unwrap();
 
           notification.success({
@@ -138,7 +138,11 @@ export default function Customers() {
                 <Button type="primary" onClick={() => setIsEditing(true)}>
                   Edit
                 </Button>
-                <Button danger onClick={handleDeleteAccount}>
+                <Button
+                  danger
+                  onClick={handleDeleteAccount}
+                  loading={deleteLoading}
+                >
                   Delete Account
                 </Button>
               </>
@@ -208,7 +212,7 @@ export default function Customers() {
           passwordForm.resetFields();
         }}
         onOk={() => passwordForm.submit()}
-        confirmLoading={loading}
+        confirmLoading={changePasswordLoading}
       >
         <Form layout="vertical" form={passwordForm} onFinish={onChangePassword}>
           <Form.Item

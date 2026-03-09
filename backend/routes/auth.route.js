@@ -1,4 +1,4 @@
-import express from "express";
+import { Router} from "express";
 import {
   register,
   login,
@@ -6,10 +6,10 @@ import {
   logout,
   getCurrentUserProfile,
 } from "../controller/user.controller.js";
-import { protect, adminOnly } from "../middleware/auth.js";
+import { protect } from "../middleware/auth.js";
 import { authRateLimiter } from "../middleware/rateLimit.js";
 
-const router = express.Router();
+const router = Router();
 
 router.route("/register").post(register);
 router.route("/login").post(authRateLimiter, login);
