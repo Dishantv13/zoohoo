@@ -81,7 +81,7 @@ export const invoiceApi = createApi({
         url: `/${id}/download`,
         responseHandler: (response) => response.blob(),
       }),
-      providesTags: (result, error, id) => [{ type: "Invoice", id }],
+      invalidatesTags: (result, error, id) => [{ type: "Invoice", id }],
     }),
     getAdminAllInvoices: builder.query({
       query: ({ page = 1, limit = 10, status, customerId }) => {

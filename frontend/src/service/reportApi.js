@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const reportApi = createApi({
   reducerPath: "reportApi",
+  tagTypes: ["Dashboard"],
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:5000/api/dashboard",
     prepareHeaders: (headers) => {

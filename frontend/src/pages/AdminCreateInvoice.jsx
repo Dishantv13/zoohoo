@@ -135,17 +135,21 @@ export default function AdminCreateInvoice() {
       };
 
       if (isEditMode) {
-        await updateInvoice({
+        const res = await updateInvoice({
           id: editInvoiceId,
           ...invoiceData,
         }).unwrap();
 
-        message.success("Invoice updated successfully");
-        navigate("/admin/invoices");
+        if (res?.success) {
+          message.success("Invoice updated successfully");
+          navigate("/admin/invoices");
+        }
       } else {
-        await createInvoice(invoiceData).unwrap();
+        const res = await createInvoice(invoiceData).unwrap();
 
-        message.success("Invoice created successfully");
+        if (res?.success) {
+          message.success("Invoice created successfully");
+        }
 
         form.resetFields();
         setItems([{ name: "", quantity: 1, rate: 0 }]);

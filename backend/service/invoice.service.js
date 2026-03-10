@@ -64,6 +64,7 @@ const createInvoiceService = async (userId, data) => {
   const finalAmountAfterDiscount = Number(amountAfterDiscount.toFixed(2));
   const finalTax = Number(taxAmount.toFixed(2));
   const finalTotal = Number(totalAmount.toFixed(2));
+  const remainingAmount = finalTotal;
 
   //   const invoiceCount = await Invoice.countDocuments();
 
@@ -90,6 +91,7 @@ const createInvoiceService = async (userId, data) => {
     discount: finalDiscountAmount,
     amountAfterDiscount: finalAmountAfterDiscount,
     totalAmount: finalTotal,
+    remainingAmount,
   });
 
   return invoice;
@@ -275,6 +277,7 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
   const finalAmountAfterDiscount = Number(amountAfterDiscount.toFixed(2));
   const finalTax = Number(taxAmount.toFixed(2));
   const finalTotal = Number(totalAmount.toFixed(2));
+  const remainingAmount = finalTotal - invoice.amountPaid;
 
   const updateData = {
     customer,
@@ -289,6 +292,7 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
     amountAfterDiscount: finalAmountAfterDiscount,
     discount: finalDiscountAmount,
     totalAmount: finalTotal,
+    remainingAmount,
   };
 
   const updatedInvoice = await Invoice.findByIdAndUpdate(

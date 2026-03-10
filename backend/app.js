@@ -37,6 +37,8 @@ import authRouter from "./routes/auth.route.js";
 import paymentRouter from "./routes/payment.route.js";
 import dashboardRouter from "./routes/report.route.js";
 import chatRouter from "./routes/chat.route.js";
+import vendorRouter from "./routes/vendor.route.js";
+import billRouter from "./routes/bill.route.js";
 
 app.use("/api/customers", userRouter);
 app.use("/api/invoices", invoiceRouter);
@@ -44,6 +46,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/payments", apiRateLimiter, paymentRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/vendors", vendorRouter);
+app.use("/api/bills", billRouter);
 
 app.use(globalErrorHandler);
 

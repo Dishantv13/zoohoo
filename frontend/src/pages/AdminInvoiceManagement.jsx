@@ -69,7 +69,7 @@ export default function AdminInvoiceManagement() {
     );
   }
 
-  const { data: customersData, error: customersError } = useGetCustomersQuery({
+  const { data: customersData } = useGetCustomersQuery({
     limit: 1000,
   });
 
@@ -84,18 +84,20 @@ export default function AdminInvoiceManagement() {
 
   const invoicesData = data?.data?.data || [];
 
+  const pagination  = data?.data?.pagination || {};
   const paginationData = {
-    current: data?.data?.pagination?.page || 1,
-    pageSize: data?.data?.pagination?.limit || 10,
-    total: data?.data?.pagination?.totalItems || 0,
+    current: pagination.page || 1,
+    pageSize: pagination.limit || 10,
+    total: pagination.totalItems || 0,
   };
 
+  const summary = data?.data?.summary || {};
   const summaryData = {
-    totalInvoices: data?.data?.summary?.totalInvoices || 0,
-    overdueCount: data?.data?.summary?.overdueCount || 0,
-    pendingAmount: data?.data?.summary?.pendingAmount || 0,
-    paidAmount: data?.data?.summary?.paidAmount || 0,
-    totalAmount: data?.data?.summary?.totalAmount || 0,
+    totalInvoices: summary.totalInvoices || 0,
+    overdueCount: summary.overdueCount || 0,
+    pendingAmount: summary.pendingAmount || 0,
+    paidAmount: summary.paidAmount || 0,
+    totalAmount: summary.totalAmount || 0,
   };
 
   const { data: paymentHistoryData } = useGetPaymentHistoryQuery(

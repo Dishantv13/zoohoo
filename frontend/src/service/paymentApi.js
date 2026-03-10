@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { invoiceApi } from "./invoiceApi";
+import { reportApi } from "./reportApi";
 
 export const paymentApi = createApi({
   reducerPath: "paymentApi",
@@ -68,6 +69,9 @@ export const paymentApi = createApi({
               { type: "Invoice", id: "LIST" },
               { type: "Invoice", id: arg?.invoiceId },
             ]),
+          );
+          dispatch(
+            reportApi.util.invalidateTags(["Dashboard"]),
           );
         } catch {}
       },

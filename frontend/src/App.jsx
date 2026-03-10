@@ -59,6 +59,8 @@ export default function App() {
     try {
       await logoutApi().unwrap();
 
+      localStorage.clear();
+
       dispatch(logoutUser());
       dispatch(authApi.util.resetApiState());
       message.success("Logout Successful");

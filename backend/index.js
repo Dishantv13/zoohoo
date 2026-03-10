@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 import connectToDB from "./config/db.js";
 import { app, server } from "./app.js";
 
+// import "./crons/reminderJob.js";
+
 dotenv.config({
   path: "/env",
 });
