@@ -169,7 +169,7 @@ export default function AdminInvoiceManagement() {
   };
 
   const handleEdit = (invoice) => {
-    navigate("/create-invoice", { state: { invoice } });
+    navigate("/admin/customer/create-invoice", { state: { invoice } });
   };
 
   const handleCashPayment = (invoice) => {
@@ -845,7 +845,8 @@ export default function AdminInvoiceManagement() {
       </Drawer>
 
       <CashPaymentModal
-        invoice={selectedInvoiceForPayment}
+      type="invoice"
+        data={selectedInvoiceForPayment}
         visible={isCashPaymentModalVisible}
         onClose={() => {
           setIsCashPaymentModalVisible(false);

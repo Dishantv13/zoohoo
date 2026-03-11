@@ -13,14 +13,11 @@ import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = Router();
 
-// Public route for vendor login
 router.route("/login").post(vendorLogin);
 
-// Protected routes - require authentication
 router.use(protect);
-router.use(adminOnly); // Only admins can manage vendors
+router.use(adminOnly);
 
-// Vendor CRUD operations
 router.route("/").post(createVendor).get(getVendors);
 
 router
@@ -29,7 +26,6 @@ router
   .put(updateVendor)
   .delete(deleteVendor);
 
-// Vendor bills and statistics
 router.route("/:vendorId/bills").get(getVendorBills);
 router.route("/:vendorId/stats").get(getVendorStats);
 

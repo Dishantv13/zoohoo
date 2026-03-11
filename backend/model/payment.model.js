@@ -5,7 +5,6 @@ const paymentSchema = new mongoose.Schema(
     invoice: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Invoice",
-      required: true,
     },
     bill: {
       type: mongoose.Schema.Types.ObjectId,

@@ -7,6 +7,8 @@ import {
   UnorderedListOutlined,
   LogoutOutlined,
   TeamOutlined,
+  ShopOutlined,
+  AppstoreOutlined,
 } from "@ant-design/icons";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
@@ -17,12 +19,15 @@ import CreateInvoice from "./pages/CreateInvoice.jsx";
 import AdminCreateInvoice from "./pages/AdminCreateInvoice.jsx";
 import InvoiceList from "./pages/invoiceList.jsx";
 import Login from "./pages/Login.jsx";
+import VendorLogin from "./pages/VendorLogin.jsx";
 import Register from "./pages/Register.jsx";
 import AdminRegister from "./pages/AdminRegister.jsx";
 import CustomerManagement from "./pages/CustomerManagement.jsx";
 import AdminInvoiceManagement from "./pages/AdminInvoiceManagement.jsx";
-// import AdminChatPage from "./pages/AdminChatPage.jsx";
-// import CustomerChatPage from "./pages/CustomerChatPage.jsx";
+import VendorManagement from "./pages/VendorManagement.jsx";
+import AdminBillManagement from "./pages/AdminBillManagement.jsx";
+import AdminCreateBill from "./pages/AdminCreateBill.jsx";
+import VendorInventory from "./pages/VendorInventory.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { setCredentials, logoutUser } from "./slice/authSlice.js";
 import { useGetCurrentUserQuery, useLogoutMutation } from "./service/authApi";
@@ -39,11 +44,11 @@ export default function App() {
 
   const { data: currentUserData, isLoading: currentUserLoading } =
     useGetCurrentUserQuery(undefined, {
-      skip: !token,
+      skip: !token || user?.role === "vendor",
     });
 
   useEffect(() => {
-    if (currentUserData?.data) {
+    if (currentUserData?.data && user?.role !== "vendor") {
       dispatch(
         setCredentials({
           user: currentUserData.data,
@@ -51,13 +56,15 @@ export default function App() {
         }),
       );
     }
-  }, [currentUserData, dispatch, token]);
+  }, [currentUserData, dispatch, token, user?.role]);
 
   const [logoutApi] = useLogoutMutation();
 
   const handleLogout = async () => {
     try {
-      await logoutApi().unwrap();
+      if (user?.role !== "vendor") {
+        await logoutApi().unwrap();
+      }
 
       localStorage.clear();
 
@@ -69,7 +76,7 @@ export default function App() {
     }
   };
 
-  const authRoutes = ["/login", "/register", "/admin/register"];
+  const authRoutes = ["/login", "/vendor/login", "/register", "/admin/register"];
 
   const showLayout = isAuthenticated && !authRoutes.includes(pathname);
 
@@ -77,52 +84,78 @@ export default function App() {
     user?.role === "admin"
       ? [
           {
-            key: "1",
+            key: "customer-tab",
             icon: <TeamOutlined />,
-            label: <Link to="/admin/customers">Manage Customers</Link>,
+            label: "Customer",
+            children: [
+              {
+                key: "customer-management",
+                label: <Link to="/admin/customers">Customer Management</Link>,
+              },
+              {
+                key: "customer-create-invoice",
+                label: (
+                  <Link to="/admin/customer/create-invoice">Create Invoice</Link>
+                ),
+              },
+              {
+                key: "customer-invoice-management",
+                label: (
+                  <Link to="/admin/customer/invoices">Invoice Management</Link>
+                ),
+              },
+            ],
           },
           {
-            key: "2",
-            icon: <FileAddOutlined />,
-            label: <Link to="/create-invoice">Create Invoice</Link>,
+            key: "vendor-tab",
+            icon: <ShopOutlined />,
+            label: "Vendor",
+            children: [
+              {
+                key: "vendor-management",
+                label: <Link to="/admin/vendors">Vendor Management</Link>,
+              },
+              {
+                key: "vendor-create-bill",
+                label: <Link to="/admin/vendor/create-bill">Create Bill</Link>,
+              },
+              {
+                key: "vendor-bill-management",
+                label: <Link to="/admin/vendor/bills">Bill Management</Link>,
+              },
+            ],
           },
           {
-            key: "3",
-            icon: <UnorderedListOutlined />,
-            label: <Link to="/admin/invoices">Invoice Management</Link>,
-          },
-          {
-            key: "4",
+            key: "report",
             icon: <UnorderedListOutlined />,
             label: <Link to="/report">Report</Link>,
           },
-          // {
-          //   key: "5",
-          //   label: <Link to="/admin/chat">Admin Chat</Link>,
-          // },
         ]
-      : [
-          {
-            key: "1",
-            icon: <UserOutlined />,
-            label: <Link to="/customers">Customer Profile</Link>,
-          },
-          {
-            key: "2",
-            icon: <FileAddOutlined />,
-            label: <Link to="/create-invoice">Create Invoice</Link>,
-          },
-          {
-            key: "3",
-            icon: <UnorderedListOutlined />,
-            label: <Link to="/invoices">Invoice</Link>,
-          },
-          //   {
-          //     key: "4",
-          //     icon: <UserOutlined />,
-          //     label: <Link to="/customer/chat">Support Chat</Link>,
-          //   },
-        ];
+      : user?.role === "vendor"
+        ? [
+            {
+              key: "vendor-inventory",
+              icon: <AppstoreOutlined />,
+              label: <Link to="/vendor/inventory">My Inventory</Link>,
+            },
+          ]
+        : [
+            {
+              key: "1",
+              icon: <UserOutlined />,
+              label: <Link to="/customers">Customer Profile</Link>,
+            },
+            {
+              key: "2",
+              icon: <FileAddOutlined />,
+              label: <Link to="/create-invoice">Create Invoice</Link>,
+            },
+            {
+              key: "3",
+              icon: <UnorderedListOutlined />,
+              label: <Link to="/invoices">Invoice</Link>,
+            },
+          ];
 
   const userMenuItems = [
     {
@@ -145,30 +178,38 @@ export default function App() {
   const selectedKey = (() => {
     if (user?.role === "admin") {
       if (pathname === "/" || pathname === "/admin/customers") {
-        return ["1"];
-      } else if (pathname === "/create-invoice") {
-        return ["2"];
-      } else if (pathname === "/admin/invoices") {
-        return ["3"];
+        return ["customer-management"];
+      } else if (
+        pathname === "/admin/customer/create-invoice" ||
+        pathname === "/create-invoice"
+      ) {
+        return ["customer-create-invoice"];
+      } else if (
+        pathname === "/admin/customer/invoices" ||
+        pathname === "/admin/invoices"
+      ) {
+        return ["customer-invoice-management"];
+      } else if (pathname === "/admin/vendors") {
+        return ["vendor-management"];
+      } else if (pathname === "/admin/vendor/create-bill") {
+        return ["vendor-create-bill"];
+      } else if (pathname === "/admin/vendor/bills") {
+        return ["vendor-bill-management"];
       } else if (pathname === "/report") {
-        return ["4"];
-      } else if (pathname === "/admin/chat") {
-        return ["5"];
+        return ["report"];
+      }
+    } else if (user?.role === "vendor") {
+      if (pathname === "/" || pathname === "/vendor/inventory") {
+        return ["vendor-inventory"];
       }
     } else {
       if (pathname === "/" || pathname === "/customers") {
         return ["1"];
       } else if (pathname === "/create-invoice") {
         return ["2"];
-      } else if (
-        pathname === "/invoices" ||
-        pathname.startsWith("/invoices/")
-      ) {
+      } else if (pathname === "/invoices" || pathname.startsWith("/invoices/")) {
         return ["3"];
       }
-      //   else if (pathname === "/customer/chat") {
-      //     return ["4"];
-      //   }
     }
     return [];
   })();
@@ -177,6 +218,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/vendor/login" element={<VendorLogin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin/register" element={<AdminRegister />} />
         <Route path="*" element={<Navigate to="/login" />} />
@@ -231,9 +273,19 @@ export default function App() {
               <ProtectedRoute>
                 {user?.role === "admin" ? (
                   <CustomerManagement />
+                ) : user?.role === "vendor" ? (
+                  <VendorInventory />
                 ) : (
                   <Customers />
                 )}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vendor/inventory"
+            element={
+              <ProtectedRoute>
+                <VendorInventory />
               </ProtectedRoute>
             }
           />
@@ -245,22 +297,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* <Route
-            path="/admin/chat"
-            element={
-              <ProtectedRoute>
-                <AdminChatPage />
-              </ProtectedRoute>
-            }
-          /> */}
-          {/* <Route
-            path="/customer/chat"
-            element={
-              <ProtectedRoute>
-                <CustomerChatPage />
-              </ProtectedRoute>
-            }
-          /> */}
           <Route
             path="/admin/customers"
             element={
@@ -278,6 +314,46 @@ export default function App() {
             }
           />
           <Route
+            path="/admin/customer/invoices"
+            element={
+              <ProtectedRoute>
+                <AdminInvoiceManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/customer/create-invoice"
+            element={
+              <ProtectedRoute>
+                <AdminCreateInvoice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/vendors"
+            element={
+              <ProtectedRoute>
+                <VendorManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/vendor/bills"
+            element={
+              <ProtectedRoute>
+                <AdminBillManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/vendor/create-bill"
+            element={
+              <ProtectedRoute>
+                <AdminCreateBill />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/report"
             element={
               <ProtectedRoute>
@@ -289,11 +365,7 @@ export default function App() {
             path="/create-invoice"
             element={
               <ProtectedRoute>
-                {user?.role === "admin" ? (
-                  <AdminCreateInvoice />
-                ) : (
-                  <CreateInvoice />
-                )}
+                {user?.role === "admin" ? <AdminCreateInvoice /> : <CreateInvoice />}
               </ProtectedRoute>
             }
           />

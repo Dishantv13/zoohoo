@@ -15,16 +15,18 @@ const router = Router();
 router.use(protect);
 router.use(adminOnly); 
 
+router.route("/stats/summary").get(getBillsStats);
+
 router.route("/").post(createBill).get(getBills);
+
+router
+  .route("/:billId/status")
+  .patch(updateBillStatus);
 
 router
   .route("/:billId")
   .get(getBillById)
   .put(updateBill)
   .delete(deleteBill);
-
-router.route("/:billId/status").patch(updateBillStatus);
-
-router.route("/stats/summary").get(getBillsStats);
 
 export default router;

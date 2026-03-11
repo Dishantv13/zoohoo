@@ -39,6 +39,7 @@ import dashboardRouter from "./routes/report.route.js";
 import chatRouter from "./routes/chat.route.js";
 import vendorRouter from "./routes/vendor.route.js";
 import billRouter from "./routes/bill.route.js";
+import itemRouter from "./routes/item.route.js";
 
 app.use("/api/customers", userRouter);
 app.use("/api/invoices", invoiceRouter);
@@ -48,6 +49,7 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/vendors", vendorRouter);
 app.use("/api/bills", billRouter);
+app.use("/api/items", itemRouter);
 
 app.use(globalErrorHandler);
 

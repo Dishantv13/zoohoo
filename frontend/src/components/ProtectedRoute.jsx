@@ -1,15 +1,17 @@
 import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useGetCurrentUserQuery } from "../service/authApi";
 
 export default function ProtectedRoute({ children }) {
+  const { user, token } = useSelector((state) => state.auth);
 
-  const token = localStorage.getItem("token");
+  const shouldFetchMe = !!token && !user;
 
   const { data, isLoading } = useGetCurrentUserQuery(null, {
-    skip: !token,
+    skip: !shouldFetchMe,
   });
 
-  const user = data?.data;
+  const resolvedUser = user || data?.data;
 
   if (!token) {
     return <Navigate to="/login" />;
@@ -19,5 +21,5 @@ export default function ProtectedRoute({ children }) {
     return <div>Loading...</div>;
   }
 
-  return user ? children : <Navigate to="/login" />;
+  return resolvedUser ? children : <Navigate to="/login" />;
 }

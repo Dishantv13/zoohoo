@@ -2,6 +2,7 @@ import { Vendor } from "../model/vendor.model.js";
 import { Bill } from "../model/bill.model.js";
 import ApiError from "../util/apiError.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const createVendorService = async (vendorData, companyId) => {
   const { name, email, phone, password, address } = vendorData;
@@ -35,15 +36,36 @@ const createVendorService = async (vendorData, companyId) => {
   return vendorObj;
 };
 
-const getVendorsService = async (companyId) => {
-  const vendors = await Vendor.find({ companyId }).select("-password");
-  return vendors;
+const getVendorsService = async (companyId, options = {}) => {
+  const page = Math.max(parseInt(options.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
+  const skip = (page - 1) * limit;
+
+  const vendors = await Vendor.find({ companyId })
+    .select("-password")
+    .skip(skip)
+    .limit(limit);
+
+  const totalVendors = await Vendor.countDocuments({ companyId });
+  const totalPages = Math.ceil(totalVendors / limit);
+
+  return {
+    vendors,
+    pagination: {
+      page,
+      limit,
+      totalVendors,
+      totalPages,
+      hasNext: totalPages > 0 && page < totalPages,
+      hasPrev: page > 1 && totalPages > 0,
+    },
+  };
 };
 
 const getVendorByIdService = async (vendorId, companyId) => {
-  const vendor = await Vendor.findOne({ 
-    _id: vendorId, 
-    companyId 
+  const vendor = await Vendor.findOne({
+    _id: vendorId,
+    companyId,
   }).select("-password");
 
   if (!vendor) {
@@ -78,7 +100,7 @@ const updateVendorService = async (vendorId, vendorData, companyId) => {
   if (name) vendor.name = name;
   if (phone !== undefined) vendor.phone = phone;
   if (address !== undefined) vendor.address = address;
-  
+
   if (password) {
     vendor.password = await bcrypt.hash(password, 10);
   }
@@ -101,7 +123,7 @@ const deleteVendorService = async (vendorId, companyId) => {
   if (billCount > 0) {
     throw new ApiError(
       400,
-      "Cannot delete vendor with existing bills. Please delete or reassign bills first."
+      "Cannot delete vendor with existing bills. Please delete or reassign bills first.",
     );
   }
 
@@ -123,53 +145,13 @@ const getVendorBillsService = async (vendorId, companyId) => {
   return bills;
 };
 
-const getVendorStatsService = async (vendorId, companyId) => {
-  const vendor = await Vendor.findOne({ _id: vendorId, companyId });
-
-  if (!vendor) {
-    throw new ApiError(404, "Vendor not found");
-  }
-
-  const bills = await Bill.find({ vendorId });
-
-  const totalPurchases = bills.length;
-  const totalAmount = bills.reduce((sum, bill) => sum + bill.totalAmount, 0);
-  const paidAmount = bills
-    .filter((bill) => bill.status === "PAID")
-    .reduce((sum, bill) => sum + bill.totalAmount, 0);
-  const pendingAmount = bills
-    .filter((bill) => bill.status === "PENDING")
-    .reduce((sum, bill) => sum + bill.totalAmount, 0);
-  const partiallyPaidAmount = bills
-    .filter((bill) => bill.status === "PARTIALLY_PAID")
-    .reduce((sum, bill) => sum + bill.totalAmount, 0);
-
-  return {
-    vendor: {
-      id: vendor._id,
-      name: vendor.name,
-      email: vendor.email,
-      phone: vendor.phone,
-    },
-    statistics: {
-      totalPurchases,
-      totalAmount,
-      paidAmount,
-      pendingAmount,
-      partiallyPaidAmount,
-      outstandingAmount: pendingAmount + partiallyPaidAmount,
-    },
-  };
-};
-
-const authenticateVendorService = async (email, password, companyId) => {
+const authenticateVendorService = async (email, password) => {
   if (!email || !password) {
     throw new ApiError(400, "Email and password are required");
   }
 
   const vendor = await Vendor.findOne({
     email: email.toLowerCase(),
-    companyId,
   });
 
   if (!vendor) {
@@ -184,7 +166,58 @@ const authenticateVendorService = async (email, password, companyId) => {
 
   const vendorObj = vendor.toObject();
   delete vendorObj.password;
-  return vendorObj;
+
+  const token = jwt.sign(
+    { id: vendor._id, accountType: "vendor" },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" },
+  );
+
+  return {
+    token,
+    user: {
+      ...vendorObj,
+      role: "vendor",
+      id: vendor._id,
+    },
+  };
+};
+
+const getVendorStatsService = async (vendorId, companyId) => {
+  const vendor = await Vendor.findOne({ _id: vendorId, companyId });
+
+  if (!vendor) {
+    throw new ApiError(404, "Vendor not found");
+  }
+
+  const statistics = await Bill.aggregate([
+    { $match: { vendorId: vendor._id } },
+    {
+      $group: {
+        _id: vendor._id,
+        totalAmount: { $sum: "$totalAmount" },
+        paidAmount: { $sum: "$amountPaid" },
+        pendingAmount: { $sum: "$remainingAmount" },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  return {
+    vendor: {
+      id: vendor._id,
+      name: vendor.name,
+      email: vendor.email,
+      phone: vendor.phone,
+    },
+    statistics: statistics[0] || {
+      _id: null,
+      totalAmount: 0,
+      paidAmount: 0,
+      pendingAmount: 0,
+      count: 0,
+    },
+  };
 };
 
 export {

@@ -3,46 +3,46 @@ import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Card, Spin, notification } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import "./Auth.css";
-import { useLoginMutation } from "../service/authApi";
+import { useVendorLoginMutation } from "../service/vendorApi";
 import { setCredentials } from "../slice/authSlice";
+import "./Auth.css";
 
-export default function Login() {
+export default function VendorLogin() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const [vendorLogin, { isLoading }] = useVendorLoginMutation();
 
-  const [login, { isLoading }] = useLoginMutation();
-
-  const handleLogin = async (data) => {
+  const handleLogin = async (values) => {
     try {
-      const response = await login(data).unwrap();
+      const response = await vendorLogin(values).unwrap();
+
       dispatch(
         setCredentials({
           user: response.data.user,
           token: response.data.token,
         }),
       );
+
       notification.success({
-        message: "Login Successful",
-        description: "You have successfully logged in.",
+        message: "Vendor Login Successful",
+        description: "Welcome back.",
       });
-      navigate("/");
+
+      navigate("/vendor/inventory");
     } catch (error) {
-      console.error("Login failed:", error);
+      notification.error({
+        message: "Login Failed",
+        description: error?.data?.message || "Invalid vendor credentials",
+      });
     }
   };
 
   return (
     <div className="auth-container">
-      <Card className="auth-card" title="Login">
+      <Card className="auth-card" title="Vendor Login">
         <Spin spinning={isLoading}>
-          <Form
-            form={form}
-            onFinish={handleLogin}
-            layout="vertical"
-            autoComplete="off"
-          >
+          <Form form={form} onFinish={handleLogin} layout="vertical" autoComplete="off">
             <Form.Item
               name="email"
               label="Email"
@@ -61,9 +61,7 @@ export default function Login() {
             <Form.Item
               name="password"
               label="Password"
-              rules={[
-                { required: true, message: "Please enter your password" },
-              ]}
+              rules={[{ required: true, message: "Please enter your password" }]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
@@ -73,27 +71,14 @@ export default function Login() {
             </Form.Item>
 
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                block
-                loading={isLoading}
-              >
-                Login
+              <Button type="primary" htmlType="submit" size="large" block loading={isLoading}>
+                Vendor Login
               </Button>
             </Form.Item>
           </Form>
 
           <p style={{ textAlign: "center" }}>
-            Don't have an account? <Link to="/register">Register here</Link>
-          </p>
-          <p style={{ textAlign: "center" }}>
-            Are you an admin?{" "}
-            <Link to="/admin/register">Register your company</Link>
-          </p>
-          <p style={{ textAlign: "center" }}>
-            Are you a vendor? <Link to="/vendor/login">Vendor login</Link>
+            Login as user/admin? <Link to="/login">Go to Login</Link>
           </p>
         </Spin>
       </Card>

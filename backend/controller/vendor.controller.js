@@ -20,7 +20,11 @@ const createVendor = asyncHandler(async (req, res) => {
 
 const getVendors = asyncHandler(async (req, res) => {
   const companyId = req.user.companyId;
-  const vendors = await getVendorsService(companyId);
+  const options = {
+    page: req.query.page,
+    limit: req.query.limit,
+  };
+  const vendors = await getVendorsService(companyId, options);
   successResponse(res, vendors, 200, "Vendors retrieved successfully");
 });
 
@@ -60,8 +64,8 @@ const getVendorStats = asyncHandler(async (req, res) => {
 });
 
 const vendorLogin = asyncHandler(async (req, res) => {
-  const { email, password, companyId } = req.body;
-  const vendor = await authenticateVendorService(email, password, companyId);
+  const { email, password } = req.body;
+  const vendor = await authenticateVendorService(email, password);
   successResponse(res, vendor, 200, "Vendor login successful");
 });
 

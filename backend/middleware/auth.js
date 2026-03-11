@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { User } from "../model/user.model.js";
+import { Vendor } from "../model/vendor.model.js";
 import { asyncHandler } from "../util/asyncHandler.js";
 import ApiError from "../util/apiError.js";
 
@@ -19,6 +20,23 @@ const protect = asyncHandler(async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      if (decoded.accountType === "vendor") {
+        const vendor = await Vendor.findById(decoded.id).select("-password");
+
+        if (!vendor) {
+          throw new ApiError(404, "Vendor not found");
+        }
+
+        req.user = {
+          ...vendor.toObject(),
+          role: "vendor",
+          id: vendor._id,
+        };
+
+        next();
+        return;
+      }
 
       const user = await User.findById(decoded.id);
 

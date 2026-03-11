@@ -142,7 +142,7 @@ export default function AdminCreateInvoice() {
 
         if (res?.success) {
           message.success("Invoice updated successfully");
-          navigate("/admin/invoices");
+          navigate("/admin/customer/invoices");
         }
       } else {
         const res = await createInvoice(invoiceData).unwrap();
@@ -156,7 +156,7 @@ export default function AdminCreateInvoice() {
         setSelectedCustomer(null);
         setDiscount(0);
         setTax(18);
-        navigate("/admin/invoices");
+        navigate("/admin/customer/invoices");
       }
     } catch (error) {
       message.error(
@@ -417,7 +417,7 @@ export default function AdminCreateInvoice() {
                 size="large"
                 onClick={() => {
                   if (isEditMode) {
-                    navigate("/admin/invoices");
+                    navigate("/admin/customer/invoices");
                   } else {
                     form.resetFields();
                     setItems([{ name: "", quantity: 1, rate: 0 }]);

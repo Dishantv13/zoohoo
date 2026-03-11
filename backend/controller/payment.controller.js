@@ -4,6 +4,7 @@ import {
   processCashPaymentService,
   getPaymentStatusService,
   getInvoicePaymentHistoryService,
+  getBillPaymentHistoryService
 } from "../service/payment.services.js";
 
 import { asyncHandler } from "../util/asyncHandler.js";
@@ -40,10 +41,19 @@ const getInvoicePaymentHistory = asyncHandler(async (req, res) => {
   successResponse(res, result, 200, "Payment history retrieved successfully");
 });
 
+const getBillPaymentHistory = asyncHandler(async (req, res) => {
+  const result = await getBillPaymentHistoryService(
+    req.user._id,
+    req.params.billId,
+  );
+  successResponse(res, result, 200, "Payment history retrieved successfully");
+});
+
 export {
   processCardPayment,
   processQRPayment,
   processCashPayment,
   getPaymentStatus,
   getInvoicePaymentHistory,
+  getBillPaymentHistory
 };

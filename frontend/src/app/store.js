@@ -6,6 +6,9 @@ import { paymentApi } from "../service/paymentApi";
 import { reportApi } from "../service/reportApi";
 import { authApi } from "../service/authApi";
 import { chatApi } from "../service/chatApi";
+import { vendorApi } from "../service/vendorApi";
+import { billApi } from "../service/billApi";
+import { itemApi } from "../service/itemApi";
 
 const store = configureStore({
   reducer: {
@@ -16,6 +19,9 @@ const store = configureStore({
     [reportApi.reducerPath]: reportApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
     [chatApi.reducerPath]: chatApi.reducer,
+    [vendorApi.reducerPath]: vendorApi.reducer,
+    [billApi.reducerPath]: billApi.reducer,
+    [itemApi.reducerPath]: itemApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }).concat(
@@ -25,6 +31,9 @@ const store = configureStore({
       reportApi.middleware,
       authApi.middleware,
       chatApi.middleware,
+      vendorApi.middleware,
+      itemApi.middleware,
+      billApi.middleware,
     ),
 });
 

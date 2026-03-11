@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { invoiceApi } from "./invoiceApi";
+import { billApi } from "./billApi";
 import { reportApi } from "./reportApi";
 
 export const paymentApi = createApi({
@@ -26,12 +27,21 @@ export const paymentApi = createApi({
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          dispatch(
-            invoiceApi.util.invalidateTags([
-              { type: "Invoice", id: "LIST" },
-              { type: "Invoice", id: arg?.invoiceId },
-            ]),
-          );
+          if (arg?.billId) {
+            dispatch(
+              billApi.util.invalidateTags([
+                { type: "Bill", id: "LIST" },
+                { type: "Bill", id: arg.billId },
+              ]),
+            );
+          } else if (arg?.invoiceId) {
+            dispatch(
+              invoiceApi.util.invalidateTags([
+                { type: "Invoice", id: "LIST" },
+                { type: "Invoice", id: arg.invoiceId },
+              ]),
+            );
+          }
         } catch {}
       },
     }),
@@ -45,12 +55,21 @@ export const paymentApi = createApi({
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          dispatch(
-            invoiceApi.util.invalidateTags([
-              { type: "Invoice", id: "LIST" },
-              { type: "Invoice", id: arg?.invoiceId },
-            ]),
-          );
+          if (arg?.billId) {
+            dispatch(
+              billApi.util.invalidateTags([
+                { type: "Bill", id: "LIST" },
+                { type: "Bill", id: arg.billId },
+              ]),
+            );
+          } else if (arg?.invoiceId) {
+            dispatch(
+              invoiceApi.util.invalidateTags([
+                { type: "Invoice", id: "LIST" },
+                { type: "Invoice", id: arg.invoiceId },
+              ]),
+            );
+          }
         } catch {}
       },
     }),
@@ -64,12 +83,21 @@ export const paymentApi = createApi({
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          dispatch(
-            invoiceApi.util.invalidateTags([
-              { type: "Invoice", id: "LIST" },
-              { type: "Invoice", id: arg?.invoiceId },
-            ]),
-          );
+          if (arg?.billId) {
+            dispatch(
+              billApi.util.invalidateTags([
+                { type: "Bill", id: "LIST" },
+                { type: "Bill", id: arg.billId },
+              ]),
+            );
+          } else if (arg?.invoiceId) {
+            dispatch(
+              invoiceApi.util.invalidateTags([
+                { type: "Invoice", id: "LIST" },
+                { type: "Invoice", id: arg.invoiceId },
+              ]),
+            );
+          }
           dispatch(
             reportApi.util.invalidateTags(["Dashboard"]),
           );
@@ -99,6 +127,21 @@ export const paymentApi = createApi({
             ]
           : [{ type: "PaymentHistory", id: invoiceId }],
     }),
+    getBillPaymentHistory: builder.query({
+      query: (billId) => ({
+        url: `/bill/${billId}/history`,
+      }),
+      providesTags: (result, error, billId) =>
+        result?.data?.data?.paymentHistory
+          ? [
+              ...result.data.data.paymentHistory.map(({ _id }) => ({
+                type: "PaymentHistory",
+                id: _id,
+              })),
+              { type: "PaymentHistory", id: billId },
+            ]
+          : [{ type: "PaymentHistory", id: billId }],
+    }),
   }),
 });
 
@@ -108,4 +151,5 @@ export const {
   useGetCashPaymentMutation,
   useGetPaymentStatusQuery,
   useGetPaymentHistoryQuery,
+  useGetBillPaymentHistoryQuery,
 } = paymentApi;

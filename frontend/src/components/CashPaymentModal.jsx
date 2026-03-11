@@ -21,33 +21,55 @@ import {
 } from "@ant-design/icons";
 import { useGetCashPaymentMutation } from "../service/paymentApi";
 
-const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
+const CashPaymentModal = ({
+  data,
+  type,
+  visible,
+  onClose,
+  onPaymentSuccess,
+}) => {
   const [form] = Form.useForm();
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
-  const [getCashPayment, { isLoading: cashPaymentLoading }] = useGetCashPaymentMutation();
+
+  const [getCashPayment, { isLoading: cashPaymentLoading }] =
+    useGetCashPaymentMutation();
 
   const toAmount = (value) => Number(Number(value || 0).toFixed(2));
 
+  const name = type === "invoice" ? data?.customer?.name : data?.vendorId?.name;
+
+  const number = type === "invoice" ? data?.invoiceNumber : data?.billNumber;
+
   useEffect(() => {
-    if (invoice && visible) {
-      const defaultAmount = invoice.remainingAmount || invoice.totalAmount;
+    if (data && visible) {
+      const defaultAmount = data.remainingAmount || data.totalAmount;
+
       setPaymentAmount(defaultAmount);
       form.setFieldsValue({ paymentAmount: defaultAmount });
       setPaymentStatus(null);
     }
-  }, [invoice, visible, form]);
+  }, [data, visible, form]);
 
   const handleCashPayment = async (values) => {
     try {
-      const response = await getCashPayment({
-        invoiceId: invoice._id,
-        paymentAmount: Number(values.paymentAmount),
-        customerId: invoice.customer?._id,
-      }).unwrap();
+      const payload =
+        type === "invoice"
+          ? {
+              invoiceId: data._id,
+              paymentAmount: Number(values.paymentAmount),
+              customerId: data.customer?._id,
+            }
+          : {
+              billId: data._id,
+              paymentAmount: Number(values.paymentAmount),
+              vendorId: data.vendorId?._id,
+            };
+
+      const response = await getCashPayment(payload).unwrap();
 
       const responseData = response?.data || {};
-      
+
       setPaymentStatus({
         success: true,
         transactionId: responseData.transactionId,
@@ -55,14 +77,15 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
         remainingAmount: toAmount(responseData.remainingAmount),
         totalAmountPaid: toAmount(responseData.totalAmountPaid),
         totalAmount: toAmount(responseData.totalAmount),
-        invoiceStatus: responseData.invoiceStatus,
+        status:
+          type === "invoice"
+            ? responseData.invoiceStatus
+            : responseData.billStatus,
         message: response?.message || "Cash payment recorded successfully",
       });
 
       setTimeout(() => {
-        if (onPaymentSuccess) {
-          onPaymentSuccess();
-        }
+        onPaymentSuccess?.();
         handleClose();
       }, 3000);
     } catch (error) {
@@ -70,7 +93,6 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
         success: false,
         message:
           error?.data?.message ||
-          error.response?.data?.message ||
           "Failed to record cash payment. Please try again.",
       });
     }
@@ -88,19 +110,26 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
     setPaymentAmount(value);
   };
 
-  if (!invoice) return null;
+  if (!data) return null;
 
-  const remainingAmount = toAmount(invoice.remainingAmount ?? invoice.totalAmount);
-  const totalAmount = toAmount(invoice.totalAmount);
-  const amountPaid = toAmount(invoice.amountPaid);
-  const calculatedRemaining = paymentAmount > 0 ? Math.max(0, remainingAmount - paymentAmount) : remainingAmount;
+  const remainingAmount = toAmount(data.remainingAmount ?? data.totalAmount);
+  const totalAmount = toAmount(data.totalAmount);
+  const amountPaid = toAmount(data.amountPaid);
+
+  const calculatedRemaining =
+    paymentAmount > 0
+      ? Math.max(0, remainingAmount - paymentAmount)
+      : remainingAmount;
 
   return (
     <Modal
       title={
         <Space>
           <DollarOutlined style={{ color: "#52c41a" }} />
-          <span>Record Cash Payment - Invoice {invoice.invoiceNumber}</span>
+          <span>
+            Record Cash Payment - {type === "invoice" ? "Invoice" : "Bill"}{" "}
+            {number}
+          </span>
         </Space>
       }
       open={visible}
@@ -156,24 +185,27 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                         prefix="₹"
                         valueStyle={{
                           fontSize: "20px",
-                          color: paymentStatus.remainingAmount > 0 ? "#ff9800" : "#52c41a",
+                          color:
+                            paymentStatus.remainingAmount > 0
+                              ? "#ff9800"
+                              : "#52c41a",
                         }}
                       />
                     </Col>
                   </Row>
+
                   <Divider />
+
                   <div style={{ textAlign: "center" }}>
                     <Tag
-                      color={
-                        paymentStatus.invoiceStatus === "PAID"
-                          ? "green"
-                          : "gold"
-                      }
+                      color={paymentStatus.status === "PAID" ? "green" : "gold"}
                       style={{ fontSize: "16px", padding: "8px 16px" }}
                     >
-                      {paymentStatus.invoiceStatus === "PAID"
-                        ? "✓ Invoice Fully Paid"
-                        : `Partially Paid - ₹${paymentStatus.remainingAmount.toFixed(2)} Remaining`}
+                      {paymentStatus.status === "PAID"
+                        ? "✓ Fully Paid"
+                        : `Partially Paid - ₹${paymentStatus.remainingAmount.toFixed(
+                            2,
+                          )} Remaining`}
                     </Tag>
                   </div>
                 </div>
@@ -185,7 +217,7 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
         <>
           <Alert
             message="Admin Only - Cash Payment Recording"
-            description="Record cash payments received from customers. The system will automatically calculate and update the remaining balance."
+            description="Record cash payments. The system will automatically calculate and update the remaining balance."
             type="info"
             showIcon
             icon={<DollarOutlined />}
@@ -203,25 +235,27 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
           >
             <Row gutter={[16, 16]}>
               <Col span={12}>
-                <div style={{ marginBottom: 12 }}>
+                <div>
                   <span style={{ color: "#666", fontSize: "13px" }}>
-                    Invoice Number
+                    {type === "invoice" ? "Invoice Number" : "Bill Number"}
                   </span>
                   <div style={{ fontSize: "16px", fontWeight: "600" }}>
-                    {invoice.invoiceNumber}
+                    {number}
                   </div>
                 </div>
               </Col>
+
               <Col span={12}>
-                <div style={{ marginBottom: 12 }}>
+                <div>
                   <span style={{ color: "#666", fontSize: "13px" }}>
-                    Customer Name
+                    {type === "invoice" ? "Customer Name" : "Vendor Name"}
                   </span>
                   <div style={{ fontSize: "16px", fontWeight: "600" }}>
-                    {invoice.customer?.name || "N/A"}
+                    {name}
                   </div>
                 </div>
               </Col>
+
               <Col span={8}>
                 <Statistic
                   title="Total Amount"
@@ -231,6 +265,7 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                   valueStyle={{ fontSize: "18px", color: "#1890ff" }}
                 />
               </Col>
+
               <Col span={8}>
                 <Statistic
                   title="Already Paid"
@@ -240,169 +275,134 @@ const CashPaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                   valueStyle={{ fontSize: "18px", color: "#52c41a" }}
                 />
               </Col>
+
               <Col span={8}>
                 <Statistic
                   title="Remaining"
                   value={remainingAmount}
                   precision={2}
                   prefix="₹"
-                  valueStyle={{ fontSize: "18px", color: "#ff9800", fontWeight: "bold" }}
+                  valueStyle={{
+                    fontSize: "18px",
+                    color: "#ff9800",
+                    fontWeight: "bold",
+                  }}
                 />
               </Col>
             </Row>
           </div>
 
-          {remainingAmount === 0 ? (
-            <Alert
-              message="Invoice Already Fully Paid"
-              description="This invoice has been fully paid. No additional payment can be recorded."
-              type="success"
-              showIcon
-              icon={<CheckCircleOutlined />}
-            />
-          ) : (
-            <>
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleCashPayment}
-                style={{ marginTop: 16 }}
-              >
-                <Form.Item
-                  label={
-                    <span style={{ fontSize: "15px", fontWeight: "500" }}>
-                      Cash Amount Received (₹)
-                    </span>
-                  }
-                  name="paymentAmount"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter the cash amount received",
-                    },
-                    {
-                      validator: (_, value) => {
-                        const numValue = Number(value);
-                        if (!value || isNaN(numValue)) {
-                          return Promise.reject("Please enter a valid number");
-                        }
-                        if (numValue <= 0) {
-                          return Promise.reject(
-                            "Amount must be greater than 0"
-                          );
-                        }
-                        if (numValue > remainingAmount) {
-                          return Promise.reject(
-                            `Amount cannot exceed remaining balance of ₹${remainingAmount.toFixed(2)}`
-                          );
-                        }
-                        return Promise.resolve();
-                      },
-                    },
-                  ]}
-                >
-                  <Input
-                    type="number"
-                    prefix="₹"
-                    placeholder={`Enter cash amount (Max: ₹${remainingAmount.toFixed(2)})`}
-                    onChange={handlePaymentAmountChange}
-                    step="0.01"
-                    size="large"
-                    style={{ fontSize: "16px" }}
-                  />
-                </Form.Item>
+          {/* FORM */}
 
-                {paymentAmount > 0 && paymentAmount <= remainingAmount && (
-                  <Alert
-                    message={
-                      <div>
-                        <Row gutter={16}>
-                          <Col span={12}>
-                            <div>
-                              <span style={{ fontSize: "13px", color: "#666" }}>
-                                Payment Amount:
-                              </span>
-                              <div
-                                style={{
-                                  fontSize: "18px",
-                                  fontWeight: "bold",
-                                  color: "#52c41a",
-                                }}
-                              >
-                                ₹{paymentAmount.toFixed(2)}
-                              </div>
-                            </div>
-                          </Col>
-                          <Col span={12}>
-                            <div>
-                              <span style={{ fontSize: "13px", color: "#666" }}>
-                                Remaining After Payment:
-                              </span>
-                              <div
-                                style={{
-                                  fontSize: "18px",
-                                  fontWeight: "bold",
-                                  color: calculatedRemaining > 0 ? "#ff9800" : "#52c41a",
-                                }}
-                              >
-                                ₹{calculatedRemaining.toFixed(2)}
-                              </div>
-                            </div>
-                          </Col>
-                        </Row>
-                        {calculatedRemaining === 0 && (
-                          <div style={{ marginTop: 8, textAlign: "center" }}>
-                            <Tag color="success" style={{ fontSize: "14px", padding: "4px 12px" }}>
-                              <CheckCircleOutlined /> Invoice will be marked as FULLY PAID
-                            </Tag>
+          <Form form={form} layout="vertical" onFinish={handleCashPayment}>
+            <Form.Item
+              label="Cash Amount Received (₹)"
+              name="paymentAmount"
+              rules={[
+                { required: true, message: "Please enter the cash amount" },
+              ]}
+            >
+              <Input
+                type="number"
+                prefix="₹"
+                onChange={handlePaymentAmountChange}
+                step="0.01"
+                size="large"
+                style={{ fontSize: "16px" }}
+              />
+            </Form.Item>
+
+            {paymentAmount >= 0 && paymentAmount <= remainingAmount && (
+              <Alert
+                message={
+                  <div>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <div>
+                          <span style={{ fontSize: "13px", color: "#666" }}>
+                            Payment Amount:
+                          </span>
+                          <div
+                            style={{
+                              fontSize: "18px",
+                              fontWeight: "bold",
+                              color: "#52c41a",
+                            }}
+                          >
+                            ₹{paymentAmount.toFixed(2)}
                           </div>
-                        )}
-                        {calculatedRemaining > 0 && (
-                          <div style={{ marginTop: 8, textAlign: "center" }}>
-                            <Tag color="warning" style={{ fontSize: "14px", padding: "4px 12px" }}>
-                              <WarningOutlined /> Invoice will be marked as PARTIALLY PAID
-                            </Tag>
+                        </div>
+                      </Col>
+                      <Col span={12}>
+                        <div>
+                          <span style={{ fontSize: "13px", color: "#666" }}>
+                            Remaining After Payment:
+                          </span>
+                          <div
+                            style={{
+                              fontSize: "18px",
+                              fontWeight: "bold",
+                              color:
+                                calculatedRemaining > 0 ? "#ff9800" : "#52c41a",
+                            }}
+                          >
+                            ₹{calculatedRemaining.toFixed(2)}
                           </div>
-                        )}
+                        </div>
+                      </Col>
+                    </Row>
+                    {calculatedRemaining === 0 && (
+                      <div style={{ marginTop: 8, textAlign: "center" }}>
+                        <Tag
+                          color="success"
+                          style={{ fontSize: "14px", padding: "4px 12px" }}
+                        >
+                          <CheckCircleOutlined /> Invoice will be marked as
+                          FULLY PAID
+                        </Tag>
                       </div>
-                    }
-                    type={calculatedRemaining === 0 ? "success" : "warning"}
-                    showIcon={false}
-                    style={{ marginBottom: 20 }}
-                  />
-                )}
+                    )}
+                    {calculatedRemaining > 0 && (
+                      <div style={{ marginTop: 8, textAlign: "center" }}>
+                        <Tag
+                          color="warning"
+                          style={{ fontSize: "14px", padding: "4px 12px" }}
+                        >
+                          <WarningOutlined /> Invoice will be marked as
+                          PARTIALLY PAID
+                        </Tag>
+                      </div>
+                    )}
+                  </div>
+                }
+                type={calculatedRemaining === 0 ? "success" : "warning"}
+                showIcon={false}
+                style={{ marginBottom: 20 }}
+              />
+            )}
 
-                <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-                  <Space style={{ width: "100%" }} direction="vertical" size="middle">
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      loading={cashPaymentLoading}
-                      block
-                      size="large"
-                      icon={<DollarOutlined />}
-                      style={{
-                        height: "48px",
-                        fontSize: "16px",
-                        fontWeight: "500",
-                      }}
-                    >
-                      Record Cash Payment of ₹
-                      {paymentAmount > 0 ? paymentAmount.toFixed(2) : "0.00"}
-                    </Button>
-                    <Button
-                      block
-                      size="large"
-                      onClick={handleClose}
-                      disabled={cashPaymentLoading}
-                    >
-                      Cancel
-                    </Button>
-                  </Space>
-                </Form.Item>
-              </Form>
-            </>
-          )}
+            <Space style={{ width: "100%" }} direction="vertical">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={cashPaymentLoading}
+                block
+                size="large"
+                icon={<DollarOutlined />}
+                style={{
+                  height: "48px",
+                  fontSize: "16px",
+                  fontWeight: "500",
+                }}
+              >
+                Record Cash Payment of ₹{paymentAmount.toFixed(2)}
+              </Button>
+
+              <Button block size="large" onClick={handleClose}>
+                Cancel
+              </Button>
+            </Space>
+          </Form>
         </>
       )}
     </Modal>

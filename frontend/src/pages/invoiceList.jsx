@@ -292,36 +292,6 @@ export default function InvoiceList() {
         </Flex>
       ),
     },
-    // {
-    //   title: (
-    //     <div style={{ lineHeight: "1.2", textAlign: "center" }}>
-    //       <div>Discount Rate</div>
-    //       <div>(%)</div>
-    //     </div>
-    //   ),
-    //   dataIndex: "parseDiscount",
-    //   width: 100,
-    //   key: "discountRate",
-    //   render: (v = 0) => (
-    //     <Flex align="center" gap="small" justify="center">
-    //       <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
-    //     </Flex>
-    //   ),
-    // },
-    // {
-    //   title: "Discount ₹",
-    //   dataIndex: "discount",
-    //   width: 120,
-    //   key: "discount",
-    //   render: (v) => {
-    //     const value = Number(v) || 0;
-    //     return (
-    //       <Flex align="center" gap="small">
-    //         <Tag color="red">₹{value.toFixed(2)}</Tag>
-    //       </Flex>
-    //     );
-    //   },
-    // },
     {
       title: (
         <div style={{ lineHeight: "1.2", textAlign: "center" }}>
@@ -338,22 +308,6 @@ export default function InvoiceList() {
         </Flex>
       ),
     },
-    // {
-    //   title: (
-    //     <div style={{ lineHeight: "1.2", textAlign: "center" }}>
-    //       <div>Tax Rate</div>
-    //       <div>(%)</div>
-    //     </div>
-    //   ),
-    //   dataIndex: "parseTaxRate",
-    //   width: 100,
-    //   key: "taxRate",
-    //   render: (v = 0) => (
-    //     <Flex align="center" gap="small" justify="center">
-    //       <Tag color="cyan">{Number(v).toFixed(2)}%</Tag>
-    //     </Flex>
-    //   ),
-    // },
     {
       title: "Tax ₹",
       dataIndex: "tax",

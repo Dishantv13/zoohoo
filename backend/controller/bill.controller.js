@@ -20,10 +20,12 @@ const createBill = asyncHandler(async (req, res) => {
 const getBills = asyncHandler(async (req, res) => {
   const companyId = req.user.companyId;
   const { vendorId, status } = req.query;
-  const filters = {};
-  
-  if (vendorId) filters.vendorId = vendorId;
-  if (status) filters.status = status;
+  const filters = {
+    page: req.query.page,
+    limit: req.query.limit,
+    vendorId,
+    status,
+  };
   
   const bills = await getBillsService(companyId, filters);
   successResponse(res, bills, 200, "Bills retrieved successfully");

@@ -9,78 +9,93 @@ import {
   Result,
   Space,
   Alert,
+  Row,
+  Col,
+  Statistic,
+  Divider,
+  Tag,
 } from "antd";
-import { CreditCardOutlined, QrcodeOutlined } from "@ant-design/icons";
+import {
+  CreditCardOutlined,
+  QrcodeOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
 import QRCode from "qrcode";
 import {
   useGetCardPaymentMutation,
   useGetUPIPaymentMutation,
 } from "../service/paymentApi";
 
-const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
+const UniversalPaymentModal = ({
+  data,
+  type = "invoice",
+  visible,
+  onClose,
+  onPaymentSuccess,
+}) => {
   const [form] = Form.useForm();
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [activeTab, setActiveTab] = useState("card");
   const [qrCodeImageUrl, setQrCodeImageUrl] = useState("");
   const [paymentAmount, setPaymentAmount] = useState(0);
-  const [getCardPayment, { isLoading: isCardPaymentLoading }] =
+
+  const [getCardPayment, { isLoading: isCardLoading }] =
     useGetCardPaymentMutation();
-  const [getUPIPayment, { isLoading: isQrPaymentLoading }] =
+
+  const [getUPIPayment, { isLoading: isUPILoading }] =
     useGetUPIPaymentMutation();
 
-  const loading = isCardPaymentLoading || isQrPaymentLoading;
-  const toAmount = (value) => Number(Number(value || 0).toFixed(2));
+  const loading = isCardLoading || isUPILoading;
+
+  const toAmount = (v) => Number(Number(v || 0).toFixed(2));
+
+  const name =
+    type === "invoice" ? data?.customerId?.name : data?.vendorId?.name;
+  const number = type === "invoice" ? data?.invoiceNumber : data?.billNumber;
 
   useEffect(() => {
-    if (invoice) {
-      const defaultAmount = invoice.remainingAmount || invoice.totalAmount;
+    if (data) {
+      const defaultAmount = data.remainingAmount || data.totalAmount;
       setPaymentAmount(defaultAmount);
       form.setFieldsValue({ paymentAmount: defaultAmount });
     }
-  }, [invoice, form]);
+  }, [data]);
 
   useEffect(() => {
-    if (activeTab === "qr" && invoice && paymentAmount > 0) {
-      const qrData = `upi://pay?pa=business@upi&pn=${invoice.invoiceNumber}&tn=Invoice&am=${paymentAmount}`;
+    if (activeTab === "qr" && paymentAmount > 0) {
+      const qrData = `upi://pay?pa=business@upi&pn=${type}&am=${paymentAmount}`;
 
-      QRCode.toDataURL(qrData, {
-        errorCorrectionLevel: "H",
-        type: "image/png",
-        width: 200,
-        margin: 1,
-        color: {
-          dark: "#000000",
-          light: "#ffffff",
-        },
-      })
-        .then((url) => {
-          setQrCodeImageUrl(url);
-        })
-        .catch((err) => {
-          console.error("Error generating QR code:", err);
-        });
+      QRCode.toDataURL(qrData, { width: 220 })
+        .then(setQrCodeImageUrl)
+        .catch(console.error);
     }
-  }, [activeTab, invoice, paymentAmount]);
+  }, [activeTab, paymentAmount]);
 
   const handleCardPayment = async (values) => {
     try {
-      const response = await getCardPayment({
-        invoiceId: invoice._id,
+      const payload = {
+        paymentAmount: Number(values.paymentAmount),
         cardNumber: values.cardNumber,
         cardHolder: values.cardHolder,
         expiryDate: values.expiryDate,
         cvv: values.cvv,
-        paymentAmount: Number(values.paymentAmount),
-      }).unwrap();
+      };
 
-      const responseData = response?.data || {};
+      if (type === "invoice") payload.invoiceId = data._id;
+      if (type === "bill") payload.billId = data._id;
+
+      const res = await getCardPayment(payload).unwrap();
+
+      const r = res?.data || {};
 
       setPaymentStatus({
         success: true,
-        transactionId: responseData.transactionId,
-        amountPaid: toAmount(responseData.amountPaid),
-        remainingAmount: toAmount(responseData.remainingAmount),
-        message: response?.message || "Payment successful",
+        transactionId: r.transactionId,
+        amountPaid: toAmount(r.amountPaid),
+        remainingAmount: toAmount(r.remainingAmount),
+        totalAmountPaid: toAmount(r.totalAmountPaid),
+        message: res.message,
       });
 
       setTimeout(() => {
@@ -90,29 +105,31 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
     } catch (error) {
       setPaymentStatus({
         success: false,
-        message:
-          error?.data?.message ||
-          error.response?.data?.message || "Payment failed. Please try again.",
+        message: error?.data?.message || "Payment Failed",
       });
     }
   };
 
   const handleQRPayment = async () => {
     try {
-      const response = await getUPIPayment({
-        invoiceId: invoice._id,
-        qrData: `QR-PAYMENT-${Date.now()}`,
-        paymentAmount: paymentAmount,
-      }).unwrap();
+      const payload = {
+        qrData: `QR-${Date.now()}`,
+        paymentAmount,
+      };
 
-      const responseData = response?.data || {};
+      if (type === "invoice") payload.invoiceId = data._id;
+      if (type === "bill") payload.billId = data._id;
+
+      const res = await getUPIPayment(payload).unwrap();
+      const r = res?.data || {};
 
       setPaymentStatus({
         success: true,
-        transactionId: responseData.transactionId,
-        amountPaid: toAmount(responseData.amountPaid),
-        remainingAmount: toAmount(responseData.remainingAmount),
-        message: response?.message || "Payment successful",
+        transactionId: r.transactionId,
+        amountPaid: toAmount(r.amountPaid),
+        remainingAmount: toAmount(r.remainingAmount),
+        totalAmountPaid: toAmount(r.totalAmountPaid),
+        message: res.message,
       });
 
       setTimeout(() => {
@@ -122,10 +139,7 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
     } catch (error) {
       setPaymentStatus({
         success: false,
-        message:
-          error?.data?.message ||
-          error.response?.data?.message ||
-          "QR payment failed. Please try again.",
+        message: error?.data?.message || "UPI Payment Failed",
       });
     }
   };
@@ -133,125 +147,178 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   const handleClose = () => {
     form.resetFields();
     setPaymentStatus(null);
-    setActiveTab("card");
     setPaymentAmount(0);
+    setActiveTab("card");
     onClose();
   };
 
-  const handlePaymentAmountChange = (e) => {
-    const value = Number(e.target.value) || 0;
-    setPaymentAmount(value);
+  const handleAmountChange = (e) => {
+    setPaymentAmount(Number(e.target.value) || 0);
   };
 
-  if (!invoice) return null;
+  if (!data) return null;
 
-  const remainingAmount = invoice.remainingAmount || invoice.totalAmount;
-  const totalAmount = invoice.totalAmount;
-  const amountPaid = invoice.amountPaid || 0;
+  const remainingAmount = data.remainingAmount || data.totalAmount;
+  const totalAmount = data.totalAmount;
+  const amountPaid = data.amountPaid || 0;
+
+  const calculatedRemaining =
+    paymentAmount > 0
+      ? Math.max(0, remainingAmount - paymentAmount)
+      : remainingAmount;
 
   return (
     <Modal
-      title={`Payment for Invoice ${invoice.invoiceNumber}`}
+      title={`${type === "invoice" ? "Invoice" : "Bill"} Payment`}
       open={visible}
-      onCancel={handleClose}
       footer={null}
       width={600}
       centered
+      onCancel={handleClose}
     >
       {paymentStatus ? (
-        <Spin spinning={loading}>
-          <Result
-            status={paymentStatus.success ? "success" : "error"}
-            title={
-              paymentStatus.success ? "Payment Successful!" : "Payment Failed"
-            }
-            subTitle={paymentStatus.message}
-            extra={
-              paymentStatus.success && (
-                <div style={{ marginTop: 16 }}>
-                  <p>
-                    <strong>Transaction ID:</strong>{" "}
-                    {paymentStatus.transactionId}
-                  </p>
-                  <p>
-                    <strong>Amount Paid:</strong> ₹
-                    {paymentStatus.amountPaid?.toFixed(2)}
-                  </p>
-                  {paymentStatus.remainingAmount > 0 && (
-                    <p style={{ color: "#ff9800" }}>
-                      <strong>Remaining Amount:</strong> ₹
-                      {paymentStatus.remainingAmount?.toFixed(2)}
-                    </p>
-                  )}
-                  {paymentStatus.remainingAmount === 0 && (
-                    <p style={{ color: "#52c41a", fontWeight: "bold" }}>
-                      Invoice Fully Paid!
-                    </p>
-                  )}
+        <Result
+          status={paymentStatus.success ? "success" : "error"}
+          title={
+            paymentStatus.success ? "Payment Successful" : "Payment Failed"
+          }
+          subTitle={paymentStatus.message}
+          extra={
+            paymentStatus.success && (
+              <div style={{ marginTop: 16, textAlign: "left" }}>
+                <Row gutter={[16, 16]}>
+                  <Col span={12}>
+                    <Statistic
+                      title="Transaction ID"
+                      value={paymentStatus.transactionId}
+                      valueStyle={{ fontSize: "14px", color: "#1890ff" }}
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Amount Received"
+                      value={paymentStatus.amountPaid}
+                      precision={2}
+                      prefix="₹"
+                      valueStyle={{ fontSize: "20px", color: "#52c41a" }}
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Total Amount Paid"
+                      value={paymentStatus.totalAmountPaid}
+                      precision={2}
+                      prefix="₹"
+                      valueStyle={{ fontSize: "16px" }}
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Remaining Balance"
+                      value={paymentStatus.remainingAmount}
+                      precision={2}
+                      prefix="₹"
+                      valueStyle={{
+                        fontSize: "20px",
+                        color:
+                          paymentStatus.remainingAmount > 0
+                            ? "#ff9800"
+                            : "#52c41a",
+                      }}
+                    />
+                  </Col>
+                </Row>
+
+                <Divider />
+
+                <div style={{ textAlign: "center" }}>
+                  <Tag
+                    color={paymentStatus.status === "PAID" ? "green" : "gold"}
+                    style={{ fontSize: "16px", padding: "8px 16px" }}
+                  >
+                    {paymentStatus.status === "PAID"
+                      ? "✓ Fully Paid"
+                      : `Partially Paid - ₹${paymentStatus.remainingAmount.toFixed(
+                          2,
+                        )} Remaining`}
+                  </Tag>
                 </div>
-              )
-            }
-          />
-        </Spin>
+              </div>
+            )
+          }
+        />
       ) : (
         <>
+          {/* Summary */}
           <div
             style={{
-              marginBottom: 16,
-              padding: "12px",
-              background: "#f0f2f5",
-              borderRadius: "4px",
+              background: "#f5f7fa",
+              padding: 14,
+              borderRadius: 6,
+              marginBottom: 18,
             }}
           >
-            <p style={{ marginBottom: 8 }}>
-              <strong>Invoice Number:</strong> {invoice.invoiceNumber}
-            </p>
-            <p style={{ marginBottom: 8 }}>
-              <strong>Total Amount:</strong> ₹{totalAmount.toFixed(2)}
-            </p>
-            {amountPaid > 0 && (
-              <>
-                <p style={{ marginBottom: 8 }}>
-                  <strong>Amount Already Paid:</strong>{" "}
-                  <span style={{ color: "#52c41a" }}>
-                    ₹{amountPaid.toFixed(2)}
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <div>
+                  <span style={{ color: "#666", fontSize: "13px" }}>
+                    {type === "invoice" ? "Invoice Number" : "Bill Number"}
                   </span>
-                </p>
-                <p style={{ marginBottom: 8 }}>
-                  <strong>Remaining Amount:</strong>{" "}
-                  <span
-                    style={{
-                      color: "#ff9800",
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    ₹{remainingAmount.toFixed(2)}
+                  <div style={{ fontSize: "16px", fontWeight: "600" }}>
+                    {number}
+                  </div>
+                </div>
+              </Col>
+
+              <Col span={12}>
+                <div>
+                  <span style={{ color: "#666", fontSize: "13px" }}>
+                    {type === "invoice" ? "Customer Name" : "Vendor Name"}
                   </span>
-                </p>
-              </>
-            )}
-            {amountPaid === 0 && (
-              <p style={{ marginBottom: 8 }}>
-                <strong>Amount to Pay:</strong>{" "}
-                <span
-                  style={{
-                    color: "#52c41a",
+                  <div style={{ fontSize: "16px", fontWeight: "600" }}>
+                    {name}
+                  </div>
+                </div>
+              </Col>
+
+              <Col span={8}>
+                <Statistic
+                  title="Total Amount"
+                  value={totalAmount}
+                  precision={2}
+                  prefix="₹"
+                  valueStyle={{ fontSize: "18px", color: "#1890ff" }}
+                />
+              </Col>
+
+              <Col span={8}>
+                <Statistic
+                  title="Already Paid"
+                  value={amountPaid}
+                  precision={2}
+                  prefix="₹"
+                  valueStyle={{ fontSize: "18px", color: "#52c41a" }}
+                />
+              </Col>
+
+              <Col span={8}>
+                <Statistic
+                  title="Remaining"
+                  value={remainingAmount}
+                  precision={2}
+                  prefix="₹"
+                  valueStyle={{
                     fontSize: "18px",
+                    color: "#ff9800",
                     fontWeight: "bold",
                   }}
-                >
-                  ₹{remainingAmount.toFixed(2)}
-                </span>
-              </p>
-            )}
-            <p style={{ marginBottom: 0 }}>
-              <strong>Status:</strong> {invoice.status}
-            </p>
+                />
+              </Col>
+            </Row>
           </div>
 
           <Alert
-            message="You can pay any amount up to the remaining balance"
+            message="You can pay partial or full amount"
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
@@ -264,20 +331,19 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
               {
                 key: "card",
                 label: (
-                  <span>
+                  <>
                     <CreditCardOutlined /> Card Payment
-                  </span>
+                  </>
                 ),
                 children: (
                   <Form
-                    form={form}
                     layout="vertical"
+                    form={form}
                     onFinish={handleCardPayment}
-                    style={{ marginTop: 16 }}
                   >
                     <Form.Item
-                      label="Payment Amount"
                       name="paymentAmount"
+                      label="Amount"
                       rules={[
                         {
                           required: true,
@@ -287,12 +353,12 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                           validator: (_, value) => {
                             if (value <= 0) {
                               return Promise.reject(
-                                "Amount must be greater than 0"
+                                "Amount must be greater than 0",
                               );
                             }
                             if (value > remainingAmount) {
                               return Promise.reject(
-                                `Amount cannot exceed remaining balance of ₹${Number(remainingAmount).toFixed(2)}`
+                                `Amount cannot exceed remaining balance of ₹${Number(remainingAmount).toFixed(2)}`,
                               );
                             }
                             return Promise.resolve();
@@ -301,160 +367,271 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
                       ]}
                     >
                       <Input
-                        type="number"
                         prefix="₹"
-                        placeholder={`Enter amount (Max: ${Number(remainingAmount).toFixed(2)})`}
-                        onChange={handlePaymentAmountChange}
-                        step="0.01"
+                        type="number"
+                        onChange={handleAmountChange}
                       />
                     </Form.Item>
 
                     <Form.Item
-                      label="Cardholder Name"
                       name="cardHolder"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please enter cardholder name",
-                        },
-                      ]}
+                      label="Card Holder"
+                      rules={[{ required: true }]}
                     >
-                      <Input placeholder="John Doe" />
+                      <Input />
                     </Form.Item>
 
                     <Form.Item
-                      label="Card Number"
                       name="cardNumber"
-                      rules={[
-                        { required: true, message: "Please enter card number" },
-                        { len: 16, message: "Card number must be 16 digits" },
-                      ]}
+                      label="Card Number"
+                      rules={[{ required: true }]}
                     >
-                      <Input placeholder="1234 5678 9012 3456" maxLength={16} />
+                      <Input maxLength={16} />
                     </Form.Item>
 
-                    <Space style={{ width: "100%" }} size="large">
+                    <Space style={{ width: "100%" }}>
                       <Form.Item
-                        label="Expiry Date"
                         name="expiryDate"
-                        rules={[
-                          { required: true, message: "Required" },
-                          {
-                            pattern: /^(0[1-9]|1[0-2])\/\d{2}$/,
-                            message: "Format: MM/YY",
-                          },
-                        ]}
+                        label="Expiry"
+                        rules={[{ required: true }]}
                         style={{ flex: 1 }}
                       >
-                        <Input placeholder="MM/YY" maxLength={5} />
+                        <Input placeholder="MM/YY" />
                       </Form.Item>
 
                       <Form.Item
-                        label="CVV"
                         name="cvv"
-                        rules={[
-                          { required: true, message: "Required" },
-                          { len: 3, message: "CVV must be 3 digits" },
-                        ]}
+                        label="CVV"
+                        rules={[{ required: true }]}
                         style={{ flex: 1 }}
                       >
-                        <Input
-                          placeholder="123"
-                          maxLength={3}
-                          type="password"
-                        />
+                        <Input type="password" maxLength={3} />
                       </Form.Item>
                     </Space>
 
-                    <Form.Item style={{ marginTop: 24 }}>
-                      <Button
-                        type="primary"
-                        htmlType="submit"
-                        loading={loading}
-                        block
-                        size="large"
-                      >
-                        Pay ₹{paymentAmount > 0 ? paymentAmount.toFixed(2) : "0.00"}
-                      </Button>
-                    </Form.Item>
+                    {paymentAmount >= 0 && paymentAmount <= remainingAmount && (
+                      <Alert
+                        message={
+                          <div>
+                            <Row gutter={16}>
+                              <Col span={12}>
+                                <div>
+                                  <span
+                                    style={{ fontSize: "13px", color: "#666" }}
+                                  >
+                                    Payment Amount:
+                                  </span>
+                                  <div
+                                    style={{
+                                      fontSize: "18px",
+                                      fontWeight: "bold",
+                                      color: "#52c41a",
+                                    }}
+                                  >
+                                    ₹{paymentAmount.toFixed(2)}
+                                  </div>
+                                </div>
+                              </Col>
+                              <Col span={12}>
+                                <div>
+                                  <span
+                                    style={{ fontSize: "13px", color: "#666" }}
+                                  >
+                                    Remaining After Payment:
+                                  </span>
+                                  <div
+                                    style={{
+                                      fontSize: "18px",
+                                      fontWeight: "bold",
+                                      color:
+                                        calculatedRemaining > 0
+                                          ? "#ff9800"
+                                          : "#52c41a",
+                                    }}
+                                  >
+                                    ₹{calculatedRemaining.toFixed(2)}
+                                  </div>
+                                </div>
+                              </Col>
+                            </Row>
+                            {calculatedRemaining === 0 && (
+                              <div
+                                style={{ marginTop: 8, textAlign: "center" }}
+                              >
+                                <Tag
+                                  color="success"
+                                  style={{
+                                    fontSize: "14px",
+                                    padding: "4px 12px",
+                                  }}
+                                >
+                                  <CheckCircleOutlined />
+                                  {type === "invoice" ? "Invoice" : "Bill"} will
+                                  be marked as FULLY PAID
+                                </Tag>
+                              </div>
+                            )}
+                            {calculatedRemaining > 0 && (
+                              <div
+                                style={{ marginTop: 8, textAlign: "center" }}
+                              >
+                                <Tag
+                                  color="warning"
+                                  style={{
+                                    fontSize: "14px",
+                                    padding: "4px 12px",
+                                  }}
+                                >
+                                  <WarningOutlined />{" "}
+                                  {type === "invoice" ? "Invoice" : "Bill"} will
+                                  be marked as PARTIALLY PAID
+                                </Tag>
+                              </div>
+                            )}
+                          </div>
+                        }
+                        type={calculatedRemaining === 0 ? "success" : "warning"}
+                        showIcon={false}
+                        style={{ marginBottom: 20 }}
+                      />
+                    )}
+
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      block
+                      size="large"
+                      loading={loading}
+                    >
+                      Pay ₹{paymentAmount}
+                    </Button>
                   </Form>
                 ),
               },
+
               {
                 key: "qr",
                 label: (
-                  <span>
-                    <QrcodeOutlined /> QR Code Payment
-                  </span>
+                  <>
+                    <QrcodeOutlined /> UPI Payment
+                  </>
                 ),
                 children: (
-                  <div
-                    style={{
-                      marginTop: 24,
-                      textAlign: "center",
-                      padding: "20px 0",
-                    }}
-                  >
-                    <Form.Item
-                      label="Payment Amount"
-                      style={{ textAlign: "left", marginBottom: 20 }}
-                    >
-                      <Input
-                        type="number"
-                        prefix="₹"
-                        placeholder={`Enter amount (Max: ${remainingAmount.toFixed(2)})`}
-                        value={paymentAmount}
-                        onChange={handlePaymentAmountChange}
-                        step="0.01"
-                        max={remainingAmount}
-                      />
-                    </Form.Item>
+                  <div style={{ textAlign: "center" }}>
+                    <Input
+                      prefix="₹"
+                      type="number"
+                      value={paymentAmount}
+                      onChange={handleAmountChange}
+                      style={{ marginBottom: 20 }}
+                      max={remainingAmount}
+                    />
 
-                    <h4>UPI Payment QR Code</h4>
                     {qrCodeImageUrl && (
-                      <div
-                        style={{
-                          padding: "15px",
-                          background: "#fff",
-                          borderRadius: "6px",
-                          display: "inline-block",
-                          border: "2px solid #1890ff",
-                          marginBottom: "20px",
-                        }}
-                      >
-                        <img
-                          src={qrCodeImageUrl}
-                          alt="UPI QR Code"
-                          style={{ display: "block", borderRadius: "4px" }}
-                        />
-                      </div>
+                      <img
+                        src={qrCodeImageUrl}
+                        alt="qr"
+                        style={{ width: 220 }}
+                      />
                     )}
 
-                    <div style={{ marginBottom: 20 }}>
-                      <h3 style={{ fontSize: "18px", marginBottom: "5px" }}>
-                        ₹{paymentAmount.toFixed(2)}
-                      </h3>
-                      <p
-                        style={{
-                          color: "#666",
-                          margin: "5px 0",
-                          fontSize: "14px",
-                        }}
-                      >
-                        Invoice: {invoice.invoiceNumber}
-                      </p>
-                      <p style={{ color: "#999", fontSize: "12px" }}>
-                        Scan using Google Pay, PhonePe, or any UPI app
-                      </p>
-                    </div>
+                    <p style={{ marginTop: 10 }}>
+                      Scan using Google Pay / PhonePe / Paytm
+                    </p>
+
+                    {paymentAmount >= 0 && paymentAmount <= remainingAmount && (
+                      <Alert
+                        message={
+                          <div>
+                            <Row gutter={16}>
+                              <Col span={12}>
+                                <div>
+                                  <span
+                                    style={{ fontSize: "13px", color: "#666" }}
+                                  >
+                                    Payment Amount:
+                                  </span>
+                                  <div
+                                    style={{
+                                      fontSize: "18px",
+                                      fontWeight: "bold",
+                                      color: "#52c41a",
+                                    }}
+                                  >
+                                    ₹{paymentAmount.toFixed(2)}
+                                  </div>
+                                </div>
+                              </Col>
+                              <Col span={12}>
+                                <div>
+                                  <span
+                                    style={{ fontSize: "13px", color: "#666" }}
+                                  >
+                                    Remaining After Payment:
+                                  </span>
+                                  <div
+                                    style={{
+                                      fontSize: "18px",
+                                      fontWeight: "bold",
+                                      color:
+                                        calculatedRemaining > 0
+                                          ? "#ff9800"
+                                          : "#52c41a",
+                                    }}
+                                  >
+                                    ₹{calculatedRemaining.toFixed(2)}
+                                  </div>
+                                </div>
+                              </Col>
+                            </Row>
+                            {calculatedRemaining === 0 && (
+                              <div
+                                style={{ marginTop: 8, textAlign: "center" }}
+                              >
+                                <Tag
+                                  color="success"
+                                  style={{
+                                    fontSize: "14px",
+                                    padding: "4px 12px",
+                                  }}
+                                >
+                                  <CheckCircleOutlined />{" "}
+                                  {type === "invoice" ? "Invoice" : "Bill"} will
+                                  be marked as FULLY PAID
+                                </Tag>
+                              </div>
+                            )}
+                            {calculatedRemaining > 0 && (
+                              <div
+                                style={{ marginTop: 8, textAlign: "center" }}
+                              >
+                                <Tag
+                                  color="warning"
+                                  style={{
+                                    fontSize: "14px",
+                                    padding: "4px 12px",
+                                  }}
+                                >
+                                  <WarningOutlined />{" "}
+                                  {type === "invoice" ? "Invoice" : "Bill"} will
+                                  be marked as PARTIALLY PAID
+                                </Tag>
+                              </div>
+                            )}
+                          </div>
+                        }
+                        type={calculatedRemaining === 0 ? "success" : "warning"}
+                        showIcon={false}
+                        style={{ marginBottom: 20 }}
+                      />
+                    )}
 
                     <Button
                       type="primary"
                       size="large"
-                      loading={loading}
                       block
+                      loading={loading}
                       onClick={handleQRPayment}
-                      disabled={paymentAmount <= 0 || paymentAmount > remainingAmount}
                     >
                       Payment Completed
                     </Button>
@@ -469,4 +646,4 @@ const PaymentModal = ({ invoice, visible, onClose, onPaymentSuccess }) => {
   );
 };
 
-export default PaymentModal;
+export default UniversalPaymentModal;

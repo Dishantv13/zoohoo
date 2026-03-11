@@ -1,31 +1,47 @@
 import { Invoice } from "../model/invoice.model.js";
+import { Bill } from "../model/bill.model.js";
 import { Payment } from "../model/payment.model.js";
 import { User } from "../model/user.model.js";
 import ApiError from "../util/apiError.js";
 
 const processCardPaymentService = async (userId, data) => {
-  const { invoiceId, cardNumber, cardHolder, expiryDate, cvv, paymentAmount } =
+  const { invoiceId, billId, cardNumber, cardHolder, expiryDate, cvv, paymentAmount } =
     data;
 
-  const invoice = await Invoice.findById(invoiceId);
-  if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+  if (!invoiceId && !billId) {
+    throw new ApiError(400, "invoiceId or billId is required");
   }
 
-  if (invoice.customer && invoice.customer.toString() !== userId.toString()) {
-    throw new ApiError(403, "You are not authorized to pay this invoice");
+  let document;
+  let docType = "invoice";
+
+  if (billId) {
+    document = await Bill.findById(billId);
+    if (!document) {
+      throw new ApiError(404, "Bill not found");
+    }
+    docType = "bill";
+  } else {
+    document = await Invoice.findById(invoiceId);
+    if (!document) {
+      throw new ApiError(404, "Invoice not found");
+    }
+
+    if (document.customer && document.customer.toString() !== userId.toString()) {
+      throw new ApiError(403, "You are not authorized to pay this invoice");
+    }
   }
 
-  if (invoice.status === "PAID") {
-    throw new ApiError(400, "Invoice is already paid");
+  if (document.status === "PAID") {
+    throw new ApiError(400, `${docType} is already paid`);
   }
 
   if (!paymentAmount || paymentAmount <= 0) {
     throw new ApiError(400, "Invalid payment amount");
   }
 
-  if (paymentAmount > invoice.remainingAmount) {
-    throw new ApiError(400, "Payment amount exceeds remaining invoice amount");
+  if (paymentAmount > document.remainingAmount) {
+    throw new ApiError(400, `Payment amount exceeds remaining ${docType} amount`);
   }
 
   if (!cardNumber || cardNumber.length < 13) {
@@ -48,68 +64,102 @@ const processCardPaymentService = async (userId, data) => {
 
   const transactionId = `TXN-CARD-${Date.now()}`;
 
-  invoice.amountPaid += paymentAmount;
-  invoice.remainingAmount = invoice.totalAmount - invoice.amountPaid;
+  document.amountPaid = Number((document.amountPaid || 0) + paymentAmount).toFixed(2);
+  document.remainingAmount = Number(document.totalAmount - document.amountPaid).toFixed(2);
 
-  if (invoice.remainingAmount <= 0) {
-    invoice.remainingAmount = 0;
-    invoice.status = "PAID";
-  } else if (invoice.amountPaid > 0) {
-    invoice.status = "PARTIALLY_PAID";
+  if (document.remainingAmount <= 0) {
+    document.remainingAmount = 0;
+    document.status = "PAID";
+  } else if (document.amountPaid > 0) {
+    document.status = "PARTIALLY_PAID";
   }
 
-  invoice.paymentHistory.push({
+  if (!document.paymentHistory) {
+    document.paymentHistory = [];
+  }
+
+  document.paymentHistory.push({
     amount: paymentAmount,
     paymentMethod: "CARD",
     transactionId,
     paidAt: new Date(),
     paidBy: userId,
   });
-  await invoice.save();
+  await document.save();
 
-  await Payment.create({
-    invoice: invoice._id,
-    invoiceNumber: invoice.invoiceNumber,
+  const paymentRecord = {
     user: userId,
     paymentMethod: "CARD",
     transactionId,
     amount: paymentAmount,
-  });
+  };
 
-  return {
-    invoiceId: invoice._id,
-    invoiceNumber: invoice.invoiceNumber,
+  if (docType === "invoice") {
+    paymentRecord.invoice = document._id;
+    paymentRecord.invoiceNumber = document.invoiceNumber;
+  } else {
+    paymentRecord.bill = document._id;
+  }
+
+  await Payment.create(paymentRecord);
+
+  const result = {
     transactionId,
     paymentMethod: "CARD",
     amountPaid: paymentAmount,
-    remainingAmount: invoice.remainingAmount,
-    totalAmountPaid: invoice.amountPaid,
-    invoiceStatus: invoice.status,
+    remainingAmount: document.remainingAmount,
+    totalAmountPaid: document.amountPaid,
   };
+
+  if (docType === "invoice") {
+    result.invoiceId = document._id;
+    result.invoiceNumber = document.invoiceNumber;
+    result.invoiceStatus = document.status;
+  } else {
+    result.billId = document._id;
+    result.billStatus = document.status;
+  }
+
+  return result;
 };
 
 const processQrPaymentService = async (userId, data) => {
-  const { invoiceId, qrData, paymentAmount } = data;
+  const { invoiceId, billId, qrData, paymentAmount } = data;
 
-  const invoice = await Invoice.findById(invoiceId);
-  if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+  if (!invoiceId && !billId) {
+    throw new ApiError(400, "invoiceId or billId is required");
   }
 
-  if (invoice.customer && invoice.customer.toString() !== userId.toString()) {
-    throw new ApiError(403, "You are not authorized to pay this invoice");
+  let document;
+  let docType = "invoice";
+
+  if (billId) {
+    document = await Bill.findById(billId);
+    if (!document) {
+      throw new ApiError(404, "Bill not found");
+    }
+    docType = "bill";
+  } else {
+    document = await Invoice.findById(invoiceId);
+    if (!document) {
+      throw new ApiError(404, "Invoice not found");
+    }
+
+    if (document.customer && document.customer.toString() !== userId.toString()) {
+      throw new ApiError(403, "You are not authorized to pay this invoice");
+    }
   }
 
-  if (invoice.status === "PAID") {
-    throw new ApiError(400, "Invoice is already paid");
+  if (document.status === "PAID") {
+    throw new ApiError(400, `${docType} is already paid`);
   }
 
   if (!paymentAmount || paymentAmount <= 0) {
     throw new ApiError(400, "Invalid payment amount");
   }
 
-  if (paymentAmount > invoice.remainingAmount) {
-    throw new ApiError(400, "Payment amount exceeds remaining invoice amount");
+  if (paymentAmount > document.remainingAmount) {
+    throw new ApiError(400, `Payment amount exceeds remaining ${docType} amount`);
   }
 
   if (!qrData || qrData.trim() === "") {
@@ -120,117 +170,169 @@ const processQrPaymentService = async (userId, data) => {
 
   const transactionId = `TXN-QR-${Date.now()}`;
 
-  invoice.amountPaid += paymentAmount;
-  invoice.remainingAmount = invoice.totalAmount - invoice.amountPaid;
+  document.amountPaid = Number((document.amountPaid || 0) + paymentAmount).toFixed(2);
+  document.remainingAmount = Number(document.totalAmount - document.amountPaid).toFixed(2);
 
-  if (invoice.remainingAmount <= 0) {
-    invoice.remainingAmount = 0;
-    invoice.status = "PAID";
-  } else if (invoice.amountPaid > 0) {
-    invoice.status = "PARTIALLY_PAID";
+  if (document.remainingAmount <= 0) {
+    document.remainingAmount = 0;
+    document.status = "PAID";
+  } else if (document.amountPaid > 0) {
+    document.status = "PARTIALLY_PAID";
   }
 
-  invoice.paymentHistory.push({
+  if (!document.paymentHistory) {
+    document.paymentHistory = [];
+  }
+
+  document.paymentHistory.push({
     amount: paymentAmount,
     paymentMethod: "QR_CODE",
     transactionId,
     paidAt: new Date(),
     paidBy: userId,
   });
-  await invoice.save();
+  await document.save();
 
-  await Payment.create({
-    invoice: invoice._id,
-    invoiceNumber: invoice.invoiceNumber,
+  const paymentRecord = {
     user: userId,
     paymentMethod: "QR_CODE",
     transactionId,
     amount: paymentAmount,
-  });
+  };
 
-  return {
-    invoiceId: invoice._id,
-    invoiceNumber: invoice.invoiceNumber,
+  if (docType === "invoice") {
+    paymentRecord.invoice = document._id;
+    paymentRecord.invoiceNumber = document.invoiceNumber;
+  } else {
+    paymentRecord.bill = document._id;
+  }
+
+  await Payment.create(paymentRecord);
+
+  const result = {
     transactionId,
     paymentMethod: "QR_CODE",
     amountPaid: paymentAmount,
-    remainingAmount: invoice.remainingAmount,
-    totalAmountPaid: invoice.amountPaid,
-    invoiceStatus: invoice.status,
+    remainingAmount: document.remainingAmount,
+    totalAmountPaid: document.amountPaid,
   };
+
+  if (docType === "invoice") {
+    result.invoiceId = document._id;
+    result.invoiceNumber = document.invoiceNumber;
+    result.invoiceStatus = document.status;
+  } else {
+    result.billId = document._id;
+    result.billStatus = document.status;
+  }
+
+  return result;
 };
 
 const processCashPaymentService = async (adminId, data) => {
-  const { invoiceId, customerId } = data;
-
+  const { invoiceId, billId, customerId, vendorId } = data;
   const paymentAmount = Number(data.paymentAmount) || 0;
 
-  const invoice = await Invoice.findById(invoiceId);
-  if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+  if (!invoiceId && !billId) {
+    throw new ApiError(400, "invoiceId or billId is required");
   }
 
-  if (invoice.status === "PAID") {
-    throw new ApiError(400, "Invoice is already paid");
+  let document;
+  let docType = "invoice";
+
+  if (billId) {
+    document = await Bill.findById(billId);
+    if (!document) {
+      throw new ApiError(404, "Bill not found");
+    }
+    docType = "bill";
+  } else {
+    document = await Invoice.findById(invoiceId);
+    if (!document) {
+      throw new ApiError(404, "Invoice not found");
+    }
+  }
+
+  if (document.status === "PAID") {
+    throw new ApiError(400, `${docType} is already paid`);
   }
 
   if (!paymentAmount || isNaN(paymentAmount) || paymentAmount <= 0) {
     throw new ApiError(400, "Invalid payment amount");
   }
 
-  const currentAmountPaid = Number(invoice.amountPaid.toFixed(2)) || 0;
-  const totalAmount = Number(invoice.totalAmount.toFixed(2)) || 0;
+  const currentAmountPaid = Number(document.amountPaid?.toFixed?.(2)) || 0;
+  const totalAmount = Number(document.totalAmount?.toFixed?.(2)) || 0;
   const currentRemainingAmount =
-    Number(invoice.remainingAmount.toFixed(2)) || totalAmount;
+    Number(document.remainingAmount?.toFixed?.(2)) || totalAmount;
 
   if (paymentAmount > currentRemainingAmount) {
     throw new ApiError(
       400,
-      `Payment amount ₹${paymentAmount} exceeds remaining invoice amount ₹${currentRemainingAmount}`,
+      `Payment amount ₹${paymentAmount} exceeds remaining ${docType} amount ₹${currentRemainingAmount}`,
     );
   }
 
   const transactionId = `TXN-CASH-${Date.now()}`;
 
-  invoice.amountPaid = currentAmountPaid + paymentAmount;
-  invoice.remainingAmount = totalAmount - invoice.amountPaid;
+  document.amountPaid = Number((currentAmountPaid + paymentAmount).toFixed(2));
+  document.remainingAmount = Number((totalAmount - document.amountPaid).toFixed(2));
 
-  if (invoice.remainingAmount <= 0) {
-    invoice.remainingAmount = 0;
-    invoice.status = "PAID";
-  } else if (invoice.amountPaid > 0) {
-    invoice.status = "PARTIALLY_PAID";
+  if (document.remainingAmount <= 0) {
+    document.remainingAmount = 0;
+    document.status = "PAID";
+  } else if (document.amountPaid > 0) {
+    document.status = "PARTIALLY_PAID";
   }
 
-  invoice.paymentHistory.push({
+  if (!document.paymentHistory) {
+    document.paymentHistory = [];
+  }
+
+  document.paymentHistory.push({
     amount: paymentAmount,
     paymentMethod: "CASH",
     transactionId,
     paidAt: new Date(),
-    paidBy: customerId || invoice.customer || adminId,
+    paidBy: customerId || vendorId || document.customer || adminId,
   });
-  await invoice.save();
+  await document.save();
 
-  await Payment.create({
-    invoice: invoice._id,
-    invoiceNumber: invoice.invoiceNumber,
-    user: customerId || invoice.customer || adminId,
+  const paymentRecord = {
     paymentMethod: "CASH",
     transactionId,
     amount: paymentAmount,
-  });
+    user: customerId || vendorId || document.customer || adminId,
+  };
 
-  return {
-    invoiceId: invoice._id,
-    invoiceNumber: invoice.invoiceNumber,
+  if (docType === "invoice") {
+    paymentRecord.invoice = document._id;
+    paymentRecord.invoiceNumber = document.invoiceNumber;
+  } else {
+    paymentRecord.bill = document._id;
+  }
+
+  await Payment.create(paymentRecord);
+
+  const result = {
     transactionId,
     paymentMethod: "CASH",
     amountPaid: paymentAmount,
-    remainingAmount: invoice.remainingAmount,
-    totalAmountPaid: invoice.amountPaid,
-    totalAmount: invoice.totalAmount,
-    invoiceStatus: invoice.status,
+    remainingAmount: document.remainingAmount,
+    totalAmountPaid: document.amountPaid,
+    totalAmount: document.totalAmount,
   };
+
+  if (docType === "invoice") {
+    result.invoiceId = document._id;
+    result.invoiceNumber = document.invoiceNumber;
+    result.invoiceStatus = document.status;
+  } else {
+    result.billId = document._id;
+    result.billStatus = document.status;
+  }
+
+  return result;
 };
 
 const getPaymentStatusService = async (userId, data) => {
@@ -302,10 +404,47 @@ const getInvoicePaymentHistoryService = async (userId, invoiceId) => {
   };
 };
 
+const getBillPaymentHistoryService = async (userId, billId) => {
+  const bill = await Bill.findById(billId).populate("paymentHistory.paidBy", "name email");
+  const currentUser = await User.findById(userId).select("role");
+
+  if (!bill) {
+    throw new ApiError(404, "Bill not found");
+  }
+
+  if (
+    currentUser?.role !== "admin" &&
+    bill.vendorId &&
+    bill.vendorId.toString() !== userId.toString()
+  ) {
+    throw new ApiError(403, "Not authorized to view this bill");
+  }
+
+  return {
+    billId: bill._id,
+    // billNumber: bill.billNumber,
+    totalAmount: bill.totalAmount,
+    amountPaid: bill.amountPaid,
+    remainingAmount: bill.remainingAmount,
+    status: bill.status,
+    paymentHistory: bill.paymentHistory
+      .sort((a, b) => b.paidAt - a.paidAt)
+      .slice(0, 4)
+      .map((payment) => ({
+        amount: payment.amount,
+        paymentMethod: payment.paymentMethod,
+        transactionId: payment.transactionId,
+        paidAt: payment.paidAt,
+        paidBy: payment.paidBy,
+      })),
+  };
+};
+
 export {
   processCardPaymentService,
   processQrPaymentService,
   processCashPaymentService,
   getPaymentStatusService,
   getInvoicePaymentHistoryService,
+  getBillPaymentHistoryService,
 };
