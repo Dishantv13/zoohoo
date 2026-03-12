@@ -24,6 +24,7 @@ import {
   WarningOutlined,
   DownloadOutlined,
   EyeOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { useState } from "react";
 import { useSelector } from "react-redux";
@@ -72,6 +73,7 @@ export default function InvoiceList() {
     totalInvoices: data?.data?.summary?.totalInvoices || 0,
     totalAmount: data?.data?.summary?.totalAmount || 0,
     paidAmount: data?.data?.summary?.paidAmount || 0,
+    pendingInvoices: data?.data?.summary?.pendingInvoices || 0,
     pendingAmount: data?.data?.summary?.pendingAmount || 0,
     overdueCount: data?.data?.summary?.overdueCount || 0,
   };
@@ -541,6 +543,16 @@ export default function InvoiceList() {
               title="Total Invoices"
               value={summary.totalInvoices || 0}
               valueStyle={{ color: "#1890ff" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            <Statistic
+              title="Pending Invoices"
+              value={summary.pendingInvoices || 0}
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: "#fa541c", fontSize: "20px" }}
             />
           </Card>
         </Col>

@@ -19,7 +19,6 @@ import CreateInvoice from "./pages/CreateInvoice.jsx";
 import AdminCreateInvoice from "./pages/AdminCreateInvoice.jsx";
 import InvoiceList from "./pages/invoiceList.jsx";
 import Login from "./pages/Login.jsx";
-import VendorLogin from "./pages/VendorLogin.jsx";
 import Register from "./pages/Register.jsx";
 import AdminRegister from "./pages/AdminRegister.jsx";
 import CustomerManagement from "./pages/CustomerManagement.jsx";
@@ -33,6 +32,8 @@ import { setCredentials, logoutUser } from "./slice/authSlice.js";
 import { useGetCurrentUserQuery, useLogoutMutation } from "./service/authApi";
 import { authApi } from "./service/authApi";
 import Report from "./pages/Report.jsx";
+import RevenueReport from "./pages/RevenueReport.jsx";
+import ExpenseReport from "./pages/ExpenseReport.jsx";
 import "./index.css";
 
 const { Header, Content } = Layout;
@@ -76,7 +77,12 @@ export default function App() {
     }
   };
 
-  const authRoutes = ["/login", "/vendor/login", "/register", "/admin/register"];
+  const authRoutes = [
+    "/login",
+    "/vendor/login",
+    "/register",
+    "/admin/register",
+  ];
 
   const showLayout = isAuthenticated && !authRoutes.includes(pathname);
 
@@ -95,7 +101,9 @@ export default function App() {
               {
                 key: "customer-create-invoice",
                 label: (
-                  <Link to="/admin/customer/create-invoice">Create Invoice</Link>
+                  <Link to="/admin/customer/create-invoice">
+                    Create Invoice
+                  </Link>
                 ),
               },
               {
@@ -129,6 +137,16 @@ export default function App() {
             key: "report",
             icon: <UnorderedListOutlined />,
             label: <Link to="/report">Report</Link>,
+          },
+          {
+            key: "revenue-report",
+            icon: <FileAddOutlined />,
+            label: <Link to="/revenue-report">Revenue Report</Link>,
+          },
+          {
+            key: "expense-report",
+            icon: <FileAddOutlined />,
+            label: <Link to="/expense-report">Expense Report</Link>,
           },
         ]
       : user?.role === "vendor"
@@ -197,6 +215,10 @@ export default function App() {
         return ["vendor-bill-management"];
       } else if (pathname === "/report") {
         return ["report"];
+      } else if (pathname === "/revenue-report") {
+        return ["revenue-report"];
+      } else if (pathname === "/expense-report") {
+        return ["expense-report"];
       }
     } else if (user?.role === "vendor") {
       if (pathname === "/" || pathname === "/vendor/inventory") {
@@ -207,7 +229,10 @@ export default function App() {
         return ["1"];
       } else if (pathname === "/create-invoice") {
         return ["2"];
-      } else if (pathname === "/invoices" || pathname.startsWith("/invoices/")) {
+      } else if (
+        pathname === "/invoices" ||
+        pathname.startsWith("/invoices/")
+      ) {
         return ["3"];
       }
     }
@@ -218,7 +243,6 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/vendor/login" element={<VendorLogin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin/register" element={<AdminRegister />} />
         <Route path="*" element={<Navigate to="/login" />} />
@@ -354,18 +378,14 @@ export default function App() {
             }
           />
           <Route
-            path="/report"
-            element={
-              <ProtectedRoute>
-                <Report />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/create-invoice"
             element={
               <ProtectedRoute>
-                {user?.role === "admin" ? <AdminCreateInvoice /> : <CreateInvoice />}
+                {user?.role === "admin" ? (
+                  <AdminCreateInvoice />
+                ) : (
+                  <CreateInvoice />
+                )}
               </ProtectedRoute>
             }
           />
@@ -382,6 +402,30 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <CreateInvoice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/report"
+            element={
+              <ProtectedRoute>
+                <Report />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/revenue-report"
+            element={
+              <ProtectedRoute>
+                <RevenueReport />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/expense-report"
+            element={
+              <ProtectedRoute>
+                <ExpenseReport />
               </ProtectedRoute>
             }
           />

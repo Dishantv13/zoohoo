@@ -7,13 +7,10 @@ import {
   deleteVendor,
   getVendorBills,
   getVendorStats,
-  vendorLogin,
 } from "../controller/vendor.controller.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 
 const router = Router();
-
-router.route("/login").post(vendorLogin);
 
 router.use(protect);
 router.use(adminOnly);

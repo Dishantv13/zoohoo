@@ -1,5 +1,7 @@
 import { User } from "../model/user.model.js";
 import { Company } from "../model/company.model.js";
+import { Vendor } from "../model/vendor.model.js";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import ApiError from "../util/apiError.js";
 
@@ -132,42 +134,76 @@ const adminRegisterService = async (userData) => {
   };
 };
 
-const loginService = async (userData) => {
-  const { email, password } = userData;
+const loginService = async ({ email, password }) => {
+  if (!email || !password) {
+    throw new ApiError(400, "Email and password are required");
+  }
 
-  const user = await User.findOne({
-    email: email.toLowerCase(),
-  })
+  const normalizedEmail = email.toLowerCase();
+
+  let user = await User.findOne({ email: normalizedEmail })
     .select("+password")
     .populate("companyId");
 
-  if (!user) {
-    throw new ApiError(404, "Invalid email or password");
+  if (user) {
+    if (!user.isActive) {
+      throw new ApiError(400, "Your account has been deactivated");
+    }
+
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      throw new ApiError(401, "Invalid email or password");
+    }
+
+    const token = jwt.sign(
+      { id: user._id, accountType: "user" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return {
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        companyId: user.companyId?._id,
+        company: user.companyId,
+        accountType: "user",
+      },
+    };
   }
 
-  if (!user.isActive) {
-    throw new ApiError(400, "Your account has been deactivated");
+  const vendor = await Vendor.findOne({ email: normalizedEmail });
+
+  if (!vendor) {
+    throw new ApiError(401, "Invalid email or password");
   }
 
-  const isMatch = await user.matchPassword(password);
+  const isPasswordValid = await bcrypt.compare(password, vendor.password);
 
-  if (!isMatch) {
-    throw new ApiError(404, "Invalid email or password");
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid email or password");
   }
 
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
-  });
+  const vendorObj = vendor.toObject();
+  delete vendorObj.password;
+
+  const token = jwt.sign(
+    { id: vendor._id, accountType: "vendor" },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
 
   return {
     token,
     user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      companyId: user.companyId?._id,
-      company: user.companyId,
+      ...vendorObj,
+      role: "vendor",
+      id: vendor._id,
+      accountType: "vendor",
     },
   };
 };

@@ -145,10 +145,8 @@ const getInvoicesServices = async (userId, options = {}) => {
         totalAmount: { $sum: "$totalAmount" },
         paidAmount: { $sum: "$amountPaid" },
         pendingAmount: { $sum: "$remainingAmount" },
-        confirmedAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
-          },
+        pendingInvoices: {
+          $sum: { $cond: [{ $ne: ["$status", "PAID"] }, 1, 0] },
         },
         overdueCount: {
           $sum: {
@@ -197,6 +195,7 @@ const getInvoicesServices = async (userId, options = {}) => {
       totalAmount: 0,
       paidAmount: 0,
       pendingAmount: 0,
+      pendingInvoices: 0,
       confirmedAmount: 0,
       overdueCount: 0,
       totalInvoices: 0,
@@ -642,10 +641,10 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
     { $skip: skip },
     { $limit: limit },
     {
-        $project: {
-            paymentHistory: 0,
-        },
-    }
+      $project: {
+        paymentHistory: 0,
+      },
+    },
   ]);
 
   const summary = await Invoice.aggregate([
@@ -656,10 +655,8 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
         totalAmount: { $sum: "$totalAmount" },
         paidAmount: { $sum: "$amountPaid" },
         pendingAmount: { $sum: "$remainingAmount" },
-        confirmedAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
-          },
+        pendingInvoices: {
+          $sum: { $cond: [{ $ne: ["$status", "PAID"] }, 1, 0] },
         },
         overdueCount: {
           $sum: {
@@ -708,6 +705,7 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
       totalAmount: 0,
       paidAmount: 0,
       pendingAmount: 0,
+      pendingInvoices: 0,
       confirmedAmount: 0,
       overdueCount: 0,
       totalInvoices: 0,

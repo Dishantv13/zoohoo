@@ -14,13 +14,6 @@ export const vendorApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    vendorLogin: builder.mutation({
-      query: (data) => ({
-        url: "/login",
-        method: "POST",
-        body: data,
-      }),
-    }),
     getVendors: builder.query({
       query: ({page = 1 , limit = 10}) => ({
         url: "/",
@@ -90,7 +83,6 @@ export const vendorApi = createApi({
 });
 
 export const {
-  useVendorLoginMutation,
   useGetVendorsQuery,
   useCreateVendorMutation,
   useUpdateVendorMutation,

@@ -301,7 +301,12 @@ const getBillsStatsService = async (companyId) => {
         totalAmount: { $sum: "$totalAmount" },
         paidAmount: { $sum: "$amountPaid" },
         pendingAmount: { $sum: "$remainingAmount" },
-        overDueCount: {
+        pendingBill: {
+          $sum: {
+            $cond: [{ $ne: ["$status", "PAID"] }, 1, 0],
+          },
+        },
+        overdueCount: {
           $sum: {
             $cond: [
               {
@@ -325,7 +330,8 @@ const getBillsStatsService = async (companyId) => {
       totalAmount: 0,
       paidAmount: 0,
       pendingAmount: 0,
-      overDueCount: 0,
+      pendingBill: 0,
+      overdueCount: 0,
       billCount: 0,
     },
   };

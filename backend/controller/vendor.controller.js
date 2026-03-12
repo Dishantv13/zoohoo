@@ -6,7 +6,6 @@ import {
   deleteVendorService,
   getVendorBillsService,
   getVendorStatsService,
-  authenticateVendorService,
 } from "../service/vendor.services.js";
 
 import { asyncHandler } from "../util/asyncHandler.js";
@@ -63,12 +62,6 @@ const getVendorStats = asyncHandler(async (req, res) => {
   successResponse(res, stats, 200, "Vendor statistics retrieved successfully");
 });
 
-const vendorLogin = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  const vendor = await authenticateVendorService(email, password);
-  successResponse(res, vendor, 200, "Vendor login successful");
-});
-
 export {
   createVendor,
   getVendors,
@@ -77,5 +70,4 @@ export {
   deleteVendor,
   getVendorBills,
   getVendorStats,
-  vendorLogin,
 };

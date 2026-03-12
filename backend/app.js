@@ -45,7 +45,7 @@ app.use("/api/customers", userRouter);
 app.use("/api/invoices", invoiceRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/payments", apiRateLimiter, paymentRouter);
-app.use("/api/dashboard", dashboardRouter);
+app.use("/api/report", dashboardRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/vendors", vendorRouter);
 app.use("/api/bills", billRouter);

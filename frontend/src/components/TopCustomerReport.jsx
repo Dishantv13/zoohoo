@@ -72,10 +72,11 @@ const TopCustomerReport = ({ dates }) => {
                     },
                     title: {
                       display: true,
-                      text: "Customers",
+                      text: "Top Customers",
                       color: "rgba(206, 126, 8, 1)",
                       font: {
-                        size: 20,
+                        size: 16,
+                        weight: "bold",
                       },
                     },
                     ticks: {

@@ -15,8 +15,10 @@ export default function Login() {
   const [login, { isLoading }] = useLoginMutation();
 
   const handleLogin = async (data) => {
+    console.log("Login data:", data);
     try {
       const response = await login(data).unwrap();
+      console.log("Login response:", response);
       dispatch(
         setCredentials({
           user: response.data.user,

@@ -10,14 +10,14 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
-import { useGetRevenueByYearQuery } from "../service/reportApi";
+import { useGetYearlyExpenseQuery } from "../service/reportApi";
 
-const YearlyRevenueReport = ({ dates }) => {
-  const { data, isLoading } = useGetRevenueByYearQuery({
+const YearlyExpenseModel = ({ dates }) => {
+  const { data, isLoading } = useGetYearlyExpenseQuery({
     year: dates && dates.length === 2 ? dates[0].year() : undefined,
   });
 
-  const yearlyRevenueData = data?.data || [];
+  const yearlyExpenseData = data?.data || [];
 
   if (isLoading) return <Spin size="large" />;
 
@@ -25,18 +25,18 @@ const YearlyRevenueReport = ({ dates }) => {
     <>
       <Row style={{ marginTop: 20 }}>
         <Col span={24}>
-          <Card title="Yearly Revenue Graph">
+          <Card title="Yearly Expense Graph">
             <Bar
               data={{
-                labels: yearlyRevenueData?.map((item) => item.year) || [],
+                labels: yearlyExpenseData?.map((item) => item.year) || [],
                 datasets: [
                   {
-                    label: "Revenue",
+                    label: "Expense",
                     data:
-                      yearlyRevenueData?.map((item) =>
-                        Number(item.totalRevenue || 0).toFixed(2),
+                      yearlyExpenseData?.map((item) =>
+                        Number(item.totalExpense || 0).toFixed(2),
                       ) || [],
-                    backgroundColor: "rgba(195, 2, 2, 0.6)",
+                    backgroundColor: "rgba(2, 117, 195, 0.6)",
                     borderColor: "rgb(0, 0, 0)",
                     borderWidth: 2,
                     borderRadius: 8,
@@ -72,7 +72,7 @@ const YearlyRevenueReport = ({ dates }) => {
                     title: {
                       display: true,
                       text: "Years",
-                      color: '#595959',
+                      color: "#595959",
                       font: {
                         size: 16,
                         weight: "bold",
@@ -102,4 +102,4 @@ const YearlyRevenueReport = ({ dates }) => {
   );
 };
 
-export default YearlyRevenueReport;
+export default YearlyExpenseModel;

@@ -16,12 +16,21 @@ import {
   Empty,
   Tag,
   Alert,
+  DatePicker,
 } from "antd";
-import { DeleteOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import "./CreateInvoice.css";
 import { useGetVendorsQuery } from "../service/vendorApi";
-import { useCreateBillMutation, useUpdateBillMutation } from "../service/billApi";
+import {
+  useCreateBillMutation,
+  useUpdateBillMutation,
+} from "../service/billApi";
 import { useGetVendorAvailabilityQuery } from "../service/itemApi";
+import dayjs from "dayjs";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -45,7 +54,10 @@ export default function AdminCreateBill() {
     limit: 100,
   });
   const { data: availabilityData, isLoading: availabilityLoading } =
-    useGetVendorAvailabilityQuery(selectedVendor ? String(selectedVendor) : null, { skip: !selectedVendor });
+    useGetVendorAvailabilityQuery(
+      selectedVendor ? String(selectedVendor) : null,
+      { skip: !selectedVendor },
+    );
   const [createBill] = useCreateBillMutation();
   const [updateBill] = useUpdateBillMutation();
 
@@ -74,6 +86,11 @@ export default function AdminCreateBill() {
       setIsEditMode(true);
       setEditBillId(bill._id);
       setSelectedVendor(bill.vendorId?._id || null);
+
+      form.setFieldsValue({
+        billDate: bill.billDate ? dayjs(bill.billDate) : null,
+        dueDate: bill.dueDate ? dayjs(bill.dueDate) : null,
+      });
 
       setItems(
         bill.items?.length
@@ -145,14 +162,15 @@ export default function AdminCreateBill() {
     return issues;
   }, [requestedByItem, inventoryById]);
 
-  const onFinish = async () => {
+  const onFinish = async (values) => {
     if (!selectedVendor) {
       message.error("Please select a vendor");
       return;
     }
 
     const hasInvalidItem = items.some(
-      (item) => !item.itemId || Number(item.quantity) <= 0 || Number(item.rate) <= 0,
+      (item) =>
+        !item.itemId || Number(item.quantity) <= 0 || Number(item.rate) <= 0,
     );
 
     if (!items.length || hasInvalidItem) {
@@ -161,7 +179,9 @@ export default function AdminCreateBill() {
     }
 
     if (stockIssues.length > 0) {
-      message.error("Some items exceed available stock. Bill cannot be created.");
+      message.error(
+        "Some items exceed available stock. Bill cannot be created.",
+      );
       return;
     }
 
@@ -170,6 +190,8 @@ export default function AdminCreateBill() {
     try {
       const payload = {
         vendorId: String(selectedVendor),
+        billDate: values.billDate.toISOString(),
+        dueDate: values.dueDate.toISOString(),
         items: items.map((item) => ({
           itemId: item.itemId,
           quantity: Number(item.quantity),
@@ -223,7 +245,9 @@ export default function AdminCreateBill() {
       key: "available",
       width: 120,
       render: (_, record) => {
-        const available = Number(inventoryById.get(record.itemId)?.quantity || 0);
+        const available = Number(
+          inventoryById.get(record.itemId)?.quantity || 0,
+        );
         return <Tag color={available > 0 ? "green" : "red"}>{available}</Tag>;
       },
     },
@@ -285,9 +309,15 @@ export default function AdminCreateBill() {
   return (
     <div className="create-invoice-container">
       <Card title={isEditMode ? "Edit Vendor Bill" : "Create Bill for Vendor"}>
-        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+          initialValues={{ billDate: dayjs() }}
+        >
           <Row gutter={16}>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={12} lg={6}>
               <Form.Item label="Select Vendor" required>
                 <Select
                   placeholder="Search and select vendor"
@@ -299,7 +329,9 @@ export default function AdminCreateBill() {
                   }}
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   options={vendorsList.map((vendor) => ({
                     label: `${vendor.name} (${vendor.email})`,
@@ -308,13 +340,41 @@ export default function AdminCreateBill() {
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12} style={{ display: "flex", alignItems: "center" }}>
-              <div>
-                <div style={{ marginBottom: 8, color: "#8c8c8c" }}>Subtotal</div>
-                <Tag color="geekblue" style={{ fontSize: 16, padding: "4px 10px" }}>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item
+                label="Bill Date"
+                name="billDate"
+                rules={[{ required: true, message: "please select bill date" }]}
+              >
+                <DatePicker style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item
+                label="Due Date"
+                name="dueDate"
+                rules={[{ required: true, message: "please select due date" }]}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  disableDate={(current) =>
+                    current && current < form.getFieldValue("billDate")
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col
+              xs={24}
+              sm={12}
+              lg={6}
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              <Space>
+                <span style={{ color: "#3f3535" }}>Subtotal</span>
+                <Tag color="geekblue" style={{ fontSize: 16 }}>
                   {currencyFormatter.format(subtotal)}
                 </Tag>
-              </div>
+              </Space>
             </Col>
           </Row>
 
@@ -342,7 +402,11 @@ export default function AdminCreateBill() {
           />
 
           <Space style={{ marginTop: 16 }}>
-            <Button icon={<PlusOutlined />} onClick={addItem} disabled={!selectedVendor}>
+            <Button
+              icon={<PlusOutlined />}
+              onClick={addItem}
+              disabled={!selectedVendor}
+            >
               Add Item
             </Button>
             <Button
@@ -353,11 +417,14 @@ export default function AdminCreateBill() {
             >
               {isEditMode ? "Update Bill" : "Create Bill"}
             </Button>
-            <Button onClick={() => navigate("/admin/vendor/bills")}>Cancel</Button>
+            <Button onClick={() => navigate("/admin/vendor/bills")}>
+              Cancel
+            </Button>
           </Space>
 
           <div style={{ marginTop: 16, color: "#8c8c8c", fontSize: 12 }}>
-            Bill creation is blocked when requested quantity is greater than vendor stock.
+            Bill creation is blocked when requested quantity is greater than
+            vendor stock.
           </div>
         </Form>
       </Card>

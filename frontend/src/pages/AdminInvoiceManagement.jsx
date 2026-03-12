@@ -28,6 +28,7 @@ import {
   SearchOutlined,
   DownloadOutlined,
   DollarOutlined,
+  ClockCircleOutlined 
 } from "@ant-design/icons";
 import CashPaymentModal from "../components/CashPaymentModal";
 import dayjs from "dayjs";
@@ -94,6 +95,7 @@ export default function AdminInvoiceManagement() {
   const summary = data?.data?.summary || {};
   const summaryData = {
     totalInvoices: summary.totalInvoices || 0,
+    pendingInvoices: summary.pendingInvoices || 0,
     overdueCount: summary.overdueCount || 0,
     pendingAmount: summary.pendingAmount || 0,
     paidAmount: summary.paidAmount || 0,
@@ -552,6 +554,16 @@ export default function AdminInvoiceManagement() {
               title="Total Invoices"
               value={summaryData.totalInvoices || 0}
               valueStyle={{ color: "#1890ff" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={3}>
+          <Card>
+            <Statistic
+              title="Pending Invoices"
+              prefix={<ClockCircleOutlined  />}
+              value={summaryData.pendingInvoices || 0}
+              valueStyle={{ color: "#ff4d4f" }}
             />
           </Card>
         </Col>

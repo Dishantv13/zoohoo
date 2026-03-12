@@ -10,14 +10,15 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
-import { useGetRevenueByYearQuery } from "../service/reportApi";
+import { useGetTopVendorsQuery } from "../service/reportApi";
 
-const YearlyRevenueReport = ({ dates }) => {
-  const { data, isLoading } = useGetRevenueByYearQuery({
+const TopVendorModel = ({ dates }) => {
+  const { data, isLoading } = useGetTopVendorsQuery({
+    month: dates && dates.length === 2 ? dates[0].month() + 1 : undefined,
     year: dates && dates.length === 2 ? dates[0].year() : undefined,
   });
 
-  const yearlyRevenueData = data?.data || [];
+  const topVendorData = data?.data || [];
 
   if (isLoading) return <Spin size="large" />;
 
@@ -25,22 +26,22 @@ const YearlyRevenueReport = ({ dates }) => {
     <>
       <Row style={{ marginTop: 20 }}>
         <Col span={24}>
-          <Card title="Yearly Revenue Graph">
+          <Card title="Top Vendors Graph">
             <Bar
+              height={280}
               data={{
-                labels: yearlyRevenueData?.map((item) => item.year) || [],
+                labels: topVendorData?.map((item) => item.vendor) || [],
                 datasets: [
                   {
-                    label: "Revenue",
+                    label: "Total Received",
                     data:
-                      yearlyRevenueData?.map((item) =>
-                        Number(item.totalRevenue || 0).toFixed(2),
-                      ) || [],
-                    backgroundColor: "rgba(195, 2, 2, 0.6)",
+                      topVendorData?.map((item) => item.totalAmount || 0) ||
+                      [],
+                    backgroundColor: "rgba(206, 126, 8, 0.6)",
                     borderColor: "rgb(0, 0, 0)",
                     borderWidth: 2,
                     borderRadius: 8,
-                    minBarLength: 10,
+                    barThickness: 120,
                   },
                 ],
               }}
@@ -49,8 +50,7 @@ const YearlyRevenueReport = ({ dates }) => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: {
-                    display: true,
-                    position: "top",
+                    display: false,
                   },
                   tooltip: {
                     backgroundColor: "#001529",
@@ -71,8 +71,8 @@ const YearlyRevenueReport = ({ dates }) => {
                     },
                     title: {
                       display: true,
-                      text: "Years",
-                      color: '#595959',
+                      text: "Top Vendors",
+                      color: "rgba(206, 126, 8, 1)",
                       font: {
                         size: 16,
                         weight: "bold",
@@ -83,17 +83,18 @@ const YearlyRevenueReport = ({ dates }) => {
                     },
                   },
                   y: {
+                    grid: {
+                      color: "#f0f0f0",
+                    },
                     ticks: {
                       color: "#595959",
                       callback: function (value) {
                         return "₹ " + value;
                       },
                     },
-                    beginAtZero: true,
                   },
                 },
               }}
-              height={280}
             />
           </Card>
         </Col>
@@ -102,4 +103,4 @@ const YearlyRevenueReport = ({ dates }) => {
   );
 };
 
-export default YearlyRevenueReport;
+export default TopVendorModel;

@@ -23,9 +23,10 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  DollarOutlined,
+  WarningOutlined,
   CreditCardOutlined,
-  MoneyCollectOutlined,
+  DollarCircleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "./InvoiceManagement.css";
@@ -191,14 +192,37 @@ export default function AdminBillManagement() {
       ),
     },
     {
-      title: "Created",
-      dataIndex: "createdAt",
-      key: "createdAt",
+      title: "Bill Date",
+      dataIndex: "billDate",
+      key: "billDate",
+      width: 100,
       render: (d) => {
         const date = dayjs(d).format("DD MMM YYYY");
         return (
           <Flex align="center" gap="small">
             <Tag color="cyan">{date}</Tag>
+          </Flex>
+        );
+      },
+    },
+    {
+      title: "Due Date",
+      dataIndex: "dueDate",
+      key: "dueDate",
+      width: 100,
+      render: (d, record) => {
+        const date = dayjs(d).format("DD MMM YYYY");
+        const isPastDue = dayjs(d).isBefore(dayjs().startOf("start-day"));
+        const isUnpaid =
+          record.status !== "PAID" && record.status !== "CANCELLED";
+        return (
+          <Flex vertical align="flex-start" gap="small">
+            <Tag color="red">{date}</Tag>
+            {isPastDue && isUnpaid && (
+              <Tag color="volcano" icon={<WarningOutlined />}>
+                Overdue
+              </Tag>
+            )}
           </Flex>
         );
       },
@@ -251,10 +275,8 @@ export default function AdminBillManagement() {
       title: "Actions",
       key: "actions",
       fixed: "right",
+      width: 300,
       render: (_, record) => {
-        const canReceiveCashPayment =
-          record.status === "PENDING" || record.status === "PARTIALLY_PAID";
-
         if (record.status === "PAID") {
           return (
             <Space wrap>
@@ -293,7 +315,7 @@ export default function AdminBillManagement() {
                 Card Pay
               </Button>
               <Button
-                icon={<MoneyCollectOutlined />}
+                icon={<DollarCircleOutlined />}
                 type="default"
                 onClick={() => handleCashPaymentClick(record)}
                 size="small"
@@ -335,7 +357,7 @@ export default function AdminBillManagement() {
               Card Pay
             </Button>
             <Button
-              icon={<MoneyCollectOutlined />}
+              icon={<DollarCircleOutlined />}
               type="default"
               onClick={() => handleCashPaymentClick(record)}
               size="small"
@@ -376,7 +398,17 @@ export default function AdminBillManagement() {
             />
           </Card>
         </Col>
-        {/* <Col xs={24} sm={12} lg={3}>
+        <Col xs={24} sm={12} lg={3}>
+          <Card>
+            <Statistic
+              title="Pending Bills"
+              prefix={<ClockCircleOutlined />}
+              value={summaryData.pendingBill || 0}
+              valueStyle={{ color: "#ff4d4f" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={3}>
           <Card>
             <Statistic
               title="Overdue Bills"
@@ -385,7 +417,7 @@ export default function AdminBillManagement() {
               valueStyle={{ color: "#ff4d4f" }}
             />
           </Card>
-        </Col> */}
+        </Col>
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
@@ -423,12 +455,21 @@ export default function AdminBillManagement() {
         extra={
           <Space>
             <Select
-              allowClear
               placeholder="Filter by vendor"
               style={{ width: 240 }}
+              prefix={<SearchOutlined />}
+              allowClear
+              showSearch
               value={selectedVendor}
-              onChange={(value) => setSelectedVendor(value || null)}
-              suffixIcon={<SearchOutlined />}
+              onChange={(value) => {
+                setPage(1);
+                setSelectedVendor(value || null);
+              }}
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
               options={vendorsList.map((vendor) => ({
                 label: `${vendor.name} (${vendor.email})`,
                 value: vendor._id,

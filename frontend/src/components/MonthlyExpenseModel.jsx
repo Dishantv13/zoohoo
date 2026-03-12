@@ -10,34 +10,37 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
-import { useGetRevenueByYearQuery } from "../service/reportApi";
+import { useGetMonthlyExpenseQuery } from "../service/reportApi";
 
-const YearlyRevenueReport = ({ dates }) => {
-  const { data, isLoading } = useGetRevenueByYearQuery({
+const MonthlyExpenseReport = ({ dates }) => {
+  const { data, isLoading } = useGetMonthlyExpenseQuery({
+    month: dates && dates.length === 2 ? dates[0].month() + 1 : undefined,
     year: dates && dates.length === 2 ? dates[0].year() : undefined,
   });
 
-  const yearlyRevenueData = data?.data || [];
+  const reportData = data?.data || [];
 
   if (isLoading) return <Spin size="large" />;
 
   return (
     <>
-      <Row style={{ marginTop: 20 }}>
+      <Row gutter={16} style={{ marginTop: 20 }}>
         <Col span={24}>
-          <Card title="Yearly Revenue Graph">
+          <Card title="Monthly Expense Graph">
             <Bar
+              height={280}
               data={{
-                labels: yearlyRevenueData?.map((item) => item.year) || [],
+                labels:
+                  reportData?.map((item) => `${item.month}/${item.year}`) || [],
                 datasets: [
                   {
-                    label: "Revenue",
+                    label: "Expense",
                     data:
-                      yearlyRevenueData?.map((item) =>
-                        Number(item.totalRevenue || 0).toFixed(2),
+                      reportData?.map((item) =>
+                        Number(item.totalExpense || 0).toFixed(2),
                       ) || [],
-                    backgroundColor: "rgba(195, 2, 2, 0.6)",
-                    borderColor: "rgb(0, 0, 0)",
+                    backgroundColor: "rgba(24, 144, 255, 0.6)",
+                    borderColor: "rgba(24, 144, 255, 1)",
                     borderWidth: 2,
                     borderRadius: 8,
                     minBarLength: 10,
@@ -50,7 +53,6 @@ const YearlyRevenueReport = ({ dates }) => {
                 plugins: {
                   legend: {
                     display: true,
-                    position: "top",
                   },
                   tooltip: {
                     backgroundColor: "#001529",
@@ -71,8 +73,8 @@ const YearlyRevenueReport = ({ dates }) => {
                     },
                     title: {
                       display: true,
-                      text: "Years",
-                      color: '#595959',
+                      text: "Month/Year",
+                      color: "#595959",
                       font: {
                         size: 16,
                         weight: "bold",
@@ -93,7 +95,6 @@ const YearlyRevenueReport = ({ dates }) => {
                   },
                 },
               }}
-              height={280}
             />
           </Card>
         </Col>
@@ -102,4 +103,4 @@ const YearlyRevenueReport = ({ dates }) => {
   );
 };
 
-export default YearlyRevenueReport;
+export default MonthlyExpenseReport;

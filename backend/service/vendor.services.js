@@ -2,7 +2,6 @@ import { Vendor } from "../model/vendor.model.js";
 import { Bill } from "../model/bill.model.js";
 import ApiError from "../util/apiError.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 
 const createVendorService = async (vendorData, companyId) => {
   const { name, email, phone, password, address } = vendorData;
@@ -145,44 +144,6 @@ const getVendorBillsService = async (vendorId, companyId) => {
   return bills;
 };
 
-const authenticateVendorService = async (email, password) => {
-  if (!email || !password) {
-    throw new ApiError(400, "Email and password are required");
-  }
-
-  const vendor = await Vendor.findOne({
-    email: email.toLowerCase(),
-  });
-
-  if (!vendor) {
-    throw new ApiError(401, "Invalid email or password");
-  }
-
-  const isPasswordValid = await bcrypt.compare(password, vendor.password);
-
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid email or password");
-  }
-
-  const vendorObj = vendor.toObject();
-  delete vendorObj.password;
-
-  const token = jwt.sign(
-    { id: vendor._id, accountType: "vendor" },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" },
-  );
-
-  return {
-    token,
-    user: {
-      ...vendorObj,
-      role: "vendor",
-      id: vendor._id,
-    },
-  };
-};
-
 const getVendorStatsService = async (vendorId, companyId) => {
   const vendor = await Vendor.findOne({ _id: vendorId, companyId });
 
@@ -228,5 +189,4 @@ export {
   deleteVendorService,
   getVendorBillsService,
   getVendorStatsService,
-  authenticateVendorService,
 };
