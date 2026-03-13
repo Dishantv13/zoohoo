@@ -1,74 +1,50 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "./baseApi";
+import { TAGS } from "../enum/tagType";
+import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
 
-export const itemApi = createApi({
-  reducerPath: "itemApi",
-  tagTypes: ["InventoryItem", "VendorAvailability"],
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/items",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+export const itemApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getInventoryItems: builder.query({
       query: (params = {}) => ({
-        url: "/",
+        url: "/items",
         params,
       }),
       providesTags: (result) =>
-        result?.data
-          ? [
-              ...result.data.map(({ _id }) => ({ type: "InventoryItem", id: _id })),
-              { type: "InventoryItem", id: "LIST" },
-            ]
-          : [{ type: "InventoryItem", id: "LIST" }],
+        tagListWithIds(TAGS.INVENTORY_ITEM, result?.data),
     }),
     getVendorAvailability: builder.query({
       query: (vendorId) => ({
-        url: `/availability/${vendorId}`,
+        url: `/items/availability/${vendorId}`,
       }),
-      providesTags: (result, error, vendorId) =>
-        result?.data
-          ? [
-              ...result.data.map(({ _id }) => ({
-                type: "VendorAvailability",
-                id: _id,
-              })),
-              { type: "VendorAvailability", id: vendorId },
-            ]
-          : [{ type: "VendorAvailability", id: vendorId }],
+      providesTags: (result, error, vendorId) => tagById(TAGS.VENDOR_AVAILABILITY, vendorId),
     }),
     createInventoryItem: builder.mutation({
       query: (data) => ({
-        url: "/",
+        url: "/items",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [{ type: "InventoryItem", id: "LIST" }],
+      invalidatesTags: tagList(TAGS.INVENTORY_ITEM),
     }),
     updateInventoryItem: builder.mutation({
       query: ({ itemId, data }) => ({
-        url: `/${itemId}`,
+        url: `/items/${itemId}`,
         method: "PUT",
         body: data,
       }),
       invalidatesTags: (result, error, { itemId }) => [
-        { type: "InventoryItem", id: itemId },
-        { type: "InventoryItem", id: "LIST" },
+        ...tagById(TAGS.INVENTORY_ITEM, itemId),
+        ...tagList(TAGS.INVENTORY_ITEM),
       ],
     }),
     deleteInventoryItem: builder.mutation({
       query: (itemId) => ({
-        url: `/${itemId}`,
+        url: `/items/${itemId}`,
         method: "DELETE",
       }),
       invalidatesTags: (result, error, itemId) => [
-        { type: "InventoryItem", id: itemId },
-        { type: "InventoryItem", id: "LIST" },
+        ...tagById(TAGS.INVENTORY_ITEM, itemId),
+        ...tagList(TAGS.INVENTORY_ITEM),
       ],
     }),
   }),

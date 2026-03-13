@@ -15,10 +15,8 @@ export default function Login() {
   const [login, { isLoading }] = useLoginMutation();
 
   const handleLogin = async (data) => {
-    console.log("Login data:", data);
     try {
       const response = await login(data).unwrap();
-      console.log("Login response:", response);
       dispatch(
         setCredentials({
           user: response.data.user,
@@ -29,7 +27,11 @@ export default function Login() {
         message: "Login Successful",
         description: "You have successfully logged in.",
       });
-      navigate("/");
+      if(response.data.user.role === "vendor") {
+        navigate("/vendor/inventory");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -93,9 +95,6 @@ export default function Login() {
           <p style={{ textAlign: "center" }}>
             Are you an admin?{" "}
             <Link to="/admin/register">Register your company</Link>
-          </p>
-          <p style={{ textAlign: "center" }}>
-            Are you a vendor? <Link to="/vendor/login">Vendor login</Link>
           </p>
         </Spin>
       </Card>

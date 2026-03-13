@@ -1,83 +1,64 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "./baseApi";
+import { TAGS, TAG_IDS } from "../enum/tagType";
+import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
 
-export const vendorApi = createApi({
-  reducerPath: "vendorApi",
-  tagTypes: ["Vendor", "VendorStats", "VendorBills"],
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/vendors",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+export const vendorApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getVendors: builder.query({
-      query: ({page = 1 , limit = 10}) => ({
-        url: "/",
+      query: ({ page = 1, limit = 10 }) => ({
+        url: "/vendors",
         params: { page, limit },
       }),
+
       providesTags: (result) =>
-        result?.data
-          ? [
-              ...result.data.vendors.map(({ _id }) => ({ type: "Vendor", id: _id })),
-              { type: "Vendor", id: "LIST" },
-            ]
-          : [{ type: "Vendor", id: "LIST" }],
+        tagListWithIds(TAGS.VENDOR, result?.data?.vendors),
     }),
+
     createVendor: builder.mutation({
       query: (data) => ({
-        url: "/",
+        url: "/vendors",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [{ type: "Vendor", id: "LIST" }],
+
+      invalidatesTags: tagList(TAGS.VENDOR),
     }),
     updateVendor: builder.mutation({
       query: ({ vendorId, data }) => ({
-        url: `/${vendorId}`,
+        url: `/vendors/${vendorId}`,
         method: "PUT",
         body: data,
       }),
       invalidatesTags: (result, error, { vendorId }) => [
-        { type: "Vendor", id: vendorId },
-        { type: "Vendor", id: "LIST" },
+        ...tagById(TAGS.VENDOR, vendorId),
+        ...tagList(TAGS.VENDOR),
       ],
     }),
     deleteVendor: builder.mutation({
       query: (vendorId) => ({
-        url: `/${vendorId}`,
+        url: `/vendors/${vendorId}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, vendorId) => [
-        { type: "Vendor", id: vendorId },
-        { type: "Vendor", id: "LIST" },
+      invalidatesTags: (result, error, { vendorId }) => [
+        ...tagById(TAGS.VENDOR, vendorId),
+        ...tagList(TAGS.VENDOR),
       ],
     }),
     getVendorStats: builder.query({
       query: (vendorId) => ({
-        url: `/${vendorId}/stats`,
+        url: `/vendors/${vendorId}/stats`,
       }),
       providesTags: (result, error, vendorId) => [
-        { type: "VendorStats", id: vendorId },
+        ...tagById(TAGS.VENDOR_STATS, vendorId),
       ],
     }),
     getVendorBills: builder.query({
-      query: (vendorId) => ({
-        url: `/${vendorId}/bills`,
+      query: ({ vendorId, page = 1, limit = 10 }) => ({
+        url: `/vendors/${vendorId}/bills`,
+        params: { page, limit },
       }),
       providesTags: (result, error, vendorId) =>
-        result?.data
-          ? [
-              ...result.data.map(({ _id }) => ({
-                type: "VendorBills",
-                id: _id,
-              })),
-              { type: "VendorBills", id: vendorId },
-            ]
-          : [{ type: "VendorBills", id: vendorId }],
+        tagListWithIds(TAGS.VENDOR_BILLS, result?.data?.bills),
     }),
   }),
 });

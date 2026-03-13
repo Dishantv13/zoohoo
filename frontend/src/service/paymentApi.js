@@ -1,146 +1,84 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { invoiceApi } from "./invoiceApi";
-import { billApi } from "./billApi";
-import { reportApi } from "./reportApi";
+import { baseApi } from "./baseApi";
+import { TAGS } from "../enum/tagType";
+import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
 
-export const paymentApi = createApi({
-  reducerPath: "paymentApi",
-  tagTypes: ["Payment", "PaymentStatus", "PaymentHistory"],
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/payments",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+export const paymentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    
     getCardPayment: builder.mutation({
       query: (data) => ({
-        url: "/card",
+        url: "/payments/card",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [{ type: "Payment", id: "LIST" }],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          if (arg?.billId) {
-            dispatch(
-              billApi.util.invalidateTags([
-                { type: "Bill", id: "LIST" },
-                { type: "Bill", id: arg.billId },
-              ]),
-            );
-          } else if (arg?.invoiceId) {
-            dispatch(
-              invoiceApi.util.invalidateTags([
-                { type: "Invoice", id: "LIST" },
-                { type: "Invoice", id: arg.invoiceId },
-              ]),
-            );
-          }
-        } catch {}
-      },
-    }),
-    getUPIPayment: builder.mutation({
-      query: (data) => ({
-        url: "/qr",
-        method: "POST",
-        body: data,
-      }),
-      invalidatesTags: [{ type: "Payment", id: "LIST" }],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          if (arg?.billId) {
-            dispatch(
-              billApi.util.invalidateTags([
-                { type: "Bill", id: "LIST" },
-                { type: "Bill", id: arg.billId },
-              ]),
-            );
-          } else if (arg?.invoiceId) {
-            dispatch(
-              invoiceApi.util.invalidateTags([
-                { type: "Invoice", id: "LIST" },
-                { type: "Invoice", id: arg.invoiceId },
-              ]),
-            );
-          }
-        } catch {}
-      },
-    }),
-    getCashPayment: builder.mutation({
-      query: (data) => ({
-        url: "/cash",
-        method: "POST",
-        body: data,
-      }),
-      invalidatesTags: [{ type: "Payment", id: "LIST" }],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          if (arg?.billId) {
-            dispatch(
-              billApi.util.invalidateTags([
-                { type: "Bill", id: "LIST" },
-                { type: "Bill", id: arg.billId },
-              ]),
-            );
-          } else if (arg?.invoiceId) {
-            dispatch(
-              invoiceApi.util.invalidateTags([
-                { type: "Invoice", id: "LIST" },
-                { type: "Invoice", id: arg.invoiceId },
-              ]),
-            );
-          }
-          dispatch(
-            reportApi.util.invalidateTags(["Dashboard"]),
-          );
-        } catch {}
-      },
-    }),
-    getPaymentStatus: builder.query({
-      query: (invoiceId) => ({
-        url: `/${invoiceId}/status`,
-      }),
-      providesTags: (result, error, invoiceId) => [
-        { type: "PaymentStatus", id: invoiceId },
+
+      invalidatesTags: (result, error, arg) => [
+        ...tagList(TAGS.PAYMENT),
+        ...(arg?.billId ? tagById(TAGS.BILL, arg.billId) : []),
+        ...(arg?.invoiceId ? tagById(TAGS.INVOICE, arg.invoiceId) : []),
       ],
     }),
+
+    getUPIPayment: builder.mutation({
+      query: (data) => ({
+        url: "/payments/qr",
+        method: "POST",
+        body: data,
+      }),
+
+      invalidatesTags: (result, error, arg) => [
+        ...tagList(TAGS.PAYMENT),
+        ...(arg?.billId ? tagById(TAGS.BILL, arg.billId) : []),
+        ...(arg?.invoiceId ? tagById(TAGS.INVOICE, arg.invoiceId) : []),
+      ],
+    }),
+
+    getCashPayment: builder.mutation({
+      query: (data) => ({
+        url: "/payments/cash",
+        method: "POST",
+        body: data,
+      }),
+
+      invalidatesTags: (result, error, arg) => [
+        ...tagList(TAGS.PAYMENT),
+        ...(arg?.billId ? tagById(TAGS.BILL, arg.billId) : []),
+        ...(arg?.invoiceId ? tagById(TAGS.INVOICE, arg.invoiceId) : []),
+        ...tagList(TAGS.DASHBOARD),
+      ],
+    }),
+
+    getPaymentStatus: builder.query({
+      query: (invoiceId) => ({
+        url: `/payments/${invoiceId}/status`,
+      }),
+
+      providesTags: (result, error, invoiceId) =>
+        tagById(TAGS.PAYMENT_STATUS, invoiceId),
+    }),
+
     getPaymentHistory: builder.query({
       query: (invoiceId) => ({
-        url: `${invoiceId}/history`,
+        url: `/payments/${invoiceId}/history`,
       }),
+
       providesTags: (result, error, invoiceId) =>
-        result?.data?.data?.paymentHistory
-          ? [
-              ...result.data.data.paymentHistory.map(({ _id }) => ({
-                type: "PaymentHistory",
-                id: _id,
-              })),
-              { type: "PaymentHistory", id: invoiceId },
-            ]
-          : [{ type: "PaymentHistory", id: invoiceId }],
+        tagListWithIds(
+          TAGS.PAYMENT_HISTORY,
+          result?.data?.data?.paymentHistory
+        ),
     }),
+
     getBillPaymentHistory: builder.query({
       query: (billId) => ({
-        url: `/bill/${billId}/history`,
+        url: `/payments/bill/${billId}/history`,
       }),
+
       providesTags: (result, error, billId) =>
-        result?.data?.data?.paymentHistory
-          ? [
-              ...result.data.data.paymentHistory.map(({ _id }) => ({
-                type: "PaymentHistory",
-                id: _id,
-              })),
-              { type: "PaymentHistory", id: billId },
-            ]
-          : [{ type: "PaymentHistory", id: billId }],
+        tagListWithIds(
+          TAGS.PAYMENT_HISTORY,
+          result?.data?.data?.paymentHistory
+        ),
     }),
   }),
 });

@@ -1,102 +1,87 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "./baseApi";
+import { TAGS, TAG_IDS } from "../enum/tagType";
+import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
 
-export const customerApi = createApi({
-  reducerPath: "customerApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/customers",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // customerProfile: builder.query({
-    //   query: () => "/profile",
-    //   providesTags: (result) => [{ type: "Customer", id: result?.data?._id }],
-    // }),
     updateCustomerProfile: builder.mutation({
       query: (data) => ({
-        url: "/update-profile",
+        url: "/customers/update-profile",
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, data) => [
-        { type: "Customer", id: data._id },
-      ],
+      invalidatesTags: (result, error, data) => tagById(TAGS.CUSTOMER, data.id),
     }),
+
     changePassword: builder.mutation({
       query: (data) => ({
-        url: "/change-password",
+        url: "/customers/change-password",
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: [{ type: "Customer", id: "LIST" }],
+      invalidatesTags: tagList(TAGS.CUSTOMER),
     }),
+
     deleteCustomerProfile: builder.mutation({
       query: () => ({
-        url: "/delete-profile",
+        url: "/customers/delete-profile",
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "Customer", id: "LIST" }],
+      invalidatesTags: tagList(TAGS.CUSTOMER),
     }),
+
     adminCreateCustomer: builder.mutation({
       query: (data) => ({
-        url: "/create-customers",
+        url: "/customers/create-customers",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [{ type: "Customer", id: "LIST" }],
+      invalidatesTags: tagList(TAGS.CUSTOMER),
     }),
+
     getCustomers: builder.query({
       query: ({ page = 1, limit = 10, search, status }) => ({
-        url: "/get-customers",
+        url: "/customers/get-customers",
         params: { page, limit, search, status },
       }),
+
       providesTags: (result) =>
-        result?.data?.customers
-          ? [
-              ...result.data.customers.map(({ _id }) => ({
-                type: "Customer",
-                id: _id,
-              })),
-              { type: "Customer", id: "LIST" },
-            ]
-          : [{ type: "Customer", id: "LIST" }],
+        tagListWithIds(TAGS.CUSTOMER, result?.data?.customers),
     }),
+
     adminUpdateCustomer: builder.mutation({
       query: ({ customerId, data }) => ({
-        url: `/update-customers/${customerId}`,
+        url: `/customers/update-customers/${customerId}`,
         method: "PUT",
         body: data,
       }),
+
       invalidatesTags: (result, error, { customerId }) => [
-        { type: "Customer", id: customerId },
-        { type: "Customer", id: "LIST" },
+        ...tagById(TAGS.CUSTOMER, customerId),
+        ...tagList(TAGS.CUSTOMER),
       ],
     }),
+
     adminDeleteCustomer: builder.mutation({
       query: (customerId) => ({
-        url: `/delete-customers/${customerId}`,
+        url: `/customers/delete-customers/${customerId}`,
         method: "DELETE",
       }),
+
       invalidatesTags: (result, error, customerId) => [
-        { type: "Customer", id: customerId },
-        { type: "Customer", id: "LIST" },
+        ...tagById(TAGS.CUSTOMER, customerId),
+        ...tagList(TAGS.CUSTOMER),
       ],
     }),
   }),
 });
 
 export const {
-  useCustomerProfileQuery,
   useUpdateCustomerProfileMutation,
   useChangePasswordMutation,
   useDeleteCustomerProfileMutation,
-  useGetCustomersQuery,
   useAdminCreateCustomerMutation,
+  useGetCustomersQuery,
   useAdminUpdateCustomerMutation,
   useAdminDeleteCustomerMutation,
 } = customerApi;

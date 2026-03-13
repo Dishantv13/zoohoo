@@ -1,51 +1,45 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "./baseApi";
+import { TAGS, TAG_IDS } from "../enum/tagType";
+import { tagById } from "../enum/tagHelper";
 
-export const authApi = createApi({
-  reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/auth",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    register: builder.mutation({
-      query: (data) => ({
-        url: "/register",
-        method: "POST",
-        body: data,
-      }),
-    }),
     login: builder.mutation({
       query: (data) => ({
-        url: "/login",
+        url: "/auth/login",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: tagById(TAGS.USER, TAG_IDS.CURRENT_USER),
+    }),
+    register: builder.mutation({
+      query: (data) => ({
+        url: "/auth/register",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: tagById(TAGS.USER, TAG_IDS.CURRENT_USER),
     }),
     logout: builder.mutation({
       query: () => ({
-        url: "/logout",
+        url: "/auth/logout",
         method: "POST",
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: tagById(TAGS.USER, TAG_IDS.CURRENT_USER),
     }),
     getCurrentUser: builder.query({
       query: () => ({
-        url: "/me",
+        url: "/auth/me",
       }),
+      providesTags: tagById(TAGS.USER, TAG_IDS.CURRENT_USER),
     }),
     adminRegister: builder.mutation({
       query: (data) => ({
-        url: "/admin/register",
+        url: "/auth/admin/register",
         method: "POST",
         body: data,
       }),
+      invalidatesTags: tagById(TAGS.USER, TAG_IDS.CURRENT_USER),
     }),
   }),
 });

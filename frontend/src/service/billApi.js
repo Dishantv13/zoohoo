@@ -1,92 +1,82 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "./baseApi";
+import { TAGS, TAG_IDS } from "../enum/tagType";
+import { tagListWithIds, tagById, tagList } from "../enum/tagHelper";
 
-export const billApi = createApi({
-  reducerPath: "billApi",
-  tagTypes: ["Bill", "BillStats"],
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/bills",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+export const billApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getBills: builder.query({
-      query: ({ vendorId, status, page = 1 , limit = 10 } = {}) => {
-        const params = {};
+      query: ({ vendorId, status, page = 1, limit = 10 }) => {
+        const params = { page, limit };
         if (vendorId) params.vendorId = vendorId;
         if (status) params.status = status;
-        if (page) params.page = page;
-        if (limit) params.limit = limit;
         return {
-          url: "/",
+          url: "/bills",
           params,
         };
       },
-      providesTags: (result) =>
-        result?.data
-          ? [
-              ...result.data.bills.map(({ _id }) => ({ type: "Bill", id: _id })),
-              { type: "Bill", id: "LIST" },
-            ]
-          : [{ type: "Bill", id: "LIST" }],
+
+      providesTags: (result) => tagListWithIds(TAGS.BILL, result?.data?.bills),
     }),
+
     getBillById: builder.query({
       query: (billId) => ({
-        url: `/${billId}`,
+        url: `/bills/${billId}`,
       }),
-      providesTags: (result, error, billId) => [{ type: "Bill", id: billId }],
+
+      providesTags: (result, error, billId) => tagById(TAGS.BILL, billId),
     }),
+
     createBill: builder.mutation({
       query: (data) => ({
-        url: "/",
+        url: "/bills",
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [{ type: "Bill", id: "LIST" }],
+
+      invalidatesTags: tagList(TAGS.BILL),
     }),
+
     updateBill: builder.mutation({
       query: ({ billId, data }) => ({
-        url: `/${billId}`,
+        url: `/bills/${billId}`,
         method: "PUT",
         body: data,
       }),
+
       invalidatesTags: (result, error, { billId }) => [
-        { type: "Bill", id: billId },
-        { type: "Bill", id: "LIST" },
+        ...tagById(TAGS.BILL, billId),
+        ...tagList(TAGS.BILL),
       ],
     }),
     updateBillStatus: builder.mutation({
       query: ({ billId, status }) => ({
-        url: `/${billId}/status`,
+        url: `bills/${billId}/status`,
         method: "PATCH",
         body: { status },
       }),
       invalidatesTags: (result, error, { billId }) => [
-        { type: "Bill", id: billId },
-        { type: "Bill", id: "LIST" },
+        ...tagById(TAGS.BILL, billId),
+        ...tagList(TAGS.BILL),
       ],
     }),
     deleteBill: builder.mutation({
       query: (billId) => ({
-        url: `/${billId}`,
+        url: `/bills/${billId}`,
         method: "DELETE",
       }),
+
       invalidatesTags: (result, error, billId) => [
-        { type: "Bill", id: billId },
-        { type: "Bill", id: "LIST" },
+        ...tagById(TAGS.BILL, billId),
+        ...tagList(TAGS.BILL),
       ],
     }),
     getBillsStats: builder.query({
       query: () => ({
-        url: "/stats/summary",
+        url: "bills/stats/summary",
       }),
       providesTags: [
-        { type: "BillStats", id: "SUMMARY" },
-        { type: "Bill", id: "LIST" },
+        ...tagById(TAGS.BILL_STATS, TAG_IDS.SUMMARY),
+        ...tagList(TAGS.BILL_STATS),
       ],
     }),
   }),
