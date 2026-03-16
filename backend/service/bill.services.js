@@ -2,23 +2,23 @@ import { Bill } from "../model/bill.model.js";
 import { Vendor } from "../model/vendor.model.js";
 import { Item } from "../model/item.model.js";
 import { Counter } from "../model/counter.model.js";
-import ApiError from "../util/apiError.js";
 import mongoose from "mongoose";
+import { BILL_ERRORS } from "../util/errorMessage.js";
 
 const createBillService = async (billData, companyId) => {
   const { vendorId, items, billDate, dueDate } = billData;
 
   if (!vendorId || !items || items.length === 0 || !dueDate) {
-    throw new ApiError(400, "Vendor ID, items, and due date are required");
+    throw BILL_ERRORS.REQUIRED_FIELDS();
   }
 
   const vendor = await Vendor.findOne({ _id: vendorId, companyId });
   if (!vendor) {
-    throw new ApiError(404, "Vendor not found");
+    throw BILL_ERRORS.VENDOR_NOT_FOUND();
   }
 
   if (new Date(dueDate) < new Date(billDate)) {
-    throw new ApiError(400, "Due date cannot be in the past");
+    throw BILL_ERRORS.INVALID_DUE_DATE();
   }
 
   let totalAmount = 0;
@@ -28,7 +28,7 @@ const createBillService = async (billData, companyId) => {
     const { itemId, quantity, rate } = item;
 
     if (!itemId || !quantity || !rate) {
-      throw new ApiError(400, "Each item must have itemId, quantity, and rate");
+      throw BILL_ERRORS.INVALID_ITEM_DATA();
     }
 
     const itemExists = await Item.findOne({
@@ -39,16 +39,13 @@ const createBillService = async (billData, companyId) => {
     });
 
     if (!itemExists) {
-      throw new ApiError(
-        404,
-        `Item with ID ${itemId} not found for this vendor`,
-      );
+      throw BILL_ERRORS.ITEM_NOT_FOUND(itemId);
     }
 
     if (Number(itemExists.quantity) < Number(quantity)) {
-      throw new ApiError(
-        400,
-        `Insufficient stock for ${itemExists.name}. Available: ${itemExists.quantity}`,
+      throw BILL_ERRORS.INSUFFICIENT_STOCK(
+        itemExists.name,
+        itemExists.quantity,
       );
     }
 
@@ -61,7 +58,6 @@ const createBillService = async (billData, companyId) => {
       rate: Number(rate),
     });
   }
-
   for (const billItem of validatedItems) {
     const inventoryItem = await Item.findById(billItem.itemId);
     inventoryItem.quantity =
@@ -153,7 +149,7 @@ const getBillByIdService = async (billId, companyId) => {
     .populate("items.itemId", "name");
 
   if (!bill) {
-    throw new ApiError(404, "Bill not found");
+    throw BILL_ERRORS.BILL_NOT_FOUND();
   }
 
   return bill;
@@ -163,7 +159,7 @@ const updateBillService = async (billId, billData, companyId) => {
   const bill = await Bill.findOne({ _id: billId, companyId });
 
   if (!bill) {
-    throw new ApiError(404, "Bill not found");
+    throw BILL_ERRORS.BILL_NOT_FOUND();
   }
 
   const { items, status, dueDate, billDate } = billData;
@@ -185,10 +181,7 @@ const updateBillService = async (billId, billData, companyId) => {
       const { itemId, quantity, rate } = item;
 
       if (!itemId || !quantity || !rate) {
-        throw new ApiError(
-          400,
-          "Each item must have itemId, quantity, and rate",
-        );
+        throw BILL_ERRORS.INVALID_ITEM_DATA();
       }
 
       const itemExists = await Item.findOne({
@@ -199,16 +192,13 @@ const updateBillService = async (billId, billData, companyId) => {
       });
 
       if (!itemExists) {
-        throw new ApiError(
-          404,
-          `Item with ID ${itemId} not found for this vendor`,
-        );
+        throw BILL_ERRORS.ITEM_NOT_FOUND(itemId);
       }
 
       if (Number(itemExists.quantity) < Number(quantity)) {
-        throw new ApiError(
-          400,
-          `Insufficient stock for ${itemExists.name}. Available: ${itemExists.quantity}`,
+        throw BILL_ERRORS.INSUFFICIENT_STOCK(
+          itemExists.name,
+          itemExists.quantity,
         );
       }
 
@@ -236,7 +226,7 @@ const updateBillService = async (billId, billData, companyId) => {
 
   if (status) {
     if (!["PENDING", "PAID", "PARTIALLY_PAID"].includes(status)) {
-      throw new ApiError(400, "Invalid status value");
+      throw BILL_ERRORS.INVALID_STATUS();
     }
     bill.status = status;
   }
@@ -262,7 +252,7 @@ const deleteBillService = async (billId, companyId) => {
   const bill = await Bill.findOne({ _id: billId, companyId });
 
   if (!bill) {
-    throw new ApiError(404, "Bill not found");
+    throw BILL_ERRORS.BILL_NOT_FOUND();
   }
 
   await Bill.findByIdAndDelete(billId);
@@ -273,11 +263,11 @@ const updateBillStatusService = async (billId, status, companyId) => {
   const bill = await Bill.findOne({ _id: billId, companyId });
 
   if (!bill) {
-    throw new ApiError(404, "Bill not found");
+    throw BILL_ERRORS.BILL_NOT_FOUND();
   }
 
   if (!["PENDING", "PAID", "PARTIALLY_PAID"].includes(status)) {
-    throw new ApiError(400, "Invalid status value");
+    throw BILL_ERRORS.INVALID_STATUS();
   }
 
   bill.status = status;

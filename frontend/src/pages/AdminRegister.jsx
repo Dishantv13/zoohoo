@@ -26,7 +26,7 @@ import {
   panValidator,
 } from "../validation/validation";
 import { useAdminRegisterMutation } from "../service/authApi";
-import "./Auth.css";
+import "../css/Auth.css";
 
 export default function AdminRegister() {
   const navigate = useNavigate();

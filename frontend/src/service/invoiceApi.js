@@ -1,12 +1,13 @@
 import { baseApi } from "./baseApi";
 import { TAGS, TAG_IDS } from "../enum/tagType";
 import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
+import { INVOICE_URL } from "../enum/apiUrl";
 
 export const invoiceApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createInvoice: builder.mutation({
       query: (invoiceData) => ({
-        url: "/invoices",
+        url: INVOICE_URL.CREATE_INVOICE,
         method: "POST",
         body: invoiceData,
       }),
@@ -14,7 +15,7 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     getInvoices: builder.query({
       query: ({ page = 1, limit = 10, status }) => ({
-        url: "/invoices",
+        url: INVOICE_URL.GET_ALL_INVOICES,
         params: { page, limit, status },
       }),
       providesTags: (result) =>
@@ -22,13 +23,13 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     getInvoiceById: builder.query({
       query: (id) => ({
-        url: `/invoices/${id}`,
+        url: INVOICE_URL.GET_INVOICE_BY_ID(id),
       }),
       providesTags: (result, error, id) => tagById(TAGS.INVOICE, id),
     }),
     updateInvoice: builder.mutation({
       query: ({ id, ...data }) => ({
-        url: `/invoices/${id}`,
+        url: INVOICE_URL.UPDATE_INVOICE(id),
         method: "PUT",
         body: data,
       }),
@@ -39,7 +40,7 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     updateInvoiceStatus: builder.mutation({
       query: ({ id, status }) => ({
-        url: `/invoices/${id}/status`,
+        url: INVOICE_URL.UPDATE_INVOICE_STATUS(id),
         method: "PATCH",
         body: { status },
       }),
@@ -50,7 +51,7 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     deleteInvoice: builder.mutation({
       query: (id) => ({
-        url: `/invoices/${id}`,
+        url: INVOICE_URL.DELETE_INVOICE(id),
         method: "DELETE",
       }),
       invalidatesTags: (result, error, id) => [
@@ -60,7 +61,7 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     downloadInvoice: builder.mutation({
       query: (id) => ({
-        url: `/invoices/${id}/download`,
+        url: INVOICE_URL.DOWNLOAD_INVOICE(id),
         responseHandler: (response) => response.blob(),
       }),
       invalidatesTags: (result, error, id) => tagById(TAGS.INVOICE, id),
@@ -69,12 +70,12 @@ export const invoiceApi = baseApi.injectEndpoints({
       query: ({ page = 1, limit = 10, status, customerId }) => {
         if (customerId) {
           return {
-            url: `/invoices/admin/customer/${customerId}`,
+            url: INVOICE_URL.GET_CUSTOMER_INVOICES(customerId),
             params: { page, limit, status },
           };
         }
         return {
-          url: "/invoices/admin/all",
+          url: INVOICE_URL.GET_ADMIN_ALL_INVOICES,
           params: { page, limit, status },
         };
       },
@@ -83,7 +84,7 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     getCustomerInvoices: builder.query({
       query: ({ customerId, page = 1, limit = 10, status }) => ({
-        url: `/invoices/admin/customer/${customerId}`,
+        url: INVOICE_URL.GET_CUSTOMER_INVOICES(customerId),
         params: { page, limit, status },
       }),
       providesTags: (result) =>
@@ -91,7 +92,7 @@ export const invoiceApi = baseApi.injectEndpoints({
     }),
     exportInvoice: builder.mutation({
       query: (params) => ({
-        url: "/invoices/export",
+        url: INVOICE_URL.EXPORT_INVOICE,
         method: "GET",
         params,
         responseHandler: (response) => response.blob(),

@@ -1,12 +1,13 @@
 import { baseApi } from "./baseApi";
 import { TAGS, TAG_IDS } from "../enum/tagType";
 import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
+import { CUSTOMER_URL } from "../enum/apiUrl";
 
 export const customerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     updateCustomerProfile: builder.mutation({
       query: (data) => ({
-        url: "/customers/update-profile",
+        url: CUSTOMER_URL.UPDATE_CUSTOMER_PROFILE,
         method: "PUT",
         body: data,
       }),
@@ -15,7 +16,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     changePassword: builder.mutation({
       query: (data) => ({
-        url: "/customers/change-password",
+        url: CUSTOMER_URL.CHANGE_PASSWORD,
         method: "PUT",
         body: data,
       }),
@@ -24,7 +25,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     deleteCustomerProfile: builder.mutation({
       query: () => ({
-        url: "/customers/delete-profile",
+        url: CUSTOMER_URL.DELETE_CUSTOMER_PROFILE,
         method: "DELETE",
       }),
       invalidatesTags: tagList(TAGS.CUSTOMER),
@@ -32,7 +33,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     adminCreateCustomer: builder.mutation({
       query: (data) => ({
-        url: "/customers/create-customers",
+        url: CUSTOMER_URL.ADMIN_CREATE_CUSTOMER,
         method: "POST",
         body: data,
       }),
@@ -41,7 +42,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     getCustomers: builder.query({
       query: ({ page = 1, limit = 10, search, status }) => ({
-        url: "/customers/get-customers",
+        url: CUSTOMER_URL.GET_CUSTOMERS,
         params: { page, limit, search, status },
       }),
 
@@ -51,7 +52,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     adminUpdateCustomer: builder.mutation({
       query: ({ customerId, data }) => ({
-        url: `/customers/update-customers/${customerId}`,
+        url: CUSTOMER_URL.ADMIN_UPDATE_CUSTOMER(customerId),
         method: "PUT",
         body: data,
       }),
@@ -64,7 +65,7 @@ export const customerApi = baseApi.injectEndpoints({
 
     adminDeleteCustomer: builder.mutation({
       query: (customerId) => ({
-        url: `/customers/delete-customers/${customerId}`,
+        url: CUSTOMER_URL.ADMIN_DELETE_CUSTOMER(customerId),
         method: "DELETE",
       }),
 

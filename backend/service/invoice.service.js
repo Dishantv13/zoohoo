@@ -5,7 +5,7 @@ import { Counter } from "../model/counter.model.js";
 import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 import excelJS from "exceljs";
-import ApiError from "../util/apiError.js";
+import { INVOICE_ERRORS } from "../util/errorMessage.js";
 
 const createInvoiceService = async (userId, data) => {
   const {
@@ -19,16 +19,16 @@ const createInvoiceService = async (userId, data) => {
   } = data;
 
   if (!items.length) {
-    throw new ApiError(400, "Invoice must have at least one item");
+    throw INVOICE_ERRORS.ITEMS_REQUIRED();
   }
 
   const user = await User.findById(userId).populate("companyId");
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw INVOICE_ERRORS.USER_NOT_FOUND();
   }
 
   if (new Date(dueDate) < new Date(invoiceDate)) {
-    throw new ApiError(400, "Due date cannot be before invoice date");
+    throw INVOICE_ERRORS.INVALID_DUE_DATE();
   }
 
   let companyId;
@@ -39,7 +39,7 @@ const createInvoiceService = async (userId, data) => {
   }
 
   if (!companyId) {
-    throw new ApiError(400, "User does not belong to any company");
+    throw INVOICE_ERRORS.USER_NO_COMPANY();
   }
 
   const parsedTaxRate = Number(tax);
@@ -209,7 +209,7 @@ const getInvoiceByIdService = async (userId, invoiceId) => {
     .populate("createdBy", "name email role");
 
   if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+    throw INVOICE_ERRORS.INVOICE_NOT_FOUND();
   }
 
   const isCreator = invoice.createdBy._id.toString() === userId.toString();
@@ -217,7 +217,7 @@ const getInvoiceByIdService = async (userId, invoiceId) => {
     invoice.customer && invoice.customer._id.toString() === userId.toString();
 
   if (!isCreator && !isCustomer) {
-    throw new ApiError(403, "Not authorized to access this invoice");
+    throw INVOICE_ERRORS.NOT_AUTHORIZED_VIEW();
   }
   return invoice;
 };
@@ -234,24 +234,24 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
   } = data;
 
   if (!items.length) {
-    throw new ApiError(400, "Invoice must have at least one item");
+    throw INVOICE_ERRORS.ITEMS_REQUIRED();
   }
 
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+    throw INVOICE_ERRORS.INVOICE_NOT_FOUND();
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new ApiError(403, "Not authorized to update this invoice");
+    throw INVOICE_ERRORS.NOT_AUTHORIZED_UPDATE();
   }
 
   if (invoice.status === "PAID" && status !== "PAID") {
-    throw new ApiError(400, "Paid invoice cannot be updated");
+    throw INVOICE_ERRORS.PAID_UPDATE_RESTRICTED();
   }
 
   if (new Date(dueDate) < new Date(invoiceDate)) {
-    throw new ApiError(400, "Due date cannot be before invoice date");
+    throw INVOICE_ERRORS.INVALID_DUE_DATE();
   }
 
   const parsedTaxRate = Number(tax);
@@ -305,11 +305,11 @@ const updateInvoiceService = async (userId, invoiceId, data) => {
 const updateInvoiceStatusService = async (userId, invoiceId, newStatus) => {
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+    throw INVOICE_ERRORS.INVOICE_NOT_FOUND();
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new ApiError(403, "Not authorized to update invoice status");
+    throw INVOICE_ERRORS.NOT_AUTHORIZED_STATUS();
   }
 
   invoice.status = newStatus;
@@ -322,15 +322,15 @@ const deleteInvoiceService = async (userId, invoiceId) => {
   const invoice = await Invoice.findById(invoiceId);
 
   if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+    throw INVOICE_ERRORS.INVOICE_NOT_FOUND();
   }
 
   if (invoice.createdBy.toString() !== userId.toString()) {
-    throw new ApiError(403, "Not authorized to delete this invoice");
+    throw INVOICE_ERRORS.NOT_AUTHORIZED_DELETE();
   }
 
   if (invoice.status === "PAID") {
-    throw new ApiError(400, "Paid invoice cannot be deleted");
+    throw INVOICE_ERRORS.PAID_DELETE_RESTRICTED();
   }
 
   await Invoice.findByIdAndDelete(invoiceId);
@@ -341,8 +341,12 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
   const company = await Company.findById(invoice.companyId);
   const user = await User.findById(userId);
 
-  if (!invoice) throw new Error("Invoice not found");
-  if (!company) throw new Error("Company not found");
+  if (!invoice) {
+    throw INVOICE_ERRORS.INVOICE_NOT_FOUND();
+  }
+  if (!company) {
+    throw INVOICE_ERRORS.COMPANY_NOT_FOUND();
+  }
 
   const isCreator = invoice.createdBy.toString() === userId.toString();
   const isAdmin =
@@ -351,7 +355,7 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
     invoice.customer && invoice.customer._id.toString() === userId.toString();
 
   if (!isCreator && !isAdmin && !isCustomer) {
-    throw new Error("Not authorized");
+    throw INVOICE_ERRORS.NOT_AUTHORIZED_VIEW();
   }
 
   const formatCurrency = (value) =>
@@ -621,7 +625,7 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
 
   const admin = await User.findById(adminId).populate("companyId");
   if (!admin || admin.role !== "admin") {
-    throw new ApiError(403, "Only admin can view company invoices");
+    throw INVOICE_ERRORS.ADMIN_ONLY_VIEW();
   }
 
   const companyId = admin.companyId?._id;
@@ -726,7 +730,7 @@ const getCustomerInvoicesByAdminService = async (
 
   const admin = await User.findById(adminId).populate("companyId");
   if (!admin || admin.role !== "admin") {
-    throw new ApiError(403, "Only admin can view customer invoices");
+    throw INVOICE_ERRORS.ADMIN_ONLY_CUSTOMER_VIEW();
   }
 
   const customer = await User.findById(customerId);
@@ -734,7 +738,7 @@ const getCustomerInvoicesByAdminService = async (
     !customer ||
     customer.companyId.toString() !== admin.companyId._id.toString()
   ) {
-    throw new ApiError(404, "Customer not found in your company");
+    throw INVOICE_ERRORS.CUSTOMER_NOT_FOUND();
   }
 
   const customerObjId = new mongoose.Types.ObjectId(customerId);

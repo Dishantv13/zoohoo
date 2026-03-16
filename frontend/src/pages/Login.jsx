@@ -3,9 +3,11 @@ import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { Form, Input, Button, Card, Spin, notification } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import "./Auth.css";
+
 import { useLoginMutation } from "../service/authApi";
 import { setCredentials } from "../slice/authSlice";
+
+import "../css/Auth.css";
 
 export default function Login() {
   const dispatch = useDispatch();

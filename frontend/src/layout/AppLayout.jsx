@@ -1,6 +1,7 @@
 import { Layout, Menu, Dropdown, Button, message } from "antd";
 import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 import { useSelector, useDispatch } from "react-redux";
+import { useLocation } from "react-router-dom";
 import { logoutUser } from "../slice/authSlice";
 import { authApi } from "../service/authApi";
 import { menuConfig } from "./menuConfig";
@@ -10,6 +11,8 @@ const { Header, Content } = Layout;
 
 export default function AppLayout({ children }) {
   const { user } = useSelector((state) => state.auth);
+  const location = useLocation();
+  const pathname = location.pathname;
 
   const menuItems = buildMenuByRole(menuConfig, user?.role);
   const dispatch = useDispatch();
@@ -45,6 +48,7 @@ export default function AppLayout({ children }) {
           theme="dark"
           mode="horizontal"
           items={menuItems}
+          selectedKeys={[pathname]}
           style={{
             flex: 1,
             minWidth: 0,

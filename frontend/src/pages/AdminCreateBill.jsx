@@ -23,7 +23,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import "./CreateInvoice.css";
+
 import { useGetVendorsQuery } from "../service/vendorApi";
 import {
   useCreateBillMutation,
@@ -31,6 +31,8 @@ import {
 } from "../service/billApi";
 import { useGetVendorAvailabilityQuery } from "../service/itemApi";
 import dayjs from "dayjs";
+
+import "../css/CreateInvoice.css";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",

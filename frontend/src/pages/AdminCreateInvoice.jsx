@@ -22,12 +22,13 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import "./CreateInvoice.css";
 import { useGetCustomersQuery } from "../service/customerApi";
 import {
   useUpdateInvoiceMutation,
   useCreateInvoiceMutation,
 } from "../service/invoiceApi";
+
+import "../css/CreateInvoice.css";
 
 export default function AdminCreateInvoice() {
   const { user } = useSelector((state) => state.auth);

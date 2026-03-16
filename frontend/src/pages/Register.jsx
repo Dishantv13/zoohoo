@@ -18,7 +18,8 @@ import {
 } from "@ant-design/icons";
 import { phoneValidator } from "../validation/validation";
 import { useRegisterMutation } from "../service/authApi";
-import "./Auth.css";
+
+import "../css/Auth.css";
 
 export default function Register() {
   const navigate = useNavigate();

@@ -11,6 +11,8 @@ import {
 } from "../service/report.services.js";
 import { asyncHandler } from "../util/asyncHandler.js";
 import { successResponse } from "../util/response.js";
+import { REPORT_MESSAGES } from "../util/successMessge.js";
+import { HTTP_STATUS } from "../util/httpStatus.js";
 
 const dashboardController = asyncHandler(async (req, res) => {
   const { startDate, endDate, month, year, date } = req.query;
@@ -21,7 +23,7 @@ const dashboardController = asyncHandler(async (req, res) => {
     year,
     date,
   });
-  successResponse(res, data, 200, "Dashboard data retrieved successfully");
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.DASHBOARD_DATA);
 });
 
 const monthlyRevenueController = asyncHandler(async (req, res) => {
@@ -33,12 +35,7 @@ const monthlyRevenueController = asyncHandler(async (req, res) => {
     year,
   });
 
-  successResponse(
-    res,
-    data,
-    200,
-    "Monthly revenue data retrieved successfully",
-  );
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.MONTHLY_REVENUE);
 });
 
 const yearlyRevenueController = asyncHandler(async (req, res) => {
@@ -49,7 +46,7 @@ const yearlyRevenueController = asyncHandler(async (req, res) => {
     year,
   });
 
-  successResponse(res, data, 200, "Yearly revenue data retrieved successfully");
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.YEARLY_REVENUE);
 });
 
 const todayRevenueController = asyncHandler(async (req, res) => {
@@ -60,12 +57,7 @@ const todayRevenueController = asyncHandler(async (req, res) => {
     endDate,
   });
 
-  successResponse(
-    res,
-    data,
-    200,
-    "Today's revenue data retrieved successfully",
-  );
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.TODAY_REVENUE);
 });
 
 const topCustomersController = asyncHandler(async (req, res) => {
@@ -77,7 +69,7 @@ const topCustomersController = asyncHandler(async (req, res) => {
     year,
   });
 
-  successResponse(res, data, 200, "Top customers data retrieved successfully");
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.TOP_CUSTOMERS);
 });
 
 const monthlyExpenseController = asyncHandler(async (req, res) => {
@@ -88,12 +80,7 @@ const monthlyExpenseController = asyncHandler(async (req, res) => {
     month,
     year,
   });
-  successResponse(
-    res,
-    data,
-    200,
-    "Monthly expense data retrieved successfully",
-  );
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.MONTHLY_EXPENSES);
 });
 
 const yearlyExpenseController = asyncHandler(async (req, res) => {
@@ -103,7 +90,7 @@ const yearlyExpenseController = asyncHandler(async (req, res) => {
     endDate,
     year,
   });
-  successResponse(res, data, 200, "Yearly expense data retrieved successfully");
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.YEARLY_EXPENSES);
 });
 
 const todayExpenseController = asyncHandler(async (req, res) => {
@@ -113,12 +100,7 @@ const todayExpenseController = asyncHandler(async (req, res) => {
     startDate,
     endDate,
   });
-  successResponse(
-    res,
-    data,
-    200,
-    "Today's expense data retrieved successfully",
-  );
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.TODAY_EXPENSES);
 });
 
 const topVendorsController = asyncHandler(async (req, res) => {
@@ -129,7 +111,7 @@ const topVendorsController = asyncHandler(async (req, res) => {
     month,
     year,
   });
-  successResponse(res, data, 200, "Top vendors data retrieved successfully");
+  successResponse(res, data, HTTP_STATUS.OK, REPORT_MESSAGES.TOP_VENDORS);
 });
 
 export {

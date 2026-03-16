@@ -1,12 +1,13 @@
 import { baseApi } from "./baseApi";
 import { TAGS } from "../enum/tagType";
 import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
+import { ITEM_URL } from "../enum/apiUrl";
 
 export const itemApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getInventoryItems: builder.query({
       query: (params = {}) => ({
-        url: "/items",
+        url: ITEM_URL.GET_INVENTORY_ITEMS,
         params,
       }),
       providesTags: (result) =>
@@ -14,13 +15,13 @@ export const itemApi = baseApi.injectEndpoints({
     }),
     getVendorAvailability: builder.query({
       query: (vendorId) => ({
-        url: `/items/availability/${vendorId}`,
+        url: ITEM_URL.GET_VENDOR_AVAILABILITY(vendorId),
       }),
       providesTags: (result, error, vendorId) => tagById(TAGS.VENDOR_AVAILABILITY, vendorId),
     }),
     createInventoryItem: builder.mutation({
       query: (data) => ({
-        url: "/items",
+        url: ITEM_URL.CREATE_INVENTORY_ITEM,
         method: "POST",
         body: data,
       }),
@@ -28,7 +29,7 @@ export const itemApi = baseApi.injectEndpoints({
     }),
     updateInventoryItem: builder.mutation({
       query: ({ itemId, data }) => ({
-        url: `/items/${itemId}`,
+        url: ITEM_URL.UPDATE_INVENTORY_ITEM(itemId),
         method: "PUT",
         body: data,
       }),
@@ -39,7 +40,7 @@ export const itemApi = baseApi.injectEndpoints({
     }),
     deleteInventoryItem: builder.mutation({
       query: (itemId) => ({
-        url: `/items/${itemId}`,
+        url: ITEM_URL.DELETE_INVENTORY_ITEM(itemId),
         method: "DELETE",
       }),
       invalidatesTags: (result, error, itemId) => [

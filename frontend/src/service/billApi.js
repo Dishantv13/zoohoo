@@ -1,6 +1,7 @@
 import { baseApi } from "./baseApi";
 import { TAGS, TAG_IDS } from "../enum/tagType";
 import { tagListWithIds, tagById, tagList } from "../enum/tagHelper";
+import { BILL_URL } from "../enum/apiUrl";
 
 export const billApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -10,7 +11,7 @@ export const billApi = baseApi.injectEndpoints({
         if (vendorId) params.vendorId = vendorId;
         if (status) params.status = status;
         return {
-          url: "/bills",
+          url: BILL_URL.GET_BILLS,
           params,
         };
       },
@@ -20,7 +21,7 @@ export const billApi = baseApi.injectEndpoints({
 
     getBillById: builder.query({
       query: (billId) => ({
-        url: `/bills/${billId}`,
+        url: BILL_URL.GET_BILL_BY_ID(billId),
       }),
 
       providesTags: (result, error, billId) => tagById(TAGS.BILL, billId),
@@ -28,7 +29,7 @@ export const billApi = baseApi.injectEndpoints({
 
     createBill: builder.mutation({
       query: (data) => ({
-        url: "/bills",
+        url: BILL_URL.CREATE_BILL,
         method: "POST",
         body: data,
       }),
@@ -38,7 +39,7 @@ export const billApi = baseApi.injectEndpoints({
 
     updateBill: builder.mutation({
       query: ({ billId, data }) => ({
-        url: `/bills/${billId}`,
+        url: BILL_URL.UPDATE_BILL(billId),
         method: "PUT",
         body: data,
       }),
@@ -50,7 +51,7 @@ export const billApi = baseApi.injectEndpoints({
     }),
     updateBillStatus: builder.mutation({
       query: ({ billId, status }) => ({
-        url: `bills/${billId}/status`,
+        url: BILL_URL.UPDATE_BILL_STATUS(billId),
         method: "PATCH",
         body: { status },
       }),
@@ -61,7 +62,7 @@ export const billApi = baseApi.injectEndpoints({
     }),
     deleteBill: builder.mutation({
       query: (billId) => ({
-        url: `/bills/${billId}`,
+        url: BILL_URL.DELETE_BILL(billId),
         method: "DELETE",
       }),
 
@@ -72,7 +73,7 @@ export const billApi = baseApi.injectEndpoints({
     }),
     getBillsStats: builder.query({
       query: () => ({
-        url: "bills/stats/summary",
+        url: BILL_URL.GET_BILLS_STATS,
       }),
       providesTags: [
         ...tagById(TAGS.BILL_STATS, TAG_IDS.SUMMARY),

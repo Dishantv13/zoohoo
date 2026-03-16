@@ -1,7 +1,7 @@
 import { Message } from "../model/message.model.js";
 import { Conversation } from "../model/conversion.model.js";
 import { User } from "../model/user.model.js";
-import ApiError from "../util/apiError.js";
+import { CHAT_ERRORS } from "../util/errorMessage.js";
 import mongoose from "mongoose";
 
 const getAllConversationsService = async (
@@ -68,12 +68,13 @@ const getMessagesByConversationIdService = async (
   limit = 50,
 ) => {
   if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
-    throw new ApiError(400, "Invalid conversation ID");
+    throw CHAT_ERRORS.INVALID_CONVERSATION_ID();
   }
 
   const conversation = await Conversation.findById(conversationId);
   if (!conversation) {
-    throw new ApiError(404, "Conversation not found");
+    throw CHAT_ERRORS.CONVERSATION_NOT_FOUND();
+
   }
 
   const skip = (page - 1) * limit;
@@ -117,11 +118,11 @@ const createConversationService = async (userId1, userId2) => {
     !mongoose.Types.ObjectId.isValid(userId1) ||
     !mongoose.Types.ObjectId.isValid(userId2)
   ) {
-    throw new ApiError(400, "Invalid user IDs");
+    throw CHAT_ERRORS.INVALID_USER_IDS();
   }
 
   if (userId1.toString() === userId2.toString()) {
-    throw new ApiError(400, "Cannot create conversation with yourself");
+    throw CHAT_ERRORS.SELF_CONVERSATION_NOT_ALLOWED();
   }
 
   const users = await User.find({
@@ -129,7 +130,7 @@ const createConversationService = async (userId1, userId2) => {
   });
 
   if (users.length !== 2) {
-    throw new ApiError(400, "One or both users do not exist");
+    throw CHAT_ERRORS.USERS_NOT_FOUND();
   }
 
   let conversation = await Conversation.findOne({
@@ -161,24 +162,21 @@ const createMessageService = async (
   conversationType = "direct",
 ) => {
   if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
-    throw new ApiError(400, "Invalid conversation ID");
+    throw CHAT_ERRORS.INVALID_CONVERSATION_ID();
   }
 
   if (!text || text.trim().length === 0) {
-    throw new ApiError(400, "Message text cannot be empty");
+    throw CHAT_ERRORS.MESSAGE_EMPTY();
   }
 
   if (text.length > 5000) {
-    throw new ApiError(
-      400,
-      "Message exceeds maximum length of 5000 characters",
-    );
+    throw CHAT_ERRORS.MESSAGE_TOO_LONG();
   }
 
   const conversation = await Conversation.findById(conversationId);
 
   if (!conversation) {
-    throw new ApiError(404, "Conversation not found");
+    throw CHAT_ERRORS.CONVERSATION_NOT_FOUND();
   }
 
   const isParticipant = conversation.participant.some(
@@ -186,10 +184,7 @@ const createMessageService = async (
   );
 
   if (!isParticipant) {
-    throw new ApiError(
-      403,
-      "Not authorized to send messages in this conversation",
-    );
+    throw CHAT_ERRORS.UNAUTHORIZED_MESSAGE();
   }
 
   const message = await Message.create({
@@ -215,7 +210,7 @@ const createMessageService = async (
 
 const markMessagesAsReadService = async (messageIds, userId) => {
   if (!Array.isArray(messageIds) || messageIds.length === 0) {
-    throw new ApiError(400, "Invalid message IDs");
+    throw CHAT_ERRORS.INVALID_MESSAGE_IDS();
   }
 
   const result = await Message.updateMany(
@@ -231,13 +226,13 @@ const markMessagesAsReadService = async (messageIds, userId) => {
 
 const getUnreadCountService = async (conversationId, userRole) => {
   if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
-    throw new ApiError(400, "Invalid conversation ID");
+    throw CHAT_ERRORS.INVALID_CONVERSATION_ID();
   }
 
   const conversation = await Conversation.findById(conversationId);
 
   if (!conversation) {
-    throw new ApiError(404, "Conversation not found");
+    throw CHAT_ERRORS.CONVERSATION_NOT_FOUND();
   }
 
   return {

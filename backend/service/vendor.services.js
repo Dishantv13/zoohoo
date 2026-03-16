@@ -1,13 +1,13 @@
 import { Vendor } from "../model/vendor.model.js";
 import { Bill } from "../model/bill.model.js";
-import ApiError from "../util/apiError.js";
 import bcrypt from "bcryptjs";
+import { VENDOR_ERRORS } from "../util/errorMessage.js";
 
 const createVendorService = async (vendorData, companyId) => {
   const { name, email, phone, password, address } = vendorData;
 
   if (!name || !email || !password) {
-    throw new ApiError(400, "Name, email, and password are required");
+    throw VENDOR_ERRORS.REQUIRED_FIELDS();
   }
 
   const existingVendor = await Vendor.findOne({
@@ -16,7 +16,7 @@ const createVendorService = async (vendorData, companyId) => {
   });
 
   if (existingVendor) {
-    throw new ApiError(400, "A vendor with this email already exists");
+    throw VENDOR_ERRORS.VENDOR_ALREADY_EXISTS();
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -68,7 +68,7 @@ const getVendorByIdService = async (vendorId, companyId) => {
   }).select("-password");
 
   if (!vendor) {
-    throw new ApiError(404, "Vendor not found");
+    throw VENDOR_ERRORS.VENDOR_NOT_FOUND();
   }
 
   return vendor;
@@ -78,7 +78,7 @@ const updateVendorService = async (vendorId, vendorData, companyId) => {
   const vendor = await Vendor.findOne({ _id: vendorId, companyId });
 
   if (!vendor) {
-    throw new ApiError(404, "Vendor not found");
+    throw VENDOR_ERRORS.VENDOR_NOT_FOUND();
   }
 
   const { name, email, phone, address, password } = vendorData;
@@ -91,7 +91,7 @@ const updateVendorService = async (vendorId, vendorData, companyId) => {
     });
 
     if (existingVendor) {
-      throw new ApiError(400, "A vendor with this email already exists");
+      throw VENDOR_ERRORS.VENDOR_ALREADY_EXISTS();
     }
     vendor.email = email.toLowerCase();
   }
@@ -115,15 +115,12 @@ const deleteVendorService = async (vendorId, companyId) => {
   const vendor = await Vendor.findOne({ _id: vendorId, companyId });
 
   if (!vendor) {
-    throw new ApiError(404, "Vendor not found");
+    throw VENDOR_ERRORS.VENDOR_NOT_FOUND();
   }
 
   const billCount = await Bill.countDocuments({ vendorId });
   if (billCount > 0) {
-    throw new ApiError(
-      400,
-      "Cannot delete vendor with existing bills. Please delete or reassign bills first.",
-    );
+    throw VENDOR_ERRORS.VENDOR_DELETE_WITH_BILLS();
   }
 
   await Vendor.findByIdAndDelete(vendorId);
@@ -134,7 +131,7 @@ const getVendorBillsService = async (vendorId, companyId) => {
   const vendor = await Vendor.findOne({ _id: vendorId, companyId });
 
   if (!vendor) {
-    throw new ApiError(404, "Vendor not found");
+    throw VENDOR_ERRORS.VENDOR_NOT_FOUND();
   }
 
   const bills = await Bill.find({ vendorId })
@@ -148,7 +145,7 @@ const getVendorStatsService = async (vendorId, companyId) => {
   const vendor = await Vendor.findOne({ _id: vendorId, companyId });
 
   if (!vendor) {
-    throw new ApiError(404, "Vendor not found");
+    throw VENDOR_ERRORS.VENDOR_NOT_FOUND();
   }
 
   const statistics = await Bill.aggregate([
@@ -159,6 +156,20 @@ const getVendorStatsService = async (vendorId, companyId) => {
         totalAmount: { $sum: "$totalAmount" },
         paidAmount: { $sum: "$amountPaid" },
         pendingAmount: { $sum: "$remainingAmount" },
+        overdueCount: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $lt: ["$dueDate", new Date()] },
+                  { $ne: ["$status", "PAID"] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
         count: { $sum: 1 },
       },
     },
@@ -176,6 +187,7 @@ const getVendorStatsService = async (vendorId, companyId) => {
       totalAmount: 0,
       paidAmount: 0,
       pendingAmount: 0,
+      overdueCount: 0,
       count: 0,
     },
   };

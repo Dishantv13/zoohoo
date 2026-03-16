@@ -1,14 +1,13 @@
 import { Invoice } from "../model/invoice.model.js";
 import { Bill } from "../model/bill.model.js";
 import { Company } from "../model/company.model.js";
-
-import ApiError from "../util/apiError.js";
+import { REPORT_ERROR } from "../util/errorMessage.js";
 
 const getCompanyByAdmin = async (adminId) => {
   const company = await Company.findOne({ adminId });
 
   if (!company) {
-    throw new ApiError(404, "Company not found for the admin");
+    throw REPORT_ERROR.COMPANY_NOT_FOUND();
   }
 
   return company;
@@ -30,7 +29,7 @@ const getDateRangeFilter = ({ startDate, endDate, month, year }) => {
       monthNumber > 12 ||
       !Number.isInteger(yearNumber)
     ) {
-      throw new ApiError(400, "Invalid month or year value");
+      throw REPORT_ERROR.INVALID_MONTH_OR_YEAR();
     }
 
     const rangeStart = new Date(yearNumber, monthNumber - 1, 1, 0, 0, 0, 0);
@@ -44,7 +43,7 @@ const getDateRangeFilter = ({ startDate, endDate, month, year }) => {
     const rangeEnd = normalizeDate(endDate);
 
     if (!rangeStart || !rangeEnd) {
-      throw new ApiError(400, "Invalid startDate or endDate");
+      throw REPORT_ERROR.INVALID_DATE_RANGE();
     }
 
     rangeStart.setHours(0, 0, 0, 0);
@@ -180,7 +179,7 @@ const yearlyRevenueServices = async (adminId, option = {}) => {
   if (option.year) {
     const yearNumber = Number(option.year);
     if (!Number.isInteger(yearNumber)) {
-      throw new ApiError(400, "Invalid year value");
+        throw REPORT_ERROR.INVALID_YEAR();
     }
 
     const yearStart = new Date(yearNumber, 0, 1, 0, 0, 0, 0);
@@ -224,7 +223,7 @@ const todayRevenueServices = async (adminId, option = {}) => {
     option.date || option.endDate || option.startDate || new Date(),
   );
   if (!selectedDate) {
-    throw new ApiError(400, "Invalid date value");
+    throw REPORT_ERROR.INVALID_DATE();
   }
 
   const selectedDateStart = new Date(selectedDate);
@@ -392,7 +391,7 @@ const yearlyExpenseServices = async (adminId, option = {}) => {
   if (option.year) {
     const yearNumber = Number(option.year);
     if (!Number.isInteger(yearNumber)) {
-      throw new ApiError(400, "Invalid year value");
+      throw REPORT_ERROR.INVALID_YEAR();
     }
 
     const yearStart = new Date(yearNumber, 0, 1, 0, 0, 0, 0);
@@ -433,7 +432,7 @@ const todayExpenseServices = async (adminId, option = {}) => {
     option.date || option.endDate || option.startDate || new Date(),
   );
   if (!selectedDate) {
-    throw new ApiError(400, "Invalid date value");
+    throw REPORT_ERROR.INVALID_DATE();
   }
 
   const selectedDateStart = new Date(selectedDate);

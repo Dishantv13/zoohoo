@@ -13,11 +13,13 @@ import {
 
 import { asyncHandler } from "../util/asyncHandler.js";
 import { successResponse } from "../util/response.js";
+import { INVOICE_MESSAGES } from "../util/successMessge.js";
+import { HTTP_STATUS } from "../util/httpStatus.js";
 
 const createInvoice = asyncHandler(async (req, res) => {
   const invoice = await createInvoiceService(req.user._id, req.body);
 
-  successResponse(res, invoice, 201, "Invoice created successfully");
+  successResponse(res, invoice, HTTP_STATUS.CREATED, INVOICE_MESSAGES.CREATE);
 });
 
 const getInvoices = asyncHandler(async (req, res) => {
@@ -26,13 +28,13 @@ const getInvoices = asyncHandler(async (req, res) => {
     limit: req.query.limit,
     status: req.query.status,
   });
-  successResponse(res, result, 200, "Invoices retrieved successfully");
+  successResponse(res, result, HTTP_STATUS.OK, INVOICE_MESSAGES.GET_ALL);
 });
 
 const getInvoiceById = asyncHandler(async (req, res) => {
   const invoice = await getInvoiceByIdService(req.user._id, req.params.id);
 
-  successResponse(res, invoice, 200, "Invoice retrieved successfully");
+  successResponse(res, invoice, HTTP_STATUS.OK, INVOICE_MESSAGES.GET_ONE);
 });
 
 const updateInvoice = asyncHandler(async (req, res) => {
@@ -41,7 +43,7 @@ const updateInvoice = asyncHandler(async (req, res) => {
     req.params.id,
     req.body,
   );
-  successResponse(res, invoice, 200, "Invoice updated successfully");
+  successResponse(res, invoice, HTTP_STATUS.OK, INVOICE_MESSAGES.UPDATE);
 });
 
 const updateInvoiceStatus = asyncHandler(async (req, res) => {
@@ -50,12 +52,12 @@ const updateInvoiceStatus = asyncHandler(async (req, res) => {
     req.params.id,
     req.body.status,
   );
-  successResponse(res, invoice, 200, "Invoice status updated successfully");
+  successResponse(res, invoice, HTTP_STATUS.OK, INVOICE_MESSAGES.STATUS_UPDATE);
 });
 
 const deleteInvoice = asyncHandler(async (req, res) => {
   await deleteInvoiceService(req.user._id, req.params.id);
-  successResponse(res, null, 200, "Invoice deleted successfully");
+  successResponse(res, null, HTTP_STATUS.OK, INVOICE_MESSAGES.DELETE);
 });
 
 const downloadInvoice = asyncHandler(async (req, res, next) => {
@@ -69,7 +71,7 @@ const getAdminAllInvoices = asyncHandler(async (req, res) => {
     status: req.query.status,
     customerId: req.query.customerId,
   });
-  successResponse(res, result, 200, "Company invoices retrieved successfully");
+  successResponse(res, result, HTTP_STATUS.OK, INVOICE_MESSAGES.GET_ALL);
 });
 
 const getCustomerInvoicesByAdmin = asyncHandler(async (req, res) => {
@@ -82,7 +84,7 @@ const getCustomerInvoicesByAdmin = asyncHandler(async (req, res) => {
       status: req.query.status,
     },
   );
-  successResponse(res, result, 200, "Customer invoices retrieved successfully");
+  successResponse(res, result, HTTP_STATUS.OK, INVOICE_MESSAGES.GET_ALL);
 });
 
 const exportInvoice = asyncHandler(async (req, res) => {

@@ -3,65 +3,88 @@ import { User } from "../model/user.model.js";
 import { Vendor } from "../model/vendor.model.js";
 import { asyncHandler } from "../util/asyncHandler.js";
 import ApiError from "../util/apiError.js";
+import { MIDDLEWARE_ERRORS } from "../util/errorMessage.js";
 
 const protect = asyncHandler(async (req, res, next) => {
-    let token;
+  let token;
 
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
 
-    if (!token) {
-      throw new ApiError(401, "Not authorized to access this route");
-    }
+  if (!token) {
+    throw MIDDLEWARE_ERRORS.AUTH_REQUIRED();
+  }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      if (decoded.accountType === "vendor") {
-        const vendor = await Vendor.findById(decoded.id).select("-password");
+    if (decoded.accountType === "vendor") {
+      const vendor = await Vendor.findById(decoded.id).select("-password");
 
-        if (!vendor) {
-          throw new ApiError(404, "Vendor not found");
-        }
-
-        req.user = {
-          ...vendor.toObject(),
-          role: "vendor",
-          id: vendor._id,
-        };
-
-        next();
-        return;
+      if (!vendor) {
+        throw MIDDLEWARE_ERRORS.VENDOR_NOT_FOUND();
       }
 
-      const user = await User.findById(decoded.id);
+      req.user = {
+        ...vendor.toObject(),
+        role: "vendor",
+        id: vendor._id,
+      };
 
-      if (!user) {
-        throw new ApiError(404, "User not found");
-      }
-
-      req.user = user;
       next();
-    } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        throw new ApiError(401, "Token expired. Please login again.");
-      } else if (error.name === "JsonWebTokenError") {
-        throw new ApiError(401, "Invalid token. Please login again.");
-      }
-      throw error;
+      return;
     }
+
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      throw MIDDLEWARE_ERRORS.USER_NOT_FOUND();
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      throw MIDDLEWARE_ERRORS.TOKEN_EXPIRED();
+    } else if (error.name === "JsonWebTokenError") {
+      throw MIDDLEWARE_ERRORS.INVALID_TOKEN();
+    }
+    throw error;
+  }
 });
 
 const adminOnly = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
   } else {
-    throw new ApiError(403, "Admin access only");
+    throw MIDDLEWARE_ERRORS.ADMIN_ONLY();
   }
 };
 
-export { protect, adminOnly };
+const socketAuth = asyncHandler(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      throw MIDDLEWARE_ERRORS.AUTH_REQUIRED();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      throw MIDDLEWARE_ERRORS.USER_NOT_FOUND();
+    }
+
+    socket.user = user;
+    next();
+  } catch (error) {
+    throw MIDDLEWARE_ERRORS.INVALID_TOKEN();
+  }
+});
+
+export { protect, adminOnly, socketAuth };

@@ -2,14 +2,21 @@ import { Invoice } from "../model/invoice.model.js";
 import { Bill } from "../model/bill.model.js";
 import { Payment } from "../model/payment.model.js";
 import { User } from "../model/user.model.js";
-import ApiError from "../util/apiError.js";
+import { PAYMENT_ERRORS } from "../util/errorMessage.js";
 
 const processCardPaymentService = async (userId, data) => {
-  const { invoiceId, billId, cardNumber, cardHolder, expiryDate, cvv, paymentAmount } =
-    data;
+  const {
+    invoiceId,
+    billId,
+    cardNumber,
+    cardHolder,
+    expiryDate,
+    cvv,
+    paymentAmount,
+  } = data;
 
   if (!invoiceId && !billId) {
-    throw new ApiError(400, "invoiceId or billId is required");
+    throw PAYMENT_ERRORS.DOCUMENT_REQUIRED();
   }
 
   let document;
@@ -18,54 +25,64 @@ const processCardPaymentService = async (userId, data) => {
   if (billId) {
     document = await Bill.findById(billId);
     if (!document) {
-      throw new ApiError(404, "Bill not found");
+      throw PAYMENT_ERRORS.BILL_NOT_FOUND();
     }
     docType = "bill";
   } else {
     document = await Invoice.findById(invoiceId);
     if (!document) {
-      throw new ApiError(404, "Invoice not found");
+      throw PAYMENT_ERRORS.INVOICE_NOT_FOUND();
     }
 
-    if (document.customer && document.customer.toString() !== userId.toString()) {
-      throw new ApiError(403, "You are not authorized to pay this invoice");
+    if (
+      document.customer &&
+      document.customer.toString() !== userId.toString()
+    ) {
+      throw PAYMENT_ERRORS.UNAUTHORIZED_INVOICE_PAYMENT();
     }
   }
 
   if (document.status === "PAID") {
-    throw new ApiError(400, `${docType} is already paid`);
+    throw PAYMENT_ERRORS.ALREADY_PAID(docType);
   }
 
   if (!paymentAmount || paymentAmount <= 0) {
-    throw new ApiError(400, "Invalid payment amount");
+    throw PAYMENT_ERRORS.INVALID_PAYMENT_AMOUNT();
   }
 
   if (paymentAmount > document.remainingAmount) {
-    throw new ApiError(400, `Payment amount exceeds remaining ${docType} amount`);
+    throw PAYMENT_ERRORS.PAYMENT_EXCEEDS_REMAINING(
+      docType,
+      document.remainingAmount,
+    );
   }
 
   if (!cardNumber || cardNumber.length < 13) {
-    throw new ApiError(400, "Invalid card number");
+    throw PAYMENT_ERRORS.INVALID_CARD_NUMBER();
   }
 
   if (!cardHolder || cardHolder.trim() === "") {
-    throw new ApiError(400, "Card holder name is required");
+    throw PAYMENT_ERRORS.CARD_HOLDER_REQUIRED();
   }
 
   if (!expiryDate || expiryDate.trim() === "") {
-    throw new ApiError(400, "Expiry date is required");
+    throw PAYMENT_ERRORS.EXPIRY_REQUIRED();
   }
 
   if (!cvv || cvv.length < 3) {
-    throw new ApiError(400, "Invalid CVV");
+    throw PAYMENT_ERRORS.INVALID_CVV();
   }
 
   await new Promise((resolve) => setTimeout(resolve, 1500));
 
   const transactionId = `TXN-CARD-${Date.now()}`;
 
-  document.amountPaid = Number((document.amountPaid || 0) + paymentAmount).toFixed(2);
-  document.remainingAmount = Number(document.totalAmount - document.amountPaid).toFixed(2);
+  document.amountPaid = Number(
+    (document.amountPaid || 0) + paymentAmount,
+  ).toFixed(2);
+  document.remainingAmount = Number(
+    document.totalAmount - document.amountPaid,
+  ).toFixed(2);
 
   if (document.remainingAmount <= 0) {
     document.remainingAmount = 0;
@@ -127,7 +144,7 @@ const processQrPaymentService = async (userId, data) => {
   const { invoiceId, billId, qrData, paymentAmount } = data;
 
   if (!invoiceId && !billId) {
-    throw new ApiError(400, "invoiceId or billId is required");
+    throw PAYMENT_ERRORS.DOCUMENT_REQUIRED();
   }
 
   let document;
@@ -136,42 +153,52 @@ const processQrPaymentService = async (userId, data) => {
   if (billId) {
     document = await Bill.findById(billId);
     if (!document) {
-      throw new ApiError(404, "Bill not found");
+      throw PAYMENT_ERRORS.BILL_NOT_FOUND();
     }
     docType = "bill";
   } else {
     document = await Invoice.findById(invoiceId);
     if (!document) {
-      throw new ApiError(404, "Invoice not found");
+      throw PAYMENT_ERRORS.INVOICE_NOT_FOUND();
     }
 
-    if (document.customer && document.customer.toString() !== userId.toString()) {
-      throw new ApiError(403, "You are not authorized to pay this invoice");
+    if (
+      document.customer &&
+      document.customer.toString() !== userId.toString()
+    ) {
+      throw PAYMENT_ERRORS.UNAUTHORIZED_INVOICE_PAYMENT();
     }
   }
 
   if (document.status === "PAID") {
-    throw new ApiError(400, `${docType} is already paid`);
+    throw PAYMENT_ERRORS.ALREADY_PAID(docType);
   }
 
   if (!paymentAmount || paymentAmount <= 0) {
-    throw new ApiError(400, "Invalid payment amount");
+    throw PAYMENT_ERRORS.INVALID_PAYMENT_AMOUNT();
   }
 
   if (paymentAmount > document.remainingAmount) {
-    throw new ApiError(400, `Payment amount exceeds remaining ${docType} amount`);
+    throw PAYMENT_ERRORS.PAYMENT_EXCEEDS_REMAINING(
+      docType,
+      document.remainingAmount,
+    );
   }
 
   if (!qrData || qrData.trim() === "") {
-    throw new ApiError(400, "Invalid QR code data");
+    throw PAYMENT_ERRORS.INVALID_QR_DATA();
   }
 
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const transactionId = `TXN-QR-${Date.now()}`;
 
-  document.amountPaid = Number((document.amountPaid || 0) + paymentAmount).toFixed(2);
-  document.remainingAmount = Number(document.totalAmount - document.amountPaid).toFixed(2);
+  document.amountPaid = Number(
+    (document.amountPaid || 0) + paymentAmount,
+  ).toFixed(2);
+  document.remainingAmount = Number(
+    document.totalAmount - document.amountPaid,
+  ).toFixed(2);
 
   if (document.remainingAmount <= 0) {
     document.remainingAmount = 0;
@@ -234,7 +261,7 @@ const processCashPaymentService = async (adminId, data) => {
   const paymentAmount = Number(data.paymentAmount) || 0;
 
   if (!invoiceId && !billId) {
-    throw new ApiError(400, "invoiceId or billId is required");
+    throw PAYMENT_ERRORS.DOCUMENT_REQUIRED();
   }
 
   let document;
@@ -243,22 +270,22 @@ const processCashPaymentService = async (adminId, data) => {
   if (billId) {
     document = await Bill.findById(billId);
     if (!document) {
-      throw new ApiError(404, "Bill not found");
+      throw PAYMENT_ERRORS.BILL_NOT_FOUND();
     }
     docType = "bill";
   } else {
     document = await Invoice.findById(invoiceId);
     if (!document) {
-      throw new ApiError(404, "Invoice not found");
+      throw PAYMENT_ERRORS.INVOICE_NOT_FOUND();
     }
   }
 
   if (document.status === "PAID") {
-    throw new ApiError(400, `${docType} is already paid`);
+    throw PAYMENT_ERRORS.ALREADY_PAID(docType);
   }
 
   if (!paymentAmount || isNaN(paymentAmount) || paymentAmount <= 0) {
-    throw new ApiError(400, "Invalid payment amount");
+    throw PAYMENT_ERRORS.INVALID_PAYMENT_AMOUNT();
   }
 
   const currentAmountPaid = Number(document.amountPaid?.toFixed?.(2)) || 0;
@@ -267,16 +294,18 @@ const processCashPaymentService = async (adminId, data) => {
     Number(document.remainingAmount?.toFixed?.(2)) || totalAmount;
 
   if (paymentAmount > currentRemainingAmount) {
-    throw new ApiError(
-      400,
-      `Payment amount ₹${paymentAmount} exceeds remaining ${docType} amount ₹${currentRemainingAmount}`,
+    throw PAYMENT_ERRORS.PAYMENT_EXCEEDS_REMAINING(
+      docType,
+      currentRemainingAmount,
     );
   }
 
   const transactionId = `TXN-CASH-${Date.now()}`;
 
   document.amountPaid = Number((currentAmountPaid + paymentAmount).toFixed(2));
-  document.remainingAmount = Number((totalAmount - document.amountPaid).toFixed(2));
+  document.remainingAmount = Number(
+    (totalAmount - document.amountPaid).toFixed(2),
+  );
 
   if (document.remainingAmount <= 0) {
     document.remainingAmount = 0;
@@ -341,7 +370,7 @@ const getPaymentStatusService = async (userId, data) => {
   const currentUser = await User.findById(userId).select("role");
 
   if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+    throw PAYMENT_ERRORS.INVOICE_NOT_FOUND();
   }
 
   if (
@@ -350,7 +379,7 @@ const getPaymentStatusService = async (userId, data) => {
     invoice.customer.toString() !== userId.toString() &&
     invoice.createdBy.toString() !== userId.toString()
   ) {
-    throw new ApiError(403, "Not authorized to view this invoice");
+    throw PAYMENT_ERRORS.UNAUTHORIZED_VIEW();
   }
 
   return {
@@ -372,7 +401,7 @@ const getInvoicePaymentHistoryService = async (userId, invoiceId) => {
   const currentUser = await User.findById(userId).select("role");
 
   if (!invoice) {
-    throw new ApiError(404, "Invoice not found");
+    throw PAYMENT_ERRORS.INVOICE_NOT_FOUND();
   }
 
   if (
@@ -381,7 +410,7 @@ const getInvoicePaymentHistoryService = async (userId, invoiceId) => {
     invoice.customer.toString() !== userId.toString() &&
     invoice.createdBy.toString() !== userId.toString()
   ) {
-    throw new ApiError(403, "Not authorized to view this invoice");
+    throw PAYMENT_ERRORS.UNAUTHORIZED_VIEW();
   }
 
   return {
@@ -405,11 +434,14 @@ const getInvoicePaymentHistoryService = async (userId, invoiceId) => {
 };
 
 const getBillPaymentHistoryService = async (userId, billId) => {
-  const bill = await Bill.findById(billId).populate("paymentHistory.paidBy", "name email");
+  const bill = await Bill.findById(billId).populate(
+    "paymentHistory.paidBy",
+    "name email",
+  );
   const currentUser = await User.findById(userId).select("role");
 
   if (!bill) {
-    throw new ApiError(404, "Bill not found");
+    throw PAYMENT_ERRORS.BILL_NOT_FOUND();
   }
 
   if (
@@ -417,12 +449,12 @@ const getBillPaymentHistoryService = async (userId, billId) => {
     bill.vendorId &&
     bill.vendorId.toString() !== userId.toString()
   ) {
-    throw new ApiError(403, "Not authorized to view this bill");
+    throw PAYMENT_ERRORS.UNAUTHORIZED_VIEW();
   }
 
   return {
     billId: bill._id,
-    // billNumber: bill.billNumber,
+    billNumber: bill.billNumber,
     totalAmount: bill.totalAmount,
     amountPaid: bill.amountPaid,
     remainingAmount: bill.remainingAmount,

@@ -10,14 +10,14 @@ export const buildMenuByRole = (menuConfig, role) => {
           icon: item.icon,
           label: item.label,
           children: item.children.map((child) => ({
-            key: child.key,
+            key: child.path,
             label: <Link to={child.path}>{child.label}</Link>,
           })),
         };
       }
 
       return {
-        key: item.key,
+        key: item.path,
         icon: item.icon,
         label: <Link to={item.path}>{item.label}</Link>,
       };

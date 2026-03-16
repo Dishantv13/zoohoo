@@ -3,18 +3,18 @@ import { Company } from "../model/company.model.js";
 import { Vendor } from "../model/vendor.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import ApiError from "../util/apiError.js";
+import { AUTH_ERRORS } from "../util/errorMessage.js";
 
 const registerService = async (userData) => {
   const { name, email, password, phonenumber, address } = userData;
 
   if (!name || !email || !password) {
-    throw new ApiError(400, "Please provide name, email and password");
+    throw AUTH_ERRORS.REQUIRED_REGISTER_FIELDS();
   }
   const userExists = await User.findOne({ email: email.toLowerCase() });
 
   if (userExists) {
-    throw new ApiError(409, "User already exists");
+    throw AUTH_ERRORS.USER_ALREADY_EXISTS();
   }
 
   const user = await User.create({
@@ -70,19 +70,19 @@ const adminRegisterService = async (userData) => {
     !companyEmail ||
     !companyPhone
   ) {
-    throw new ApiError(400, "Please provide all required fields");
+    throw AUTH_ERRORS.REQUIRED_ADMIN_FIELDS();
   }
 
   const adminExists = await User.findOne({ email: adminEmail.toLowerCase() });
   if (adminExists) {
-    throw new ApiError(409, "Admin email already registered");
+    throw AUTH_ERRORS.ADMIN_EMAIL_EXISTS();
   }
 
   const companyExists = await Company.findOne({
     email: companyEmail.toLowerCase(),
   });
   if (companyExists) {
-    throw new ApiError(409, "Company email already registered");
+    throw AUTH_ERRORS.COMPANY_EMAIL_EXISTS();
   }
 
   const admin = await User.create({
@@ -136,7 +136,7 @@ const adminRegisterService = async (userData) => {
 
 const loginService = async ({ email, password }) => {
   if (!email || !password) {
-    throw new ApiError(400, "Email and password are required");
+    throw AUTH_ERRORS.EMAIL_PASSWORD_REQUIRED();
   }
 
   const normalizedEmail = email.toLowerCase();
@@ -147,19 +147,19 @@ const loginService = async ({ email, password }) => {
 
   if (user) {
     if (!user.isActive) {
-      throw new ApiError(400, "Your account has been deactivated");
+      throw AUTH_ERRORS.ACCOUNT_DEACTIVATED();
     }
 
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      throw new ApiError(401, "Invalid email or password");
+      throw AUTH_ERRORS.INVALID_CREDENTIALS();
     }
 
     const token = jwt.sign(
       { id: user._id, accountType: "user" },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "1d" },
     );
 
     return {
@@ -179,13 +179,13 @@ const loginService = async ({ email, password }) => {
   const vendor = await Vendor.findOne({ email: normalizedEmail });
 
   if (!vendor) {
-    throw new ApiError(401, "Invalid email or password");
+    throw AUTH_ERRORS.INVALID_CREDENTIALS();
   }
 
   const isPasswordValid = await bcrypt.compare(password, vendor.password);
 
   if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid email or password");
+    throw AUTH_ERRORS.INVALID_CREDENTIALS();
   }
 
   const vendorObj = vendor.toObject();
@@ -194,7 +194,7 @@ const loginService = async ({ email, password }) => {
   const token = jwt.sign(
     { id: vendor._id, accountType: "vendor" },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" }
+    { expiresIn: "1d" },
   );
 
   return {
@@ -212,7 +212,7 @@ const logOutService = async (userId) => {
   const user = await User.findById(userId);
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw AUTH_ERRORS.USER_NOT_FOUND();
   }
 
   return {
@@ -228,7 +228,7 @@ const getCurrentUserProfileService = async (userId) => {
   const user = await User.findById(userId).select("-password");
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw AUTH_ERRORS.USER_NOT_FOUND();
   }
 
   return user;
@@ -244,7 +244,7 @@ const updateUserProfileService = async (userId, updateData) => {
   ).select("-password");
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw AUTH_ERRORS.USER_NOT_FOUND();
   }
 
   return user;
@@ -254,7 +254,7 @@ const deleteProfileService = async (userId) => {
   const user = await User.findByIdAndDelete(userId);
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw AUTH_ERRORS.USER_NOT_FOUND();
   }
 
   return null;
@@ -270,7 +270,7 @@ const getCompanyCustomersService = async (adminId, options = {}) => {
   const status = options.status || "all";
 
   if (!admin || admin.role !== "admin") {
-    throw new ApiError(403, "Only admin can view customers");
+    throw AUTH_ERRORS.ADMIN_ONLY_ACCESS();
   }
 
   const query = {
@@ -318,12 +318,12 @@ const createCustomerService = async (adminId, customerData) => {
   const { name, email, password, phonenumber } = customerData;
 
   if (!name || !email || !password) {
-    throw new ApiError(400, "Please provide name, email and password");
+    throw AUTH_ERRORS.REQUIRED_REGISTER_FIELDS();
   }
 
   const admin = await User.findById(adminId);
   if (!admin || admin.role !== "admin") {
-    throw new ApiError(403, "Only admin can create customers");
+    throw AUTH_ERRORS.ADMIN_ONLY_ACCESS();
   }
 
   const customerExists = await User.findOne({
@@ -331,7 +331,7 @@ const createCustomerService = async (adminId, customerData) => {
     companyId: admin.companyId,
   });
   if (customerExists) {
-    throw new ApiError(409, "Email already registered");
+    throw AUTH_ERRORS.EMAIL_ALREADY_REGISTERED();
   }
 
   const customer = await User.create({
@@ -357,7 +357,7 @@ const createCustomerService = async (adminId, customerData) => {
 const updateCustomerService = async (adminId, customerId, updateData) => {
   const admin = await User.findById(adminId);
   if (!admin || admin.role !== "admin") {
-    throw new ApiError(403, "Only admin can update customers");
+    throw AUTH_ERRORS.ADMIN_ONLY_ACCESS();
   }
 
   const customer = await User.findById(customerId);
@@ -365,7 +365,7 @@ const updateCustomerService = async (adminId, customerId, updateData) => {
     !customer ||
     customer.companyId.toString() !== admin.companyId.toString()
   ) {
-    throw new ApiError(404, "Customer not found in your company");
+    throw AUTH_ERRORS.CUSTOMER_NOT_FOUND();
   }
 
   const { name, phonenumber, isActive } = updateData;
@@ -382,7 +382,7 @@ const updateCustomerService = async (adminId, customerId, updateData) => {
 const deleteCustomerService = async (adminId, customerId) => {
   const admin = await User.findById(adminId);
   if (!admin || admin.role !== "admin") {
-    throw new ApiError(403, "Only admin can delete customers");
+    throw AUTH_ERRORS.ADMIN_ONLY_ACCESS();
   }
 
   const customer = await User.findById(customerId);
@@ -390,7 +390,7 @@ const deleteCustomerService = async (adminId, customerId) => {
     !customer ||
     customer.companyId.toString() !== admin.companyId.toString()
   ) {
-    throw new ApiError(404, "Customer not found in your company");
+    throw AUTH_ERRORS.CUSTOMER_NOT_FOUND();
   }
 
   await User.findByIdAndDelete(customerId);
@@ -402,30 +402,27 @@ const changePasswordService = async (userId, data) => {
   const { currentPassword, newPassword } = data;
 
   if (!currentPassword || !newPassword) {
-    throw new ApiError(400, "Please provide current and new password");
+    throw AUTH_ERRORS.PASSWORD_REQUIRED();
   }
 
   if (newPassword.length < 6) {
-    throw new ApiError(400, "New password must be at least 6 characters");
+    throw AUTH_ERRORS.PASSWORD_MIN_LENGTH();
   }
 
   if (currentPassword === newPassword) {
-    throw new ApiError(
-      400,
-      "New password cannot be the same as current password",
-    );
+    throw AUTH_ERRORS.PASSWORD_SAME_AS_OLD();
   }
 
   const user = await User.findById(userId).select("+password");
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw AUTH_ERRORS.USER_NOT_FOUND();
   }
 
   const isPasswordMatch = await user.matchPassword(currentPassword);
 
   if (!isPasswordMatch) {
-    throw new ApiError(400, "Current password is incorrect");
+    throw AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT();
   }
 
   user.password = newPassword;

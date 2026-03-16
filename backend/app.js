@@ -6,7 +6,7 @@ import { globalErrorHandler } from "./middleware/globelErrorHandler.js";
 
 import http from "http";
 import { Server } from "socket.io";
-import { socketAuth } from "./middleware/socketAuth.js";
+import { socketAuth } from "./middleware/auth.js";
 import { chatSocket } from "./socket/chat.Socket.js";
 
 const app = express();

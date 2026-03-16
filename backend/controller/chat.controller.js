@@ -11,6 +11,8 @@ import {
 import { asyncHandler } from "../util/asyncHandler.js";
 import { successResponse } from "../util/response.js";
 import ApiError from "../util/apiError.js";
+import { CHAT_MESSAGES } from "../util/successMessge.js";
+import { HTTP_STATUS } from "../util/httpStatus.js";
 
 const getAllConversations = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, type } = req.query;
@@ -30,8 +32,8 @@ const getAllConversations = asyncHandler(async (req, res) => {
   successResponse(
     res,
     result.conversations,
-    200,
-    "Conversations retrieved successfully",
+    HTTP_STATUS.OK,
+    CHAT_MESSAGES.CONVERSATION,
     result.pagination,
   );
 });
@@ -49,8 +51,8 @@ const getMessagesByConversationId = asyncHandler(async (req, res) => {
   successResponse(
     res,
     result.messages,
-    200,
-    "Messages retrieved successfully",
+    HTTP_STATUS.OK,
+    CHAT_MESSAGES.MESSAGES_RETRIEVED,
     result.pagination,
   );
 });
@@ -67,7 +69,7 @@ const createConversation = asyncHandler(async (req, res) => {
     customerId,
   );
 
-  successResponse(res, conversation, 201, "Conversation created successfully");
+  successResponse(res, conversation, HTTP_STATUS.CREATED, CHAT_MESSAGES.CONVERSATION_CREATED);
 });
 
 const createMessage = asyncHandler(async (req, res) => {
@@ -87,7 +89,7 @@ const createMessage = asyncHandler(async (req, res) => {
     text,
   );
 
-  successResponse(res, message, 201, "Message sent successfully");
+  successResponse(res, message, HTTP_STATUS.CREATED, CHAT_MESSAGES.MESSAGE_SENT);
 });
 
 const markAsRead = asyncHandler(async (req, res) => {
@@ -102,8 +104,8 @@ const markAsRead = asyncHandler(async (req, res) => {
   successResponse(
     res,
     result,
-    200,
-    `${result.modifiedCount} messages marked as read`,
+    HTTP_STATUS.OK,
+    CHAT_MESSAGES.MESSAGE_READ,
   );
 });
 
@@ -113,7 +115,7 @@ const getUnreadCount = asyncHandler(async (req, res) => {
 
   const unreadInfo = await getUnreadCountService(conversationId, userRole);
 
-  successResponse(res, unreadInfo, 200, "Unread count retrieved successfully");
+  successResponse(res, unreadInfo, HTTP_STATUS.OK, CHAT_MESSAGES.UNREAD_COUNT);
 });
 
 const searchConversations = asyncHandler(async (req, res) => {
@@ -125,7 +127,7 @@ const searchConversations = asyncHandler(async (req, res) => {
 
   const conversations = await searchConversationsService(req.user._id, query);
 
-  successResponse(res, conversations, 200, "Conversations search results");
+  successResponse(res, conversations, HTTP_STATUS.OK, CHAT_MESSAGES.SEARCH_RESULTS);
 });
 
 export {

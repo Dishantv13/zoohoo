@@ -1,6 +1,6 @@
 import { Item } from "../model/item.model.js";
 import { Vendor } from "../model/vendor.model.js";
-import ApiError from "../util/apiError.js";
+import { ITEM_ERRORS } from "../util/errorMessage.js";
 
 const resolveVendorContext = async (user, vendorIdInput) => {
   if (user?.role === "vendor") {
@@ -12,7 +12,7 @@ const resolveVendorContext = async (user, vendorIdInput) => {
 
   if (user?.role === "admin") {
     if (!vendorIdInput) {
-      throw new ApiError(400, "vendorId is required for admin operations");
+      throw ITEM_ERRORS.VENDOR_ID_REQUIRED();
     }
 
     const vendor = await Vendor.findOne({
@@ -21,7 +21,7 @@ const resolveVendorContext = async (user, vendorIdInput) => {
     });
 
     if (!vendor) {
-      throw new ApiError(404, "Vendor not found in your company");
+      throw ITEM_ERRORS.VENDOR_NOT_FOUND();
     }
 
     return {
@@ -30,14 +30,14 @@ const resolveVendorContext = async (user, vendorIdInput) => {
     };
   }
 
-  throw new ApiError(403, "Not authorized");
+  throw ITEM_ERRORS.NOT_AUTHORIZED();
 };
 
 const createInventoryItemService = async (user, payload) => {
   const { vendorId: vendorIdInput, name, quantity, rate, tax, isActive } = payload;
 
   if (!name || quantity === undefined || rate === undefined) {
-    throw new ApiError(400, "name, quantity and rate are required");
+    throw ITEM_ERRORS.ITEM_REQUIRED_FIELDS();
   }
 
   const { vendorId, companyId } = await resolveVendorContext(user, vendorIdInput);
@@ -72,7 +72,7 @@ const getInventoryItemsService = async (user, query) => {
 const updateInventoryItemService = async (user, itemId, payload) => {
   const item = await Item.findById(itemId);
   if (!item) {
-    throw new ApiError(404, "Inventory item not found");
+    throw ITEM_ERRORS.ITEM_NOT_FOUND();
   }
 
   const isVendorOwner =
@@ -85,7 +85,7 @@ const updateInventoryItemService = async (user, itemId, payload) => {
     item.companyId?.toString() === user.companyId?.toString();
 
   if (!isVendorOwner && !isAdminOwner) {
-    throw new ApiError(403, "Not authorized to update this inventory item");
+    throw ITEM_ERRORS.ITEM_UPDATE_NOT_ALLOWED();
   }
 
   const updatable = ["name", "quantity", "rate", "tax", "isActive"];
@@ -106,7 +106,7 @@ const updateInventoryItemService = async (user, itemId, payload) => {
 const deleteInventoryItemService = async (user, itemId) => {
   const item = await Item.findById(itemId);
   if (!item) {
-    throw new ApiError(404, "Inventory item not found");
+    throw ITEM_ERRORS.ITEM_NOT_FOUND();
   }
 
   const isVendorOwner =
@@ -119,7 +119,7 @@ const deleteInventoryItemService = async (user, itemId) => {
     item.companyId?.toString() === user.companyId?.toString();
 
   if (!isVendorOwner && !isAdminOwner) {
-    throw new ApiError(403, "Not authorized to delete this inventory item");
+    throw ITEM_ERRORS.ITEM_DELETE_NOT_ALLOWED();
   }
 
   await Item.findByIdAndDelete(itemId);
@@ -128,12 +128,12 @@ const deleteInventoryItemService = async (user, itemId) => {
 
 const getVendorAvailabilityService = async (user, vendorId) => {
   if (user?.role !== "admin") {
-    throw new ApiError(403, "Admin access only");
+    throw ITEM_ERRORS.ADMIN_ONLY();
   }
 
   const vendor = await Vendor.findOne({ _id: vendorId, companyId: user.companyId });
   if (!vendor) {
-    throw new ApiError(404, "Vendor not found in your company");
+    throw ITEM_ERRORS.COMPANY_VENDOR_NOT_FOUND();
   }
 
   const items = await Item.find({
