@@ -1,16 +1,7 @@
 import { useState } from "react";
-import { Card, Col, Row, Typography, DatePicker, Spin, Statistic } from "antd";
-import {
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  RiseOutlined,
-  FallOutlined,
-  DollarOutlined,
-} from "@ant-design/icons";
+import { Spin } from "antd";
 import { useGetDashBoardQuery } from "../service/reportApi";
-
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
+import ReportDashboard from "../components/ReportDashboard";
 
 const Report = () => {
   const [date, setDate] = useState(null);
@@ -50,120 +41,62 @@ const Report = () => {
 
   return (
     <div style={{ padding: 16 }}>
-      <Title level={3}>Financial Dashboard</Title>
-      <Text type="secondary">
-        Overview of your company financial performance
-      </Text>
-
-      <Row style={{ marginTop: 20, marginBottom: 20 }}>
-        <Col>
-          <RangePicker value={date} onChange={handleDateChange} allowClear />
-        </Col>
-      </Row>
-
-      <Title level={4} style={{ marginTop: 30 }}>
-        Total Performance
-      </Title>
-
-      <Row gutter={[16, 16]}>
-        <Col span={8}>
-          <Card hoverable>
-            <Statistic
-              title="Total Revenue"
-              value={Number(dashboardData?.totalRevenue) || 0}
-              precision={2}
-              prefix={
-                <>
-                  <RiseOutlined /> ₹
-                </>
-              }
-              valueStyle={{ color: "#3f8600" }}
-            />
-          </Card>
-        </Col>
-
-        <Col span={8}>
-          <Card hoverable>
-            <Statistic
-              title="Total Expense"
-              value={Number(dashboardData?.totalExpense) || 0}
-              precision={2}
-              prefix={
-                <>
-                  <FallOutlined /> ₹
-                </>
-              }
-              valueStyle={{ color: "#cf1322" }}
-            />
-          </Card>
-        </Col>
-
-        <Col span={8}>
-          <Card hoverable>
-            <Statistic
-              title={isProfit ? "Total Profit" : "Total Loss"}
-              value={value}
-              precision={2}
-              prefix={
-                <>{isProfit ? <ArrowUpOutlined /> : <ArrowDownOutlined />} ₹</>
-              }
-              valueStyle={{ color: isProfit ? "#3f8600" : "#cf1322" }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Title level={4} style={{ marginTop: 30 }}>
-        Today Performance
-      </Title>
-
-      <Row gutter={[16, 16]}>
-        <Col span={8}>
-          <Card hoverable>
-            <Statistic
-              title="Today Revenue"
-              value={Number(dashboardData?.todayRevenue) || 0}
-              precision={2}
-              prefix={
-                <>
-                  <DollarOutlined /> ₹
-                </>
-              }
-              valueStyle={{ color: "#3f8600" }}
-            />
-          </Card>
-        </Col>
-
-        <Col span={8}>
-          <Card hoverable>
-            <Statistic
-              title="Today Expense"
-              value={Number(dashboardData?.todayExpense) || 0}
-              precision={2}
-              prefix={
-                <>
-                  <DollarOutlined /> ₹
-                </>
-              }
-              valueStyle={{ color: "#cf1322" }}
-            />
-          </Card>
-        </Col>
-
-        <Col span={8}>
-          <Card hoverable>
-            <Statistic
-              title={isTodayProfit ? "Today Profit" : "Today Loss"}
-              value={todayValue}
-              precision={2}
-              prefix={
-                <>{isTodayProfit ? <ArrowUpOutlined /> : <ArrowDownOutlined />} ₹</>
-              }
-              valueStyle={{ color: isTodayProfit ? "#3f8600" : "#cf1322" }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <ReportDashboard
+        title="Financial Dashboard"
+        subtitle="Overview of your company financial performance"
+        dates={date}
+        handleDateChange={handleDateChange}
+        sections={[
+          {
+            title: "Total Performance",
+            stats: [
+              {
+                title: "Total Revenue",
+                value: dashboardData?.totalRevenue,
+                prefix: <>₹</>,
+                valueStyle: { color: "#3f8600" },
+              },
+              {
+                title: "Total Expense",
+                value: dashboardData?.totalExpense,
+                prefix: <>₹</>,
+                valueStyle: { color: "#cf1322" },
+              },
+              {
+                title: isProfit ? "Total Profit" : "Total Loss",
+                value: value,
+                prefix: <>₹</>,
+                valueStyle: { color: isProfit ? "#3f8600" : "#cf1322" },
+              },
+            ],
+          },
+          {
+            title: "Today Performance",
+            stats: [
+              {
+                title: "Today Revenue",
+                value: dashboardData?.todayRevenue,
+                prefix: <>₹</>,
+                valueStyle: { color: "#3f8600" },
+              },
+              {
+                title: "Today Expense",
+                value: dashboardData?.todayExpense,
+                prefix: <>₹</>,
+                valueStyle: { color: "#cf1322" },
+              },
+              {
+                title: isTodayProfit ? "Today Profit" : "Today Loss",
+                value: todayValue,
+                prefix: <>₹</>,
+                valueStyle: {
+                  color: isTodayProfit ? "#3f8600" : "#cf1322",
+                },
+              },
+            ],
+          },
+        ]}
+      />
     </div>
   );
 };

@@ -12,7 +12,7 @@ import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
 import { useGetRevenueByMonthQuery } from "../service/reportApi";
 
-const MonthlyRevenueReport = ({dates}) => {
+const MonthlyRevenueReport = ({ dates }) => {
   const { data, isLoading } = useGetRevenueByMonthQuery({
     month: dates && dates.length === 2 ? dates[0].month() + 1 : undefined,
     year: dates && dates.length === 2 ? dates[0].year() : undefined,
@@ -68,6 +68,15 @@ const MonthlyRevenueReport = ({dates}) => {
                   x: {
                     grid: {
                       display: false,
+                    },
+                    title: {
+                      display: true,
+                      text: "Month/Year",
+                      color: "#595959",
+                      font: {
+                        size: 16,
+                        weight: "bold",
+                      },
                     },
                     ticks: {
                       color: "#595959",

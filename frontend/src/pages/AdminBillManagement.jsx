@@ -17,6 +17,7 @@ import ManagementTableCard from "../components/ManagementTableCard";
 import PaymentModel from "../components/PaymentModal";
 import CashPaymentModel from "../components/CashPaymentModal";
 import { getBillColumns } from "../columns/BillColumn";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -167,7 +168,7 @@ export default function AdminBillManagement() {
         setStatusFilter={setStatusFilter}
         setPage={setPage}
         navigate={navigate}
-        createPath="/admin/vendor/create-bill"
+        createPath={ROUTE_PATHS.ADMIN_CREATE_BILL}
         dataSource={bills}
         isLoading={isLoading}
         columns={columns}

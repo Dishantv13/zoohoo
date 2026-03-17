@@ -19,13 +19,13 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-//   useCustomerProfileQuery,
   useUpdateCustomerProfileMutation,
   useChangePasswordMutation,
   useDeleteCustomerProfileMutation,
 } from "../service/customerApi";
 
 import { useGetCurrentUserQuery } from "../service/authApi";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 
 export default function Customers() {
   const [form] = Form.useForm();
@@ -81,7 +81,7 @@ export default function Customers() {
       setPasswordModal(false);
       passwordForm.resetFields();
       localStorage.removeItem("token");
-      navigate("/login");
+      navigate(ROUTE_PATHS.LOGIN);
     } catch (error) {
       notification.error({
         message: "Failed",
@@ -105,7 +105,7 @@ export default function Customers() {
           });
 
           localStorage.removeItem("token");
-          navigate("/login");
+          navigate(ROUTE_PATHS.LOGIN);
         } catch (error) {
           notification.error({
             message: "Failed",

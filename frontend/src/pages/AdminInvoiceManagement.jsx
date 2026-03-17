@@ -15,6 +15,7 @@ import {
 import { useGetCustomersQuery } from "../service/customerApi";
 import { useGetPaymentHistoryQuery } from "../service/paymentApi";
 import { InvoiceColumns } from "../columns/InvoiceColumn";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 
 import "../css/InvoiceManagement.css";
 
@@ -104,6 +105,11 @@ export default function AdminInvoiceManagement() {
     a.download = `invoice-${invoiceNumber}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+
+    notification.success({
+      message: "Download successful",
+      description: `Invoice ${invoiceNumber} has been downloaded`,
+    });
   };
 
   const [exportInvoices, { isLoading }] = useExportInvoiceMutation();
@@ -148,7 +154,7 @@ export default function AdminInvoiceManagement() {
   };
 
   const handleEdit = (invoice) => {
-    navigate("/admin/customer/create-invoice", { state: { invoice } });
+    navigate(ROUTE_PATHS.ADMIN_CREATE_INVOICE, { state: { invoice } });
   };
 
   const handleCashPayment = (invoice) => {

@@ -77,18 +77,18 @@ const TodayExpenseModel = ({ dates }) => {
                     grid: {
                       display: false,
                     },
-                    title : {
-                        display: true,
-                        text: 'Hour of the Day',
-                        color: '#595959',
-                        font: {
-                            size: 16,
-                            weight: 'bold',
-                        }
+                    title: {
+                      display: true,
+                      text: "Hour of the Day",
+                      color: "#595959",
+                      font: {
+                        size: 16,
+                        weight: "bold",
+                      },
                     },
                     ticks: {
                       color: "#595959",
-                    }
+                    },
                   },
                   y: {
                     ticks: {

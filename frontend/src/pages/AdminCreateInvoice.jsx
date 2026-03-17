@@ -2,32 +2,16 @@ import "@ant-design/v5-patch-for-react-19";
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  Form,
-  InputNumber,
-  Button,
-  Card,
-  Space,
-  Table,
-  message,
-  DatePicker,
-  Select,
-  Row,
-  Col,
-  Empty,
-} from "antd";
-import {
-  DeleteOutlined,
-  PlusOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { Form, Card, message, Empty, notification } from "antd";
 import dayjs from "dayjs";
 import { useGetCustomersQuery } from "../service/customerApi";
 import {
   useUpdateInvoiceMutation,
   useCreateInvoiceMutation,
 } from "../service/invoiceApi";
-
+import { getSimpleItemColumns } from "../columns/ItemColumn";
+import BillInvoiceForm from "../components/BillInvoiceForm";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 import "../css/CreateInvoice.css";
 
 export default function AdminCreateInvoice() {
@@ -73,25 +57,6 @@ export default function AdminCreateInvoice() {
       });
     }
   }, [location.state, form]);
-
-  const calculateSubtotal = () => {
-    return items.reduce(
-      (sum, item) => sum + (item.quantity * item.rate || 0),
-      0,
-    );
-  };
-
-  const calculateDiscount = () => {
-    return (calculateSubtotal() * discount) / 100;
-  };
-
-  const calculateTax = () => {
-    return ((calculateSubtotal() - calculateDiscount()) * tax) / 100;
-  };
-
-  const calculateTotal = () => {
-    return calculateSubtotal() - calculateDiscount() + calculateTax();
-  };
 
   const addItem = () => {
     setItems([...items, { name: "", quantity: 1, rate: 0 }]);
@@ -142,14 +107,20 @@ export default function AdminCreateInvoice() {
         }).unwrap();
 
         if (res?.success) {
-          message.success("Invoice updated successfully");
-          navigate("/admin/customer/invoices");
+          notification.success({
+            message: "Invoice Updated",
+            description: "Invoice updated successfully",
+          });
+          navigate(ROUTE_PATHS.ADMIN_INVOICE_MANAGEMENT);
         }
       } else {
         const res = await createInvoice(invoiceData).unwrap();
 
         if (res?.success) {
-          message.success("Invoice created successfully");
+          notification.success({
+            message: "Invoice Created",
+            description: "Invoice created successfully",
+          });
         }
 
         form.resetFields();
@@ -157,283 +128,51 @@ export default function AdminCreateInvoice() {
         setSelectedCustomer(null);
         setDiscount(0);
         setTax(18);
-        navigate("/admin/customer/invoices");
+        navigate(ROUTE_PATHS.ADMIN_INVOICE_MANAGEMENT);
       }
     } catch (error) {
-      message.error(
-        error?.data?.message ||
+      notification.error({
+        message: "Failed to Create Invoice",
+        description:
+          error?.data?.message ||
           `Failed to ${isEditMode ? "update" : "create"} invoice`,
-      );
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const itemColumns = [
-    {
-      title: "Item Name",
-      dataIndex: "name",
-      key: "name",
-      render: (text, record, index) => (
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => updateItem(index, "name", e.target.value)}
-          placeholder="Enter item name"
-        />
-      ),
-    },
-    {
-      title: "Quantity",
-      dataIndex: "quantity",
-      key: "quantity",
-      render: (text, record, index) => (
-        <input
-          type="number"
-          value={text}
-          onChange={(e) => updateItem(index, "quantity", e.target.value)}
-        />
-      ),
-    },
-    {
-      title: "Rate (₹)",
-      dataIndex: "rate",
-      key: "rate",
-      render: (text, record, index) => (
-        <input
-          type="number"
-          value={text}
-          onChange={(e) => updateItem(index, "rate", e.target.value)}
-        />
-      ),
-    },
-    {
-      title: "Amount (₹)",
-      key: "amount",
-      render: (_, record) => (
-        <span>{(record.quantity * record.rate || 0).toFixed(2)}</span>
-      ),
-    },
-    {
-      title: "Action",
-      key: "action",
-      width: 80,
-      render: (_, record, index) => (
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => removeItem(index)}
-        />
-      ),
-    },
-  ];
+  const itemColumns = getSimpleItemColumns({ updateItem, removeItem });
 
   return (
     <div className="create-invoice-container">
-      <Card title={isEditMode ? "Edit Invoice" : "Create Invoice for Customer"}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-        >
-          <Row gutter={16}>
-            <Col xs={24} sm={6}>
-              <Form.Item
-                label="Select Customer"
-                required
-                message="Please select a customer"
-              >
-                <Select
-                  placeholder="Search and select customer"
-                  value={selectedCustomer}
-                  prefix={<SearchOutlined />}
-                  onChange={setSelectedCustomer}
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  options={(Array.isArray(customersList)
-                    ? customersList
-                    : []
-                  ).map((c) => ({
-                    label: `${c.name} (${c.email})`,
-                    value: c._id,
-                  }))}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={6}>
-              <Form.Item
-                name="invoiceDate"
-                label="Invoice Date"
-                initialValue={dayjs()}
-                rules={[
-                  { required: true, message: "Please select invoice date" },
-                ]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={6}>
-              <Form.Item
-                name="dueDate"
-                label="Due Date"
-                initialValue={dayjs()}
-                rules={[{ required: true, message: "Please select due date" }]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={6}>
-              {isEditMode && (
-                <Form.Item name="invoiceNumber" label="Invoice Number">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    disabled={isEditMode}
-                  />
-                </Form.Item>
-              )}
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} sm={6}>
-              <Form.Item
-                name="status"
-                label="Invoice Status"
-                initialValue="PENDING"
-                rules={[{ required: true, message: "Please select status" }]}
-              >
-                <Select placeholder="Select status" disabled>
-                  <Select.Option value="PENDING">Pending</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={6}>
-              <Form.Item label="Discount (%)">
-                <InputNumber
-                  value={discount}
-                  onChange={setDiscount}
-                  min={0}
-                  max={100}
-                  style={{ width: "100%" }}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={6}>
-              <Form.Item label="Tax (%)">
-                <InputNumber
-                  value={tax}
-                  onChange={setTax}
-                  min={0}
-                  max={100}
-                  style={{ width: "100%" }}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}></Row>
-
-          <Card title="Invoice Items" style={{ marginBottom: 16 }}>
-            {items.length > 0 ? (
-              <Table
-                dataSource={items.map((item, index) => ({
-                  ...item,
-                  key: index,
-                }))}
-                columns={itemColumns}
-                pagination={false}
-                size="small"
-              />
-            ) : (
-              <Empty description="No items added" />
-            )}
-            <Button
-              type="dashed"
-              block
-              icon={<PlusOutlined />}
-              onClick={addItem}
-              style={{ marginTop: 16 }}
-            >
-              Add Item
-            </Button>
-          </Card>
-
-          <Card title="Amount Summary" style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col xs={24} sm={6}>
-                <div className="summary-box">
-                  <div className="summary-label">Subtotal</div>
-                  <div className="summary-value">
-                    ₹{calculateSubtotal().toFixed(2)}
-                  </div>
-                </div>
-              </Col>
-              <Col xs={24} sm={6}>
-                <div className="summary-box">
-                  <div className="summary-label">Discount</div>
-                  <div className="summary-value">
-                    ₹{calculateDiscount().toFixed(2)}
-                  </div>
-                </div>
-              </Col>
-              <Col xs={24} sm={6}>
-                <div className="summary-box">
-                  <div className="summary-label">Tax</div>
-                  <div className="summary-value">
-                    ₹{calculateTax().toFixed(2)}
-                  </div>
-                </div>
-              </Col>
-              <Col xs={24} sm={6}>
-                <div className="summary-box total">
-                  <div className="summary-label">Total</div>
-                  <div className="summary-value">
-                    ₹{calculateTotal().toFixed(2)}
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          </Card>
-
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                loading={loading}
-              >
-                {isEditMode ? "Update Invoice" : "Create Invoice"}
-              </Button>
-              <Button
-                size="large"
-                onClick={() => {
-                  if (isEditMode) {
-                    navigate("/admin/customer/invoices");
-                  } else {
-                    form.resetFields();
-                    setItems([{ name: "", quantity: 1, rate: 0 }]);
-                    setSelectedCustomer(null);
-                    setDiscount(0);
-                    setTax(18);
-                  }
-                }}
-              >
-                {isEditMode ? "Cancel" : "Reset"}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Card>
+      <BillInvoiceForm
+        title={isEditMode ? "Edit Invoice" : "Create Invoice"}
+        form={form}
+        onFinish={onFinish}
+        partyLabel="Customer"
+        partyList={customersList}
+        selectedParty={selectedCustomer}
+        setSelectedParty={setSelectedCustomer}
+        items={items}
+        itemColumns={itemColumns}
+        addItem={addItem}
+        loading={loading}
+        submitText={isEditMode ? "Update Invoice" : "Create Invoice"}
+        cancelHandler={() => navigate(ROUTE_PATHS.ADMIN_INVOICE_MANAGEMENT)}
+        dateField={[
+          {
+            name: "invoiceDate",
+            label: "Invoice Date",
+            rules: [{ required: true, message: "Please select invoice date" }],
+          },
+          {
+            name: "dueDate",
+            label: "Due Date",
+            rules: [{ required: true, message: "Please select due date" }],
+          },
+        ]}
+      ></BillInvoiceForm>
     </div>
   );
 }

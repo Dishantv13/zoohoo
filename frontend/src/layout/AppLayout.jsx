@@ -1,4 +1,4 @@
-import { Layout, Menu, Dropdown, Button, message } from "antd";
+import { Layout, Menu, Dropdown, Button, message, notification } from "antd";
 import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 import { useSelector, useDispatch } from "react-redux";
 import { useLocation } from "react-router-dom";
@@ -21,7 +21,10 @@ export default function AppLayout({ children }) {
     localStorage.clear();
     dispatch(logoutUser());
     dispatch(authApi.util.resetApiState());
-    message.success("Logout Successful");
+    notification.success({
+      message: "Logout Successful",
+      description: "You have successfully logged out.",
+    });
   };
 
   const userMenu = [
@@ -36,6 +39,7 @@ export default function AppLayout({ children }) {
     {
       key: "logout",
       label: "Logout",
+      style: { color: "red" },
       icon: <LogoutOutlined />,
       onClick: handleLogout,
     },

@@ -6,6 +6,7 @@ import { UserOutlined, LockOutlined } from "@ant-design/icons";
 
 import { useLoginMutation } from "../service/authApi";
 import { setCredentials } from "../slice/authSlice";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 
 import "../css/Auth.css";
 
@@ -29,12 +30,19 @@ export default function Login() {
         message: "Login Successful",
         description: "You have successfully logged in.",
       });
-      if(response.data.user.role === "vendor") {
-        navigate("/vendor/inventory");
+      if (response.data.user.role === "vendor") {
+        navigate(ROUTE_PATHS.VENDOR_INVENTORY);
+      } else if (response.data.user.role === "admin") {
+        navigate(ROUTE_PATHS.CUSTOMER_MANAGEMENT);
       } else {
-        navigate("/");
+        navigate(ROUTE_PATHS.HOME);
       }
     } catch (error) {
+      notification.error({
+        message: "Login Failed",
+        description:
+          error?.data?.message || "Something went wrong. Please try again.",
+      });
       console.error("Login failed:", error);
     }
   };

@@ -186,7 +186,7 @@ export default function CustomerManagement() {
         form={form}
         open={isModalVisible}
         isEditMode={isEditMode}
-        loading={isCreating || isUpdating}
+        loading={isLoading}
         onCancel={() => {
           setIsModalVisible(false);
           setIsEditMode(false);

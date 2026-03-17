@@ -3,7 +3,6 @@ import { TAGS } from "../enum/tagType";
 
 export const baseApi = createApi({
   reducerPath: "api",
-
   baseQuery: fetchBaseQuery({
     baseUrl: "/api",
 
@@ -21,5 +20,3 @@ export const baseApi = createApi({
 
   endpoints: () => ({}),
 });
-
-  console.log("Base URL:", import.meta.env.VITE_BACKEND_URL);

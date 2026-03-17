@@ -36,7 +36,8 @@ const TodayRevenueReport = ({ dates }) => {
           <Card title="Today Revenue Graph (1 to 24 hours)">
             <Line
               data={{
-                labels: todayData?.hourlyRevenue?.map((item) => item.hour) || [],
+                labels:
+                  todayData?.hourlyRevenue?.map((item) => item.hour) || [],
                 datasets: [
                   {
                     label: "Revenue",
@@ -74,6 +75,18 @@ const TodayRevenueReport = ({ dates }) => {
                   x: {
                     grid: {
                       display: false,
+                    },
+                    title: {
+                      display: true,
+                      text: "Hour of the Day",
+                      color: "#595959",
+                      font: {
+                        size: 16,
+                        weight: "bold",
+                      },
+                    },
+                    ticks: {
+                      color: "#595959",
                     },
                   },
                   y: {

@@ -10,6 +10,7 @@ import MonthlyRevenueReport from "../components/MonthlyRevenueReport";
 import YearlyRevenueReport from "../components/YearlyRevenueReport";
 import TodayRevenueReport from "../components/TodayRevenueReport";
 import TopCustomerReport from "../components/TopCustomerReport";
+import ReportDashboard from "../components/ReportDashboard";
 import { useGetDashBoardQuery } from "../service/reportApi";
 
 const { Title, Text } = Typography;
@@ -82,85 +83,33 @@ const RevenueReport = () => {
 
   return (
     <div style={{ padding: "8px" }}>
-      <Title level={3} style={{ marginBottom: 4 }}>
-        Revenue Report
-      </Title>
-      <Text type="secondary">Analyze your revenue with customizable reports</Text>
-
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        {reportMenu.map((item) => {
-          const isActive = activeReport === item.key;
-
-          return (
-            <Col xs={24} sm={12} lg={6} key={item.key}>
-              <Card
-                hoverable
-                onClick={() => handleReportChange(item.key)}
-                style={{
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  borderColor: isActive ? "#1677ff" : undefined,
-                  boxShadow: isActive
-                    ? "0 4px 12px rgba(22,119,255,0.15)"
-                    : undefined,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {item.icon}
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{item.title}</div>
-                    <Text type="secondary">{item.description}</Text>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-          );
-        })}
-      </Row>
-
-      <Row style={{ marginBottom: 20, marginTop: 20 }}>
-        <Col>
-          <RangePicker value={dates} onChange={handleDateChange} allowClear />
-        </Col>
-      </Row>
-
-      <Row gutter={16}>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Total Revenue"
-              value={dashboardData?.totalRevenue || 0}
-              precision={2}
-              prefix="₹"
-            />
-          </Card>
-        </Col>
-
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Today Revenue"
-              value={dashboardData?.todayRevenue || 0}
-              precision={2}
-              prefix="₹"
-            />
-          </Card>
-        </Col>
-
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Pending Invoice"
-              value={dashboardData?.pendingInvoices || 0}
-              valueStyle={{ color: "#cf1322" }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Card style={{ marginTop: 16, borderRadius: 10 }}>
-        {reports[activeReport]}
-      </Card>
+      <ReportDashboard
+        title="Revenue Report"
+        subtitle="Analyze your revenue with customizable reports"
+        reportMenu={reportMenu}
+        activeReport={activeReport}
+        handleReportChange={handleReportChange}
+        dates={dates}
+        handleDateChange={handleDateChange}
+        reports={reports}
+        stats={[
+          {
+            title: "Total Revenue",
+            value: dashboardData?.totalRevenue,
+            prefix: "₹",
+          },
+          {
+            title: "Today Revenue",
+            value: dashboardData?.todayRevenue,
+            prefix: "₹",
+          },
+          {
+            title: "Pending Invoice",
+            value: dashboardData?.pendingInvoices,
+            valueStyle: { color: "#cf1322" },
+          },
+        ]}
+      />
     </div>
   );
 };

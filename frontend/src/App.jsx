@@ -12,7 +12,7 @@ import CreateInvoice from "./pages/CreateInvoice";
 import InvoiceList from "./pages/invoiceList";
 
 import CustomerManagement from "./pages/CustomerManagement";
-import AdminCreateInvoice from "./pages/AdminCreateinvoice";
+import AdminCreateInvoice from "./pages/AdminCreateInvoice";
 import AdminInvoiceManagement from "./pages/AdminInvoiceManagement";
 
 import VendorManagement from "./pages/VendorManagement";
@@ -24,15 +24,17 @@ import Report from "./pages/Report";
 import RevenueReport from "./pages/RevenueReport";
 import ExpenseReport from "./pages/ExpenseReport";
 
+import { ROUTE_PATHS } from "./enum/apiUrl";
+
 export default function App() {
     const { isAuthenticated } = useSelector((state) => state.auth);
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/admin/register" element={<AdminRegister />} />
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path={ROUTE_PATHS.LOGIN} element={<Login />} />
+        <Route path={ROUTE_PATHS.REGISTER} element={<Register />} />
+        <Route path={ROUTE_PATHS.ADMIN_REGISTER} element={<AdminRegister />} />
+        <Route path="*" element={<Navigate to={ROUTE_PATHS.LOGIN} />} />
       </Routes>
     );
   }
@@ -41,7 +43,7 @@ export default function App() {
     <AppLayout>
       <Routes>
         <Route
-          path="/"
+          path={ROUTE_PATHS.HOME}
           element={
             <ProtectedRoute>
               <Customers />
@@ -50,7 +52,7 @@ export default function App() {
         />
 
         <Route
-          path="/create-invoice"
+          path={ROUTE_PATHS.CREATE_INVOICE}
           element={
             <ProtectedRoute>
               <CreateInvoice />
@@ -59,7 +61,7 @@ export default function App() {
         />
 
         <Route
-          path="/invoices"
+          path={ROUTE_PATHS.INVOICES}
           element={
             <ProtectedRoute>
               <InvoiceList />
@@ -68,7 +70,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/customers"
+          path={ROUTE_PATHS.CUSTOMER_MANAGEMENT}
           element={
             <ProtectedRoute>
               <CustomerManagement />
@@ -77,7 +79,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/vendors"
+          path={ROUTE_PATHS.VENDOR_MANAGEMENT}
           element={
             <ProtectedRoute>
               <VendorManagement />
@@ -86,7 +88,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/customer/create-invoice"
+          path={ROUTE_PATHS.ADMIN_CREATE_INVOICE}
           element={
             <ProtectedRoute>
               <AdminCreateInvoice />
@@ -95,7 +97,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/vendor/create-bill"
+          path={ROUTE_PATHS.ADMIN_CREATE_BILL}
           element={
             <ProtectedRoute>
               <AdminCreateBill />
@@ -104,7 +106,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/vendor/bills"
+          path={ROUTE_PATHS.ADMIN_VENDOR_BILLS}
           element={
             <ProtectedRoute>
               <AdminBillManagement />
@@ -113,7 +115,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/customer/invoices"
+          path={ROUTE_PATHS.ADMIN_INVOICE_MANAGEMENT}
           element={
             <ProtectedRoute>
               <AdminInvoiceManagement />
@@ -122,7 +124,7 @@ export default function App() {
         />
 
         <Route
-          path="/vendor/inventory"
+          path={ROUTE_PATHS.VENDOR_INVENTORY}
           element={
             <ProtectedRoute>
               <VendorInventory />
@@ -131,7 +133,7 @@ export default function App() {
         />
 
         <Route
-          path="/report"
+          path={ROUTE_PATHS.REPORT}
           element={
             <ProtectedRoute>
               <Report />
@@ -140,7 +142,7 @@ export default function App() {
         />
 
         <Route
-          path="/revenue-report"
+          path={ROUTE_PATHS.REVENUE_REPORT}
           element={
             <ProtectedRoute>
               <RevenueReport />
@@ -149,7 +151,7 @@ export default function App() {
         />
 
         <Route
-          path="/expense-report"
+          path={ROUTE_PATHS.EXPENSE_REPORT}
           element={
             <ProtectedRoute>
               <ExpenseReport />
@@ -157,7 +159,7 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path={ROUTE_PATHS.FALSE} element={<Navigate to={ROUTE_PATHS.HOME} />} />
       </Routes>
     </AppLayout>
   );

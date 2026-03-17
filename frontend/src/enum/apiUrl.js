@@ -77,3 +77,24 @@ export const VENDOR_URL = {
     GET_VENDOR_BILLS: (vendorId) => `/vendors/${vendorId}/bills`,
 };
 
+export const ROUTE_PATHS = {
+    HOME: "/",
+    LOGIN: "/login",
+    REGISTER: "/register",
+    ADMIN_DELETE_CUSTOMER: "/admin/register",
+    CREATE_INVOICE: "/create-invoice",
+    INVOICES: "/invoices",
+    CUSTOMER_MANAGEMENT: "/admin/customers",
+    VENDOR_MANAGEMENT: "/admin/vendors",
+    ADMIN_CREATE_INVOICE: "/admin/customer/create-invoice",
+    ADMIN_CREATE_BILL: "/admin/vendor/create-bill",
+    ADMIN_VENDOR_BILLS: "/admin/vendor/bills",
+    ADMIN_INVOICE_MANAGEMENT: "/admin/customer/invoices",
+    VENDOR_INVENTORY: "/vendor/inventory",
+    REPORT: "/report",
+    REVENUE_REPORT: "/revenue-report",
+    EXPENSE_REPORT: "/expense-report",
+    INVOICE_ID : (invoice) => `/invoices/${invoice._id}`,
+    FALSE : "*",
+}
+

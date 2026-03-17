@@ -2,27 +2,7 @@ import "@ant-design/v5-patch-for-react-19";
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  Form,
-  InputNumber,
-  Button,
-  Card,
-  Space,
-  Table,
-  message,
-  Select,
-  Row,
-  Col,
-  Empty,
-  Tag,
-  Alert,
-  DatePicker,
-} from "antd";
-import {
-  DeleteOutlined,
-  PlusOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { Form, Card, message, Empty, notification } from "antd";
 
 import { useGetVendorsQuery } from "../service/vendorApi";
 import {
@@ -30,7 +10,10 @@ import {
   useUpdateBillMutation,
 } from "../service/billApi";
 import { useGetVendorAvailabilityQuery } from "../service/itemApi";
+import { getInventoryItemColumns } from "../columns/ItemColumn";
+import BillInvoiceForm from "../components/BillInvoiceForm";
 import dayjs from "dayjs";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 
 import "../css/CreateInvoice.css";
 
@@ -131,12 +114,6 @@ export default function AdminCreateBill() {
     });
   };
 
-  const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => {
-      return sum + (Number(item.quantity) || 0) * (Number(item.rate) || 0);
-    }, 0);
-  }, [items]);
-
   const requestedByItem = useMemo(() => {
     const map = new Map();
     items.forEach((item) => {
@@ -203,233 +180,70 @@ export default function AdminCreateBill() {
 
       if (isEditMode && editBillId) {
         await updateBill({ billId: editBillId, data: payload }).unwrap();
-        message.success("Bill updated successfully");
+        notification.success({
+          message: "Bill Updated",
+          description: "Bill updated successfully",
+        });
       } else {
         await createBill(payload).unwrap();
-        message.success("Bill created successfully");
+        notification.success({
+          message: "Bill Created",
+          description: "Bill created successfully",
+        });
       }
 
-      navigate("/admin/vendor/bills");
+      navigate(ROUTE_PATHS.ADMIN_VENDOR_BILLS);
     } catch (error) {
-      message.error(
-        error?.data?.message ||
+      notification.error({
+        message: "Failed to Create Bill",
+        description:
+          error?.data?.message ||
           `Failed to ${isEditMode ? "update" : "create"} bill`,
-      );
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const itemColumns = [
-    {
-      title: "Item",
-      dataIndex: "itemId",
-      key: "itemId",
-      render: (value, _, index) => (
-        <Select
-          value={value || undefined}
-          placeholder="Select item"
-          loading={availabilityLoading}
-          showSearch
-          style={{ width: "100%" }}
-          optionFilterProp="label"
-          onChange={(val) => updateItem(index, "itemId", val)}
-          options={availableItems.map((item) => ({
-            value: item._id,
-            label: `${item.name} (Stock: ${item.quantity})`,
-            disabled: Number(item.quantity) <= 0,
-          }))}
-        />
-      ),
-    },
-    {
-      title: "Available",
-      key: "available",
-      width: 120,
-      render: (_, record) => {
-        const available = Number(
-          inventoryById.get(record.itemId)?.quantity || 0,
-        );
-        return <Tag color={available > 0 ? "green" : "red"}>{available}</Tag>;
-      },
-    },
-    {
-      title: "Quantity",
-      dataIndex: "quantity",
-      key: "quantity",
-      width: 140,
-      render: (value, _, index) => (
-        <InputNumber
-          min={1}
-          value={value}
-          onChange={(val) => updateItem(index, "quantity", val || 1)}
-          style={{ width: "100%" }}
-        />
-      ),
-    },
-    {
-      title: "Rate",
-      dataIndex: "rate",
-      key: "rate",
-      width: 180,
-      render: (value, _, index) => (
-        <InputNumber
-          min={0}
-          value={value}
-          onChange={(val) => updateItem(index, "rate", val || 0)}
-          style={{ width: "100%" }}
-          formatter={(val) => `INR ${val}`}
-          parser={(val) => String(val).replace(/INR\s?|,/g, "")}
-        />
-      ),
-    },
-    {
-      title: "Amount",
-      key: "amount",
-      width: 180,
-      render: (_, record) => {
-        const qty = Number(record.quantity) || 0;
-        const rate = Number(record.rate) || 0;
-        return <Tag color="blue">{currencyFormatter.format(qty * rate)}</Tag>;
-      },
-    },
-    {
-      title: "Action",
-      key: "action",
-      width: 100,
-      render: (_, __, index) => (
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => removeItem(index)}
-          disabled={items.length <= 1}
-        />
-      ),
-    },
-  ];
+  const itemColumns = getInventoryItemColumns({
+    availableItems,
+    availabilityLoading,
+    inventoryById,
+    updateItem,
+    removeItem,
+    items,
+    currencyFormatter,
+  });
 
   return (
     <div className="create-invoice-container">
-      <Card title={isEditMode ? "Edit Vendor Bill" : "Create Bill for Vendor"}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-          initialValues={{ billDate: dayjs() }}
-        >
-          <Row gutter={16}>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item label="Select Vendor" required>
-                <Select
-                  placeholder="Search and select vendor"
-                  value={selectedVendor}
-                  prefix={<SearchOutlined />}
-                  onChange={(value) => {
-                    setSelectedVendor(value);
-                    setItems([{ itemId: "", quantity: 1, rate: 0 }]);
-                  }}
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  options={vendorsList.map((vendor) => ({
-                    label: `${vendor.name} (${vendor.email})`,
-                    value: vendor._id,
-                  }))}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item
-                label="Bill Date"
-                name="billDate"
-                rules={[{ required: true, message: "please select bill date" }]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item
-                label="Due Date"
-                name="dueDate"
-                rules={[{ required: true, message: "please select due date" }]}
-              >
-                <DatePicker
-                  style={{ width: "100%" }}
-                  disableDate={(current) =>
-                    current && current < form.getFieldValue("billDate")
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col
-              xs={24}
-              sm={12}
-              lg={6}
-              style={{ display: "flex", alignItems: "center" }}
-            >
-              <Space>
-                <span style={{ color: "#3f3535" }}>Subtotal</span>
-                <Tag color="geekblue" style={{ fontSize: 16 }}>
-                  {currencyFormatter.format(subtotal)}
-                </Tag>
-              </Space>
-            </Col>
-          </Row>
-
-          {stockIssues.length > 0 && (
-            <Alert
-              type="error"
-              showIcon
-              style={{ marginBottom: 12 }}
-              message="Some selected quantities exceed availability"
-              description={stockIssues
-                .map(
-                  (issue) =>
-                    `${issue.name}: requested ${issue.requestedQty}, available ${issue.availableQty}`,
-                )
-                .join(" | ")}
-            />
-          )}
-
-          <Table
-            rowKey="itemId"
-            dataSource={items}
-            columns={itemColumns}
-            pagination={false}
-            scroll={{ x: true }}
-          />
-
-          <Space style={{ marginTop: 16 }}>
-            <Button
-              icon={<PlusOutlined />}
-              onClick={addItem}
-              disabled={!selectedVendor}
-            >
-              Add Item
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              disabled={!selectedVendor || stockIssues.length > 0}
-            >
-              {isEditMode ? "Update Bill" : "Create Bill"}
-            </Button>
-            <Button onClick={() => navigate("/admin/vendor/bills")}>
-              Cancel
-            </Button>
-          </Space>
-
-          <div style={{ marginTop: 16, color: "#8c8c8c", fontSize: 12 }}>
-            Bill creation is blocked when requested quantity is greater than
-            vendor stock.
-          </div>
-        </Form>
-      </Card>
+      <BillInvoiceForm
+        title={isEditMode ? "Edit Vendor Bill" : "Create Bill"}
+        form={form}
+        onFinish={onFinish}
+        partyLabel="Vendor"
+        partyList={vendorsList}
+        selectedParty={selectedVendor}
+        setSelectedParty={setSelectedVendor}
+        items={items}
+        itemColumns={itemColumns}
+        addItem={addItem}
+        loading={loading}
+        submitText={isEditMode ? "Update Bill" : "Create Bill"}
+        cancelHandler={() => navigate(ROUTE_PATHS.ADMIN_VENDOR_BILLS)}
+        dateField={[
+          {
+            name: "billDate",
+            label: "Bill Date",
+            rules: [{ required: true, message: "Please select bill date" }],
+          },
+          {
+            name: "dueDate",
+            label: "Due Date",
+            rules: [{ required: true, message: "Please select due date" }],
+          },
+        ]}
+      ></BillInvoiceForm>
     </div>
   );
 }

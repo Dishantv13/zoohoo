@@ -101,9 +101,9 @@ export default function ManagementTableCard({
           loading={isLoading}
           onChange={handleTableChange}
           pagination={{
-            current: paginationData.current,
-            pageSize: paginationData.pageSize,
-            total: paginationData.total,
+            current: paginationData?.current,
+            pageSize: paginationData?.pageSize,
+            total: paginationData?.total,
             showQuickJumper: true,
             showSizeChanger: true,
             pageSizeOptions: [5, 10, 20, 50],

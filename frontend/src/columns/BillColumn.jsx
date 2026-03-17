@@ -8,6 +8,7 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 
 export const getBillColumns = ({
   statusColors,
@@ -203,7 +204,7 @@ export const getBillColumns = ({
           <Button
             icon={<EditOutlined />}
             onClick={() =>
-              navigate("/admin/vendor/create-bill", {
+              navigate(ROUTE_PATHS.ADMIN_CREATE_BILL, {
                 state: { bill: record },
               })
             }

@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 import {
   useGetInvoiceByIdQuery,
   useUpdateInvoiceMutation,
@@ -132,7 +133,7 @@ export default function CreateInvoice() {
       }
 
       form.resetFields();
-      navigate("/invoices");
+      navigate(ROUTE_PATHS.INVOICES);
     } catch (error) {
       notification.error({
         message: "Failed",

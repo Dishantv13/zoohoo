@@ -17,7 +17,7 @@ import { useGetPaymentHistoryQuery } from "../service/paymentApi";
 import { useExportInvoiceMutation } from "../service/invoiceApi";
 import { useDownloadInvoiceMutation } from "../service/invoiceApi";
 import { InvoiceListColumn } from "../columns/InvoiceListColumn";
-
+import { ROUTE_PATHS } from "../enum/apiUrl";
 import "../css/InvoiceManagement.css";
 
 export default function InvoiceList() {
@@ -34,7 +34,7 @@ export default function InvoiceList() {
   const currentUser = useSelector((state) => state.auth.user);
   const currentUserId = currentUser?._id || currentUser?.id || null;
 
-  const { data, isLoading, refetch } = useGetInvoicesQuery({
+  const { data, isLoading, isFetching, refetch } = useGetInvoicesQuery({
     page,
     limit: pageSize,
     status: statusFilter,
@@ -43,23 +43,25 @@ export default function InvoiceList() {
 
   const invoicesData = data?.data?.data || [];
 
+  const pagination = data?.data?.pagination || {};
   const paginationData = {
-    current: data?.data?.pagination?.page || 1,
-    pageSize: data?.data?.pagination?.limit || 10,
-    total: data?.data?.pagination?.totalItems || 0,
+    current: pagination.page || 1,
+    pageSize: pagination.limit || 10,
+    total: pagination.totalItems || 0,
   };
 
+  const summary  = data?.data?.summary || {};
   const summaryData = {
-    totalInvoices: data?.data?.summary?.totalInvoices || 0,
-    totalAmount: data?.data?.summary?.totalAmount || 0,
-    paidAmount: data?.data?.summary?.paidAmount || 0,
-    pendingInvoices: data?.data?.summary?.pendingInvoices || 0,
-    pendingAmount: data?.data?.summary?.pendingAmount || 0,
-    overdueCount: data?.data?.summary?.overdueCount || 0,
+    totalInvoices: summary.totalInvoices || 0,
+    totalAmount: summary.totalAmount || 0,
+    paidAmount: summary.paidAmount || 0,
+    pendingInvoices: summary.pendingInvoices || 0,
+    pendingAmount: summary.pendingAmount || 0,
+    overdueCount: summary.overdueCount || 0,
   };
 
   const handleEdit = (invoice) => {
-    navigate(`/invoices/${invoice._id}`);
+    navigate(ROUTE_PATHS.INVOICE_ID(invoice));
   };
 
   const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
@@ -199,7 +201,7 @@ export default function InvoiceList() {
         type="invoice"
         dataSource={invoicesData}
         pagination={paginationData}
-        loading={isLoading}
+        isLoading={isLoading || isFetching}
         columns={columns}
         onChange={handleTableChange}
         onExport={handleExportInvoices}

@@ -2,7 +2,6 @@ import "@ant-design/v5-patch-for-react-19";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Form,
-  Input,
   Button,
   Card,
   Spin,
@@ -10,22 +9,9 @@ import {
   Tabs,
   Divider,
 } from "antd";
-import {
-  UserOutlined,
-  LockOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  EnvironmentOutlined,
-  HomeOutlined,
-  GlobalOutlined,
-  FileTextOutlined,
-} from "@ant-design/icons";
-import {
-  phoneValidator,
-  gstValidator,
-  panValidator,
-} from "../validation/validation";
 import { useAdminRegisterMutation } from "../service/authApi";
+import { AdminFields, CompanyFields } from "../components/AdminField";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 import "../css/Auth.css";
 
 export default function AdminRegister() {
@@ -42,7 +28,7 @@ export default function AdminRegister() {
           response?.message ||
           "Your company and admin account have been created successfully",
       });
-      navigate("/login");
+      navigate(ROUTE_PATHS.LOGIN);
     } catch (error) {
       notification.error({
         message: "Registration Failed",
@@ -50,194 +36,6 @@ export default function AdminRegister() {
       });
     }
   };
-
-  const adminFields = (
-    <>
-      <Form.Item
-        name="adminName"
-        label="Admin Full Name"
-        rules={[{ required: true, message: "Please enter admin name" }]}
-      >
-        <Input
-          prefix={<UserOutlined />}
-          placeholder="Enter your full name"
-          size="large"
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="adminEmail"
-        label="Admin Email"
-        rules={[
-          { required: true, message: "Please enter admin email" },
-          { type: "email", message: "Invalid email format" },
-        ]}
-      >
-        <Input
-          prefix={<MailOutlined />}
-          placeholder="Enter your email"
-          size="large"
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="adminPassword"
-        label="Password"
-        rules={[
-          { required: true, message: "Please enter password" },
-          { min: 6, message: "Password must be at least 6 characters" },
-        ]}
-      >
-        <Input.Password
-          prefix={<LockOutlined />}
-          placeholder="Enter password"
-          size="large"
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="adminPhone"
-        label="Admin Phone Number"
-        rules={[{ required: true }, { validator: phoneValidator }]}
-      >
-        <Input
-          prefix={<PhoneOutlined />}
-          maxLength={10}
-          onInput={(e) => {
-            e.target.value = e.target.value.replace(/[^0-9]/g, "");
-          }}
-          placeholder="Enter your phone number"
-          size="large"
-        />
-      </Form.Item>
-    </>
-  );
-
-  const companyFields = (
-    <>
-      <Form.Item
-        name="companyName"
-        label="Company Name"
-        rules={[{ required: true, message: "Please enter company name" }]}
-      >
-        <Input
-          prefix={<HomeOutlined />}
-          placeholder="Enter company name"
-          size="large"
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="companyEmail"
-        label="Company Email"
-        rules={[
-          { required: true, message: "Please enter company email" },
-          { type: "email", message: "Invalid email format" },
-        ]}
-      >
-        <Input
-          prefix={<MailOutlined />}
-          placeholder="Enter company email"
-          size="large"
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="companyPhone"
-        label="Company Phone"
-        rules={[
-          { required: true, message: "Please enter phone number" },
-          { validator: phoneValidator },
-        ]}
-      >
-        <Input
-          prefix={<PhoneOutlined />}
-          maxLength={10}
-          onInput={(e) => {
-            e.target.value = e.target.value.replace(/[^0-9]/g, "");
-          }}
-          placeholder="Enter company phone"
-          size="large"
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="companyAddress"
-        label="Company Address"
-        rules={[{ required: true, message: "Please enter company address" }]}
-      >
-        <Input
-          prefix={<EnvironmentOutlined />}
-          placeholder="Enter company address"
-          size="large"
-        />
-      </Form.Item>
-
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}
-      >
-        <Form.Item name="city" label="City" rules={[{ required: false }]}>
-          <Input placeholder="Enter city" size="large" />
-        </Form.Item>
-
-        <Form.Item name="state" label="State" rules={[{ required: false }]}>
-          <Input placeholder="Enter state" size="large" />
-        </Form.Item>
-
-        <Form.Item
-          name="zipcode"
-          label="Zip Code"
-          rules={[{ required: false }]}
-        >
-          <Input placeholder="Enter zip code" type="number" size="large" />
-        </Form.Item>
-
-        <Form.Item name="country" label="Country" rules={[{ required: false }]}>
-          <Input placeholder="Enter country" size="large" />
-        </Form.Item>
-      </div>
-
-      <Form.Item name="website" label="Website" rules={[{ required: false }]}>
-        <Input
-          prefix={<GlobalOutlined />}
-          placeholder="Enter company website"
-          size="large"
-        />
-      </Form.Item>
-
-      <Form.Item name="industry" label="Industry" rules={[{ required: false }]}>
-        <Input placeholder="Enter industry type" size="large" />
-      </Form.Item>
-
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}
-      >
-        <Form.Item
-          name="gstNumber"
-          label="GST Number"
-          rules={[{ validator: gstValidator }]}
-        >
-          <Input
-            prefix={<FileTextOutlined />}
-            placeholder="Enter GST number"
-            size="large"
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="panNumber"
-          label="PAN Number"
-          rules={[{ validator: panValidator }]}
-        >
-          <Input
-            prefix={<FileTextOutlined />}
-            placeholder="Enter PAN number"
-            size="large"
-          />
-        </Form.Item>
-      </div>
-    </>
-  );
 
   return (
     <div className="auth-container">
@@ -257,12 +55,12 @@ export default function AdminRegister() {
                 {
                   key: "admin",
                   label: "Admin Details",
-                  children: adminFields,
+                  children: <AdminFields />,
                 },
                 {
                   key: "company",
                   label: "Company Details",
-                  children: companyFields,
+                  children: <CompanyFields />,
                 },
               ]}
             />

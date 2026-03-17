@@ -6,6 +6,7 @@ import {
   AppstoreOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import { ROUTE_PATHS } from "../enum/apiUrl";
 
 export const menuConfig = [
   {
@@ -17,17 +18,17 @@ export const menuConfig = [
       {
         key: "customer-management",
         label: "Customer Management",
-        path: "/admin/customers",
+        path: ROUTE_PATHS.CUSTOMER_MANAGEMENT,
       },
       {
         key: "customer-create-invoice",
         label: "Create Invoice",
-        path: "/admin/customer/create-invoice",
+        path: ROUTE_PATHS.ADMIN_CREATE_INVOICE,
       },
       {
         key: "customer-invoice-management",
         label: "Invoice Management",
-        path: "/admin/customer/invoices",
+        path: ROUTE_PATHS.ADMIN_INVOICE_MANAGEMENT,
       },
     ],
   },
@@ -40,17 +41,17 @@ export const menuConfig = [
       {
         key: "vendor-management",
         label: "Vendor Management",
-        path: "/admin/vendors",
+        path: ROUTE_PATHS.VENDOR_MANAGEMENT,
       },
       {
         key: "vendor-create-bill",
         label: "Create Bill",
-        path: "/admin/vendor/create-bill",
+        path: ROUTE_PATHS.ADMIN_CREATE_BILL,
       },
       {
         key: "vendor-bill-management",
         label: "Bill Management",
-        path: "/admin/vendor/bills",
+        path: ROUTE_PATHS.ADMIN_VENDOR_BILLS,
       },
     ],
   },
@@ -59,48 +60,48 @@ export const menuConfig = [
     icon: <UnorderedListOutlined />,
     label: "Report",
     roles: ["admin"],
-    path: "/report",
+    path: ROUTE_PATHS.REPORT,
   },
   {
     key: "revenue-report",
     icon: <FileAddOutlined />,
     label: "Revenue Report",
     roles: ["admin"],
-    path: "/revenue-report",
+    path: ROUTE_PATHS.REVENUE_REPORT,
   },
   {
     key: "expense-report",
     icon: <FileAddOutlined />,
     label: "Expense Report",
     roles: ["admin"],
-    path: "/expense-report",
+    path: ROUTE_PATHS.EXPENSE_REPORT,
   },
   {
     key: "vendor-inventory",
     icon: <AppstoreOutlined />,
     label: "My Inventory",
     roles: ["vendor"],
-    path: "/vendor/inventory",
+    path: ROUTE_PATHS.VENDOR_INVENTORY,
   },
   {
     key: "customer-profile",
     icon: <UserOutlined />,
     label: "Customer Profile",
     roles: ["customer"],
-    path: "/customers",
+    path: ROUTE_PATHS.HOME,
   },
   {
     key: "create-invoice",
     icon: <FileAddOutlined />,
     label: "Create Invoice",
     roles: ["customer"],
-    path: "/create-invoice",
+    path: ROUTE_PATHS.CREATE_INVOICE,
   },
   {
     key: "invoice-list",
     icon: <UnorderedListOutlined />,
     label: "Invoices",
     roles: ["customer"],
-    path: "/invoices",
+    path: ROUTE_PATHS.INVOICES,
   },
 ];
