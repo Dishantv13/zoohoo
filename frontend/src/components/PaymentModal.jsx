@@ -249,7 +249,6 @@ const UniversalPaymentModal = ({
         />
       ) : (
         <>
-          {/* Summary */}
           <div
             style={{
               background: "#f5f7fa",

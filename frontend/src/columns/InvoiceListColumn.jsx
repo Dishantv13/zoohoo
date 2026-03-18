@@ -1,4 +1,4 @@
-import { Tag, Flex, Space, Button, Tooltip, Popconfirm } from "antd";
+import { Tag, Flex, Space, Button, Popconfirm } from "antd";
 import {
   WarningOutlined,
   EyeOutlined,

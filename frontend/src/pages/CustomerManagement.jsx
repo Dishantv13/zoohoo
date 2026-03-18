@@ -1,12 +1,7 @@
 import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import {
-  Form,
-  Card,
-  notification,
-  Empty,
-} from "antd";
+import { Form, Card, notification, Empty } from "antd";
 import PartyDetailDrawer from "../components/PartyDetailDrawer";
 import PartyManagementCard from "../components/PartyManagementCard";
 import PartyFormModal from "../components/PartyFormModel";
@@ -53,6 +48,9 @@ export default function CustomerManagement() {
     search: searchTerm,
     status: statusFilter,
   });
+  const [updateCustomer] = useAdminUpdateCustomerMutation();
+  const [deleteCustomer] = useAdminDeleteCustomerMutation();
+  const [createCustomer] = useAdminCreateCustomerMutation();
 
   const customersList = data?.data?.customers || [];
 
@@ -72,9 +70,6 @@ export default function CustomerManagement() {
     setPageSize(paginationInfo.pageSize);
   };
 
-  const [updateCustomer] = useAdminUpdateCustomerMutation();
-  const [deleteCustomer] = useAdminDeleteCustomerMutation();
-  const [createCustomer] = useAdminCreateCustomerMutation();
   const handleSubmit = async (values) => {
     try {
       if (isEditMode) {

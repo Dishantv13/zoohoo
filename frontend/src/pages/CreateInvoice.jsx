@@ -1,17 +1,5 @@
 import "@ant-design/v5-patch-for-react-19";
-import {
-  Form,
-  Input,
-  Button,
-  Select,
-  DatePicker,
-  InputNumber,
-  notification,
-  Spin,
-  Row,
-  Col,
-} from "antd";
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { Form, notification, Spin } from "antd";
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -22,6 +10,7 @@ import {
   useUpdateInvoiceMutation,
   useCreateInvoiceMutation,
 } from "../service/invoiceApi";
+import InvoiceForm from "../components/InvoiceForm";
 
 export default function CreateInvoice() {
   const [form] = Form.useForm();
@@ -30,6 +19,11 @@ export default function CreateInvoice() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = !!id;
+  const [updateInvoice] = useUpdateInvoiceMutation();
+  const [createInvoice] = useCreateInvoiceMutation();
+  const { data: invoiceResponse, isLoading } = useGetInvoiceByIdQuery(id, {
+    skip: !isEditing,
+  });
 
   const calculateTotals = (values) => {
     if (!values.items && !values.tax && !values.discount) return;
@@ -57,10 +51,6 @@ export default function CreateInvoice() {
       totalAmount: Number(totalAmount.toFixed(2)),
     });
   };
-
-  const { data: invoiceResponse, isLoading } = useGetInvoiceByIdQuery(id, {
-    skip: !isEditing,
-  });
 
   const invoice = invoiceResponse?.data;
 
@@ -94,9 +84,6 @@ export default function CreateInvoice() {
       });
     }
   }, [currentUserId]);
-
-  const [updateInvoice] = useUpdateInvoiceMutation();
-  const [createInvoice] = useCreateInvoiceMutation();
 
   const onFinish = async (values) => {
     try {
@@ -145,202 +132,12 @@ export default function CreateInvoice() {
   if (isLoading) return <Spin />;
 
   return (
-    <Form
+    <InvoiceForm
       form={form}
-      layout="vertical"
       onFinish={onFinish}
-      onValuesChange={(_, allValues) => calculateTotals(allValues)}
-    >
-      <Form.Item name="customer" hidden>
-        <Input />
-      </Form.Item>
-
-      <Form.Item label="Customer">
-        <Input value={currentUser?.name || ""} disabled />
-      </Form.Item>
-
-      {isEditing && (
-        <Form.Item name="invoiceNumber" label="Invoice Number">
-          <Input value={form.getFieldValue("invoiceNumber") || ""} disabled />
-        </Form.Item>
-      )}
-
-      <Row gutter={20}>
-        <Col xs={24} sm={8}>
-          <Form.Item
-            name="invoiceDate"
-            label="Invoice Date"
-            rules={[{ required: true, message: "Please select invoice date" }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Form.Item
-            name="dueDate"
-            label="Due Date"
-            rules={[{ required: true, message: "Please select due date" }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-      </Row>
-
-      <Row gutter={20}>
-        <Col xs={24} sm={4}>
-          <Form.Item name="status" label="Status" initialValue="PENDING">
-            <Select placeholder="Select status" disabled>
-              <Select.Option value="PENDING">Pending</Select.Option>
-            </Select>
-          </Form.Item>
-        </Col>
-
-        <Col xs={24} sm={4}>
-          <Form.Item
-            name="discount"
-            label="Discount (%)"
-            initialValue={0}
-            rules={[{ type: "number", min: 0, max: 100 }]}
-          >
-            <InputNumber min={0} max={100} style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-
-        <Col xs={24} sm={4}>
-          <Form.Item
-            name="tax"
-            label="Tax Rate (%)"
-            initialValue={18}
-            rules={[{ type: "number", min: 0, max: 100 }]}
-          >
-            <InputNumber min={0} max={100} style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-      </Row>
-
-      <Form.List name="items" initialValue={[{ quantity: 1, rate: 0 }]}>
-        {(fields, { add, remove }) => (
-          <>
-            {fields.map(({ key, name }) => (
-              <Row
-                key={key}
-                gutter={20}
-                align="middle"
-                style={{ marginBottom: 16 }}
-              >
-                <Col span={5}>
-                  <Form.Item
-                    name={[name, "name"]}
-                    label="Item Name"
-                    rules={[
-                      { required: true, message: "Item name is required" },
-                    ]}
-                  >
-                    <Input
-                      placeholder="Enter item name"
-                      style={{ width: "100%" }}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={6}>
-                  <Form.Item
-                    name={[name, "quantity"]}
-                    label="Quantity"
-                    rules={[
-                      { required: true, message: "Quantity is required" },
-                    ]}
-                  >
-                    <InputNumber
-                      placeholder="Quantity"
-                      min={1}
-                      style={{ width: "100%" }}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={6}>
-                  <Form.Item
-                    name={[name, "rate"]}
-                    label="Rate"
-                    rules={[{ required: true, message: "Rate is required" }]}
-                  >
-                    <InputNumber
-                      placeholder="Rate"
-                      min={0}
-                      style={{ width: "100%" }}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={2} style={{ paddingTop: 30 }}>
-                  {fields.length > 1 && (
-                    <MinusCircleOutlined
-                      onClick={() => remove(name)}
-                      style={{ cursor: "pointer", color: "red" }}
-                    />
-                  )}
-                </Col>
-              </Row>
-            ))}
-
-            <Button
-              type="dashed"
-              onClick={() => add()}
-              icon={<PlusOutlined />}
-              style={{ marginTop: 16, width: "100%" }}
-            >
-              + Add Item
-            </Button>
-          </>
-        )}
-      </Form.List>
-
-      <Row gutter={25} style={{ marginTop: 25 }}>
-        <Col xs={24} sm={4}>
-          <Form.Item name="subTotal" label="Sub Total">
-            <InputNumber disabled style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-
-        <Col xs={24} sm={4}>
-          <Form.Item name="discountAmount" label="Discount (₹)">
-            <InputNumber disabled style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-
-        <Col xs={24} sm={4}>
-          <Form.Item name="amountAfterDiscount" label="After Discount (₹)">
-            <InputNumber disabled style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-
-        <Col xs={24} sm={4}>
-          <Form.Item name="taxAmount" label="Tax Amount (₹)">
-            <InputNumber disabled style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-
-        <Col xs={24} sm={4}>
-          <Form.Item name="totalAmount" label="Total Amount (₹)">
-            <InputNumber
-              disabled
-              style={{ width: "100%", fontWeight: "bold" }}
-            />
-          </Form.Item>
-        </Col>
-      </Row>
-
-      <Form.Item style={{ marginTop: 24 }}>
-        <Button
-          type="primary"
-          htmlType="submit"
-          size="large"
-          style={{ width: "100%" }}
-        >
-          {isEditing ? "Update Invoice" : "Create Invoice"}
-        </Button>
-      </Form.Item>
-    </Form>
+      calculateTotals={calculateTotals}
+      currentUser={currentUser}
+      isEditing={isEditing}
+    />
   );
 }

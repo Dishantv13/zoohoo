@@ -37,6 +37,8 @@ export default function AdminCreateInvoice() {
   const { data: customersData, error: customersError } = useGetCustomersQuery({
     limit: 1000,
   });
+  const [createInvoice] = useCreateInvoiceMutation();
+  const [updateInvoice] = useUpdateInvoiceMutation();
 
   const customersList = customersData?.data?.customers || customersData || [];
 
@@ -71,9 +73,6 @@ export default function AdminCreateInvoice() {
     newItems[index][field] = value;
     setItems(newItems);
   };
-
-  const [createInvoice] = useCreateInvoiceMutation();
-  const [updateInvoice] = useUpdateInvoiceMutation();
 
   const onFinish = async (values) => {
     if (!selectedCustomer) {

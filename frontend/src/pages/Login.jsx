@@ -43,7 +43,6 @@ export default function Login() {
         description:
           error?.data?.message || "Something went wrong. Please try again.",
       });
-      console.error("Login failed:", error);
     }
   };
 

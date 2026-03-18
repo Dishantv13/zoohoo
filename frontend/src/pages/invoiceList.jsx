@@ -28,18 +28,26 @@ export default function InvoiceList() {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [pageSize, setPageSize] = useState(10);
+
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
-
-  const currentUser = useSelector((state) => state.auth.user);
-  const currentUserId = currentUser?._id || currentUser?.id || null;
-
   const { data, isLoading, isFetching, refetch } = useGetInvoicesQuery({
     page,
     limit: pageSize,
     status: statusFilter,
     customer: currentUserId,
   });
+  const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
+    selectedInvoice?._id,
+    { skip: !selectedInvoice?._id },
+  );
+  const [exportInvoices, { isLoading: exportLoading }] =
+    useExportInvoiceMutation();
+  const [downloadInvoice, { isLoading: downloadLoading }] =
+    useDownloadInvoiceMutation();
+
+  const currentUser = useSelector((state) => state.auth.user);
+  const currentUserId = currentUser?._id || currentUser?.id || null;
 
   const invoicesData = data?.data?.data || [];
 
@@ -50,7 +58,7 @@ export default function InvoiceList() {
     total: pagination.totalItems || 0,
   };
 
-  const summary  = data?.data?.summary || {};
+  const summary = data?.data?.summary || {};
   const summaryData = {
     totalInvoices: summary.totalInvoices || 0,
     totalAmount: summary.totalAmount || 0,
@@ -63,11 +71,6 @@ export default function InvoiceList() {
   const handleEdit = (invoice) => {
     navigate(ROUTE_PATHS.INVOICE_ID(invoice));
   };
-
-  const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
-    selectedInvoice?._id,
-    { skip: !selectedInvoice?._id },
-  );
 
   const paymentHistory = paymentHistoryData?.data?.paymentHistory || [];
 
@@ -88,8 +91,6 @@ export default function InvoiceList() {
     setPaymentModalVisible(true);
   };
 
-  const [exportInvoices, { isLoading: exportLoading }] =
-    useExportInvoiceMutation();
   const handleExportInvoices = async () => {
     try {
       const params = {};
@@ -122,8 +123,6 @@ export default function InvoiceList() {
     }
   };
 
-  const [downloadInvoice, { isLoading: downloadLoading }] =
-    useDownloadInvoiceMutation();
   const handleDownLoad = async (invoiceId, invoiceNumber) => {
     const blob = await downloadInvoice(invoiceId).unwrap();
 

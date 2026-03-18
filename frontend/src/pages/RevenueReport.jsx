@@ -1,20 +1,17 @@
 import { useState } from "react";
-import { Card, Col, Row, Typography, DatePicker, Spin, Statistic } from "antd";
+import { Spin } from "antd";
 import {
   BarChartOutlined,
   CalendarOutlined,
   RiseOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import MonthlyRevenueReport from "../components/MonthlyRevenueReport";
-import YearlyRevenueReport from "../components/YearlyRevenueReport";
-import TodayRevenueReport from "../components/TodayRevenueReport";
-import TopCustomerReport from "../components/TopCustomerReport";
-import ReportDashboard from "../components/ReportDashboard";
+import ReportDashboard from "../chartModel/ReportDashboard";
+import MonthlyRevenueReport from "../chartModel/MonthlyRevenueModel";
+import YearlyRevenueReport from "../chartModel/YearlyRevenueModel";
+import TodayRevenueReport from "../chartModel/TodayRevenueModel";
+import TopCustomerReport from "../chartModel/TopCustomerModel";
 import { useGetDashBoardQuery } from "../service/reportApi";
-
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 
 const RevenueReport = () => {
   const [activeReport, setActiveReport] = useState("");

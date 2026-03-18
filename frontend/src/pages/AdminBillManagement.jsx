@@ -61,8 +61,13 @@ export default function AdminBillManagement() {
     limit,
   });
   const { data: billStatsData } = useGetBillsStatsQuery();
-
   const [deleteBill, { isLoading: isDeleting }] = useDeleteBillMutation();
+  const { data: paymentHistoryData } = useGetBillPaymentHistoryQuery(
+    selectedBill?._id,
+    {
+      skip: !selectedBill?._id,
+    },
+  );
 
   const vendorsList = vendorsData?.data?.vendors || [];
   const bills = billsData?.data?.bills || [];
@@ -80,13 +85,6 @@ export default function AdminBillManagement() {
     PENDING: "orange",
     PARTIALLY_PAID: "gold",
   };
-
-  const { data: paymentHistoryData } = useGetBillPaymentHistoryQuery(
-    selectedBill?._id,
-    {
-      skip: !selectedBill?._id,
-    },
-  );
 
   const paymentHistory = paymentHistoryData?.data?.paymentHistory || [];
 

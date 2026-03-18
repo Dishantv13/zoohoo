@@ -312,7 +312,10 @@ export const CHAT_ERRORS = {
     new ApiError(HTTP_STATUS.BAD_REQUEST, "Invalid user IDs"),
 
   SELF_CONVERSATION_NOT_ALLOWED: () =>
-    new ApiError(HTTP_STATUS.BAD_REQUEST, "Cannot create conversation with yourself"),
+    new ApiError(
+      HTTP_STATUS.BAD_REQUEST,
+      "Cannot create conversation with yourself",
+    ),
 
   USERS_NOT_FOUND: () =>
     new ApiError(HTTP_STATUS.BAD_REQUEST, "One or both users do not exist"),
@@ -324,12 +327,17 @@ export const CHAT_ERRORS = {
     new ApiError(HTTP_STATUS.BAD_REQUEST, "Message text cannot be empty"),
 
   MESSAGE_TOO_LONG: () =>
-    new ApiError(HTTP_STATUS.BAD_REQUEST, "Message exceeds maximum length of 5000 characters"),
+    new ApiError(
+      HTTP_STATUS.BAD_REQUEST,
+      "Message exceeds maximum length of 5000 characters",
+    ),
 
   UNAUTHORIZED_MESSAGE: () =>
-    new ApiError(HTTP_STATUS.FORBIDDEN, "Not authorized to send messages in this conversation"),
+    new ApiError(
+      HTTP_STATUS.FORBIDDEN,
+      "Not authorized to send messages in this conversation",
+    ),
 
   INVALID_MESSAGE_IDS: () =>
     new ApiError(HTTP_STATUS.BAD_REQUEST, "Invalid message IDs"),
 };
-

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Spin } from "antd";
 import { useGetDashBoardQuery } from "../service/reportApi";
-import ReportDashboard from "../components/ReportDashboard";
+import ReportDashboard from "../chartModel/ReportDashboard";
 
 const Report = () => {
   const [date, setDate] = useState(null);

@@ -1,12 +1,7 @@
 import "@ant-design/v5-patch-for-react-19";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import {
-  Form,
-  Card,
-  notification,
-  Empty,
-} from "antd";
+import { Form, Card, notification, Empty } from "antd";
 
 import PartyDetailDrawer from "../components/PartyDetailDrawer";
 import PartyManagementCard from "../components/PartyManagementCard";
@@ -55,6 +50,10 @@ export default function VendorManagement() {
   const [createVendor, { isLoading: isCreating }] = useCreateVendorMutation();
   const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
   const [deleteVendor] = useDeleteVendorMutation();
+  const { data: statsData, isLoading: statsLoading } = useGetVendorStatsQuery(
+    selectedVendor?._id,
+    { skip: !selectedVendor?._id },
+  );
 
   const vendorsList = data?.data.vendors || [];
   const filteredVendors = useMemo(() => {
@@ -74,11 +73,6 @@ export default function VendorManagement() {
     pageSize: pagination.limit || 10,
     total: pagination.totalVendors || 0,
   };
-
-  const { data: statsData, isLoading: statsLoading } = useGetVendorStatsQuery(
-    selectedVendor?._id,
-    { skip: !selectedVendor?._id },
-  );
 
   const vendorStats = statsData?.data?.statistics || {};
 

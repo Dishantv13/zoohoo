@@ -1,5 +1,4 @@
 import rateLimit from "express-rate-limit";
-import ApiError from "../util/apiError.js";
 import { RATELIMIT_ERRORS } from "../util/errorMessage.js";
 
 const authRateLimiter = rateLimit({

@@ -52,14 +52,21 @@ export default function AdminInvoiceManagement() {
     limit: 1000,
   });
 
-  const customersList = customersData?.data?.customers || customersData || [];
-
   const { data, refetch } = useGetAdminAllInvoicesQuery({
     page,
     limit: pageSize,
     status: statusFilters.status,
     customerId: selectedCustomer,
   });
+  const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
+    selectedInvoice?._id,
+    { skip: !selectedInvoice?._id },
+  );
+  const [downloadInvoice, { isLoading: downloadLoading }] =
+    useDownloadInvoiceMutation();
+  const [exportInvoices, { isLoading }] = useExportInvoiceMutation();
+
+  const customersList = customersData?.data?.customers || customersData || [];
 
   const invoicesData = data?.data?.data || [];
 
@@ -80,11 +87,6 @@ export default function AdminInvoiceManagement() {
     totalAmount: summary.totalAmount || 0,
   };
 
-  const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
-    selectedInvoice?._id,
-    { skip: !selectedInvoice?._id },
-  );
-
   const paymentHistory = paymentHistoryData?.data?.paymentHistory || [];
 
   const handleViewDetails = (invoice) => {
@@ -94,8 +96,6 @@ export default function AdminInvoiceManagement() {
     setIsDrawerVisible(true);
   };
 
-  const [downloadInvoice, { isLoading: downloadLoading }] =
-    useDownloadInvoiceMutation();
   const handleDownload = async (invoiceId, invoiceNumber) => {
     const blob = await downloadInvoice(invoiceId).unwrap();
 
@@ -112,7 +112,6 @@ export default function AdminInvoiceManagement() {
     });
   };
 
-  const [exportInvoices, { isLoading }] = useExportInvoiceMutation();
   const handleExportInvoices = async () => {
     try {
       const params = {};
