@@ -4,6 +4,7 @@ import { Vendor } from "../model/vendor.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AUTH_ERRORS } from "../util/errorMessage.js";
+import { getPagination, getPaginationMeta } from "../util/pagination.js";
 
 const registerService = async (userData) => {
   const { name, email, password, phonenumber, address } = userData;
@@ -263,9 +264,11 @@ const deleteProfileService = async (userId) => {
 const getCompanyCustomersService = async (adminId, options = {}) => {
   const admin = await User.findById(adminId);
 
-  const page = Math.max(parseInt(options.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(
+    options.page,
+    options.limit,
+    options.skip,
+  );
   const search = options.search || "";
   const status = options.status || "all";
 
@@ -298,19 +301,9 @@ const getCompanyCustomersService = async (adminId, options = {}) => {
 
   const totalCustomers = await User.countDocuments(query);
 
-  const totalPages =
-    totalCustomers === 0 ? 0 : Math.ceil(totalCustomers / limit);
-
   return {
     customers,
-    pagination: {
-      page,
-      limit,
-      totalCustomers,
-      totalPages,
-      hasNext: totalPages > 0 && page < totalPages,
-      hasPrev: page > 1 && totalPages > 0,
-    },
+    pagination: getPaginationMeta(totalCustomers, page, limit),
   };
 };
 

@@ -25,7 +25,7 @@ import QRCode from "qrcode";
 import {
   useGetCardPaymentMutation,
   useGetUPIPaymentMutation,
-} from "../service/paymentApi";
+} from "../../service/paymentApi";
 
 const UniversalPaymentModal = ({
   data,

@@ -14,7 +14,7 @@ import {
   phoneValidator,
   gstValidator,
   panValidator,
-} from "../validation/validation";
+} from "../../validation/validation";
 
 export const AdminFields = () => {
   return (

@@ -2,6 +2,7 @@ import { Vendor } from "../model/vendor.model.js";
 import { Bill } from "../model/bill.model.js";
 import bcrypt from "bcryptjs";
 import { VENDOR_ERRORS } from "../util/errorMessage.js";
+import { getPagination, getPaginationMeta } from "../util/pagination.js";
 
 const createVendorService = async (vendorData, companyId) => {
   const { name, email, phone, password, address } = vendorData;
@@ -36,9 +37,11 @@ const createVendorService = async (vendorData, companyId) => {
 };
 
 const getVendorsService = async (companyId, options = {}) => {
-  const page = Math.max(parseInt(options.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(
+    options.page,
+    options.limit,
+    options.skip,
+  );
 
   const vendors = await Vendor.find({ companyId })
     .select("-password")
@@ -46,18 +49,10 @@ const getVendorsService = async (companyId, options = {}) => {
     .limit(limit);
 
   const totalVendors = await Vendor.countDocuments({ companyId });
-  const totalPages = Math.ceil(totalVendors / limit);
 
   return {
     vendors,
-    pagination: {
-      page,
-      limit,
-      totalVendors,
-      totalPages,
-      hasNext: totalPages > 0 && page < totalPages,
-      hasPrev: page > 1 && totalPages > 0,
-    },
+    pagination: getPaginationMeta(totalVendors, page, limit),
   };
 };
 

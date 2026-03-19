@@ -2,9 +2,9 @@ import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Form, Card, notification, Empty } from "antd";
-import PartyDetailDrawer from "../components/PartyDetailDrawer";
-import PartyManagementCard from "../components/PartyManagementCard";
-import PartyFormModal from "../components/PartyFormModel";
+import PartyDetailDrawer from "../components/detailDrawer/PartyDetailDrawer";
+import PartyManagementCard from "../components/managementModel/PartyManagementCard";
+import PartyFormModal from "../components/formField/PartyFormModel";
 import {
   useGetCustomersQuery,
   useAdminCreateCustomerMutation,
@@ -42,7 +42,7 @@ export default function CustomerManagement() {
     );
   }
 
-  const { data, isLoading, error } = useGetCustomersQuery({
+  const { data, isLoading } = useGetCustomersQuery({
     page,
     limit: pageSize,
     search: searchTerm,

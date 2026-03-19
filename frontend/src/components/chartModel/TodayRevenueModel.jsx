@@ -18,7 +18,7 @@ ChartJS.register(
 );
 import { Row, Col, Card, Spin } from "antd";
 import { Line } from "react-chartjs-2";
-import { useGetTodayRevenueQuery } from "../service/reportApi";
+import { useGetTodayRevenueQuery } from "../../service/reportApi";
 
 const TodayRevenueReport = ({ dates }) => {
   const { data, isLoading } = useGetTodayRevenueQuery({

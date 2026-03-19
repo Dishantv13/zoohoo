@@ -4,6 +4,7 @@ import { Item } from "../model/item.model.js";
 import { Counter } from "../model/counter.model.js";
 import mongoose from "mongoose";
 import { BILL_ERRORS } from "../util/errorMessage.js";
+import { getPagination, getPaginationMeta } from "../util/pagination.js";
 
 const createBillService = async (billData, companyId) => {
   const { vendorId, items, billDate, dueDate } = billData;
@@ -91,9 +92,7 @@ const createBillService = async (billData, companyId) => {
 };
 
 const getBillsService = async (companyId, filters = {}) => {
-  const page = Math.max(parseInt(filters.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(filters.limit, 10) || 10, 1), 100);
-  const skip = (page - 1) * limit;
+    const { page, limit, skip } = getPagination(filters.page, filters.limit, filters.skip);
 
   const query = { companyId };
 
@@ -109,8 +108,6 @@ const getBillsService = async (companyId, filters = {}) => {
   }
 
   const totalItems = await Bill.countDocuments(query);
-
-  const totalPages = Math.ceil(totalItems / limit);
 
   const bills = await Bill.aggregate([
     { $match: query },
@@ -132,14 +129,7 @@ const getBillsService = async (companyId, filters = {}) => {
 
   return {
     bills: populatedBills,
-    pagination: {
-      page,
-      limit,
-      totalPages,
-      totalItems,
-      hasNext: totalPages > 0 && page < totalPages,
-      hasPrev: page > 1 && totalPages > 0,
-    },
+    pagination: getPaginationMeta(totalItems, page, limit),
   };
 };
 

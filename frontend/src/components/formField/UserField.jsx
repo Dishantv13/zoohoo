@@ -6,7 +6,7 @@ import {
   PhoneOutlined,
   EnvironmentOutlined,
 } from "@ant-design/icons";
-import { phoneValidator } from "../validation/validation";
+import { phoneValidator } from "../../validation/validation";
 
 const UserFields = () => {
   return (

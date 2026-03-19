@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 import excelJS from "exceljs";
 import { INVOICE_ERRORS } from "../util/errorMessage.js";
+import { getPagination, getPaginationMeta } from "../util/pagination.js";
 
 const createInvoiceService = async (userId, data) => {
   const {
@@ -98,9 +99,7 @@ const createInvoiceService = async (userId, data) => {
 };
 
 const getInvoicesServices = async (userId, options = {}) => {
-  const page = Math.max(parseInt(options.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(options);
 
   const { status } = options;
 
@@ -179,18 +178,9 @@ const getInvoicesServices = async (userId, options = {}) => {
     },
   ]);
 
-  const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
-
   return {
     data: populated,
-    pagination: {
-      page,
-      limit,
-      totalItems,
-      totalPages,
-      hasNext: totalPages > 0 && page < totalPages,
-      hasPrev: page > 1 && totalPages > 0,
-    },
+    pagination: getPaginationMeta(totalItems, page, limit),
     summary: summary[0] || {
       totalAmount: 0,
       paidAmount: 0,
@@ -617,9 +607,7 @@ const downloadInvoiceService = async (userId, invoiceId, res) => {
 };
 
 const getAdminAllInvoicesService = async (adminId, options = {}) => {
-  const page = Math.max(parseInt(options.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(options);
 
   const { status, customerId } = options;
 
@@ -693,18 +681,9 @@ const getAdminAllInvoicesService = async (adminId, options = {}) => {
     },
   ]);
 
-  const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
-
   return {
     data: populated,
-    pagination: {
-      page,
-      limit,
-      totalItems,
-      totalPages,
-      hasNext: totalPages > 0 && page < totalPages,
-      hasPrev: page > 1 && totalPages > 0,
-    },
+    pagination: getPaginationMeta(totalItems, page, limit),
     summary: summary[0] || {
       totalAmount: 0,
       paidAmount: 0,
@@ -722,9 +701,7 @@ const getCustomerInvoicesByAdminService = async (
   customerId,
   options = {},
 ) => {
-  const page = Math.max(parseInt(options.page, 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(options.limit, 10) || 10, 1), 100);
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(options);
 
   const { status } = options;
 
@@ -808,8 +785,6 @@ const getCustomerInvoicesByAdminService = async (
     },
   ]);
 
-  const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
-
   return {
     customer: {
       id: customer._id,
@@ -818,14 +793,7 @@ const getCustomerInvoicesByAdminService = async (
       phonenumber: customer.phonenumber,
     },
     data: populated,
-    pagination: {
-      page,
-      limit,
-      totalItems,
-      totalPages,
-      hasNext: totalPages > 0 && page < totalPages,
-      hasPrev: page > 1 && totalPages > 0,
-    },
+    pagination: getPaginationMeta(totalItems, page, limit),
     summary: summary[0] || {
       totalAmount: 0,
       paidAmount: 0,

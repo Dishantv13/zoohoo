@@ -19,7 +19,7 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import { useGetCashPaymentMutation } from "../service/paymentApi";
+import { useGetCashPaymentMutation } from "../../service/paymentApi";
 
 const CashPaymentModal = ({
   data,

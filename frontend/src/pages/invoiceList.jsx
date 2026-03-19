@@ -28,6 +28,8 @@ export default function InvoiceList() {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [pageSize, setPageSize] = useState(10);
+  const currentUser = useSelector((state) => state.auth.user);
+  const currentUserId = currentUser?._id || currentUser?.id || null;
 
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
@@ -45,9 +47,6 @@ export default function InvoiceList() {
     useExportInvoiceMutation();
   const [downloadInvoice, { isLoading: downloadLoading }] =
     useDownloadInvoiceMutation();
-
-  const currentUser = useSelector((state) => state.auth.user);
-  const currentUserId = currentUser?._id || currentUser?.id || null;
 
   const invoicesData = data?.data?.data || [];
 
@@ -199,10 +198,10 @@ export default function InvoiceList() {
       <ManagementTableCard
         type="invoice"
         dataSource={invoicesData}
-        pagination={paginationData}
+        paginationData={paginationData}
         isLoading={isLoading || isFetching}
         columns={columns}
-        onChange={handleTableChange}
+        handleTableChange={handleTableChange}
         onExport={handleExportInvoices}
         exportLoading={exportLoading}
         statusFilter={statusFilter}
