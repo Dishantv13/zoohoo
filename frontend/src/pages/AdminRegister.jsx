@@ -10,7 +10,7 @@ import {
   Divider,
 } from "antd";
 import { useAdminRegisterMutation } from "../service/authApi";
-import { AdminFields, CompanyFields } from "../components/AdminField";
+import { AdminFields, CompanyFields } from "../components/formField/AdminField";
 import { ROUTE_PATHS } from "../enum/apiUrl";
 import "../css/Auth.css";
 

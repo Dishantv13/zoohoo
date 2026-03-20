@@ -11,7 +11,7 @@ import {
   useChangePasswordMutation,
   useDeleteCustomerProfileMutation,
 } from "../service/customerApi";
-import CustomerForm from "../components/CustomerForm";
+import CustomerForm from "../components/formField/CustomerForm";
 
 import { useGetCurrentUserQuery } from "../service/authApi";
 import { ROUTE_PATHS } from "../enum/apiUrl";

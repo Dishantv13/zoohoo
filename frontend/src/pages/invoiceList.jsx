@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
-import PaymentModal from "../components/PaymentModal";
-import DetailDrawer from "../components/DetailDrawer";
+import PaymentModal from "../components/paymentModel/PaymentModal";
+import DetailDrawer from "../components/detailDrawer/DetailDrawer";
 import SummaryCards from "../components/SummaryCard";
-import ManagementTableCard from "../components/ManagementTableCard";
+import ManagementTableCard from "../components/managementModel/ManagementTableCard";
 
 import {
   useGetInvoicesQuery,

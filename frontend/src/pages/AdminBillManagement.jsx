@@ -11,11 +11,11 @@ import {
 } from "../service/billApi";
 import { useGetVendorsQuery } from "../service/vendorApi";
 import { useGetBillPaymentHistoryQuery } from "../service/paymentApi";
-import DetailDrawer from "../components/DetailDrawer";
+import DetailDrawer from "../components/detailDrawer/DetailDrawer";
 import SummaryCards from "../components/SummaryCard";
-import ManagementTableCard from "../components/ManagementTableCard";
-import PaymentModel from "../components/PaymentModal";
-import CashPaymentModel from "../components/CashPaymentModal";
+import ManagementTableCard from "../components/managementModel/ManagementTableCard";
+import PaymentModel from "../components/paymentModel/PaymentModal";
+import CashPaymentModel from "../components/paymentModel/CashPaymentModal";
 import { getBillColumns } from "../columns/BillColumn";
 import { ROUTE_PATHS } from "../enum/apiUrl";
 

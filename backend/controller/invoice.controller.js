@@ -9,6 +9,7 @@ import {
   getAdminAllInvoicesService,
   getCustomerInvoicesByAdminService,
   exportInvoiceServices,
+  invoiceStateCardService,
 } from "../service/invoice.service.js";
 
 import { asyncHandler } from "../util/asyncHandler.js";
@@ -74,6 +75,11 @@ const getAdminAllInvoices = asyncHandler(async (req, res) => {
   successResponse(res, result, HTTP_STATUS.OK, INVOICE_MESSAGES.GET_ALL);
 });
 
+const getInvoiceStateCard = asyncHandler(async (req, res) => {
+  const result = await invoiceStateCardService(req.user.companyId);
+  successResponse(res, result, HTTP_STATUS.OK, INVOICE_MESSAGES.GET_ALL);
+});
+
 const getCustomerInvoicesByAdmin = asyncHandler(async (req, res) => {
   const result = await getCustomerInvoicesByAdminService(
     req.user._id,
@@ -125,4 +131,5 @@ export {
   getAdminAllInvoices,
   getCustomerInvoicesByAdmin,
   exportInvoice,
+  getInvoiceStateCard,
 };

@@ -6,6 +6,7 @@ export const TAGS = {
   CUSTOMER: "Customer",
 
   INVOICE: "Invoice",
+  INVOICE_STATS: "InvoiceStats",
   INVOICE_EXPORT: "InvoiceExport",
 
   INVENTORY_ITEM: "InventoryItem",

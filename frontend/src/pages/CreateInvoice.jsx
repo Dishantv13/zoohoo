@@ -10,7 +10,7 @@ import {
   useUpdateInvoiceMutation,
   useCreateInvoiceMutation,
 } from "../service/invoiceApi";
-import InvoiceForm from "../components/InvoiceForm";
+import InvoiceForm from "../components/formField/InvoiceForm";
 
 export default function CreateInvoice() {
   const [form] = Form.useForm();

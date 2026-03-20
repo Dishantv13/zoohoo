@@ -11,7 +11,7 @@ export const connectSocket = () => {
       return null;
     }
 
-    socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+    socket = io(import.meta.env.VITE_API_URL || "http://localhost:5001", {
       auth: {
         token,
       },

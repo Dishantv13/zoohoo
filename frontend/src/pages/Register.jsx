@@ -2,7 +2,7 @@ import "@ant-design/v5-patch-for-react-19";
 import { useNavigate } from "react-router-dom";
 import { Form, Button, Card, notification } from "antd";
 import { useRegisterMutation } from "../service/authApi";
-import UserFields from "../components/UserField";
+import UserFields from "../components/formField/UserField";
 import { ROUTE_PATHS } from "../enum/apiUrl";
 
 import "../css/Auth.css";

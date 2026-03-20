@@ -11,7 +11,7 @@ import {
 } from "../service/billApi";
 import { useGetVendorAvailabilityQuery } from "../service/itemApi";
 import { getInventoryItemColumns } from "../columns/ItemColumn";
-import BillInvoiceForm from "../components/BillInvoiceForm";
+import BillInvoiceForm from "../components/formField/BillInvoiceForm";
 import dayjs from "dayjs";
 import { ROUTE_PATHS } from "../enum/apiUrl";
 

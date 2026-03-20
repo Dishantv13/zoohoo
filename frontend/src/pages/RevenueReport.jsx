@@ -6,11 +6,11 @@ import {
   RiseOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import ReportDashboard from "../chartModel/ReportDashboard";
-import MonthlyRevenueReport from "../chartModel/MonthlyRevenueModel";
-import YearlyRevenueReport from "../chartModel/YearlyRevenueModel";
-import TodayRevenueReport from "../chartModel/TodayRevenueModel";
-import TopCustomerReport from "../chartModel/TopCustomerModel";
+import ReportDashboard from "../components/chartModel/ReportDashboard";
+import MonthlyRevenueReport from "../components/chartModel/MonthlyRevenueModel";
+import YearlyRevenueReport from "../components/chartModel/YearlyRevenueModel";
+import TodayRevenueReport from "../components/chartModel/TodayRevenueModel";
+import TopCustomerReport from "../components/chartModel/TopCustomerModel";
 import { useGetDashBoardQuery } from "../service/reportApi";
 
 const RevenueReport = () => {

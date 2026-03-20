@@ -14,7 +14,7 @@ import {
   useDeleteInventoryItemMutation,
 } from "../service/itemApi";
 import VendorInventoryColumns from "../columns/VendorInventoryColumn";
-import VendorInventoryModel from "../components/VendorInventoryModel";
+import VendorInventoryModel from "../components/managementModel/VendorInventoryModel";
 
 export default function VendorInventory() {
   const { user } = useSelector((state) => state.auth);

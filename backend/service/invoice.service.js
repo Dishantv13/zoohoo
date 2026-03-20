@@ -749,11 +749,6 @@ const getCustomerInvoicesByAdminService = async (
         totalAmount: { $sum: "$totalAmount" },
         paidAmount: { $sum: "$amountPaid" },
         pendingAmount: { $sum: "$remainingAmount" },
-        confirmedAmount: {
-          $sum: {
-            $cond: [{ $eq: ["$status", "CONFIRMED"] }, "$totalAmount", 0],
-          },
-        },
         overdueCount: {
           $sum: {
             $cond: [
@@ -798,7 +793,6 @@ const getCustomerInvoicesByAdminService = async (
       totalAmount: 0,
       paidAmount: 0,
       pendingAmount: 0,
-      confirmedAmount: 0,
       overdueCount: 0,
       totalInvoices: 0,
     },
@@ -941,6 +935,52 @@ const exportInvoiceServices = async (userId, option = {}) => {
   return workbook;
 };
 
+const invoiceStateCardService = async (companyId) => {
+
+  const summary = await Invoice.aggregate([
+    { $match: { companyId: new mongoose.Types.ObjectId(companyId) } },
+    {
+      $group: {
+        _id: companyId,
+        totalAmount: { $sum: "$totalAmount" },
+        paidAmount: { $sum: "$amountPaid" },
+        pendingAmount: { $sum: "$remainingAmount" },
+        pendingInvoices: {
+          $sum: { $cond: [{ $ne: ["$status", "PAID"] }, 1, 0] },
+        },
+        overdueCount: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $lt: ["$dueDate", new Date()] },
+                  { $ne: ["$status", "PAID"] },
+                  { $ne: ["$status", "CANCELLED"] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+        totalInvoices: { $sum: 1 },
+      },
+    },
+  ]);
+
+  return {
+    summary: summary[0] || {
+      totalAmount: 0,
+      paidAmount: 0,
+      pendingAmount: 0,
+      pendingInvoices: 0,
+      confirmedAmount: 0,
+      overdueCount: 0,
+      totalInvoices: 0,
+    },
+  };
+};
+
 export {
   createInvoiceService,
   getInvoicesServices,
@@ -952,4 +992,5 @@ export {
   getAdminAllInvoicesService,
   getCustomerInvoicesByAdminService,
   exportInvoiceServices,
+  invoiceStateCardService,
 };

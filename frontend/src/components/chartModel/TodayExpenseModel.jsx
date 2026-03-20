@@ -19,7 +19,7 @@ ChartJS.register(
 
 import { Row, Col, Card, Spin } from "antd";
 import { Line } from "react-chartjs-2";
-import { useGetTodayExpenseQuery } from "../service/reportApi";
+import { useGetTodayExpenseQuery } from "../../service/reportApi";
 
 const TodayExpenseModel = ({ dates }) => {
   const { data, isLoading } = useGetTodayExpenseQuery({

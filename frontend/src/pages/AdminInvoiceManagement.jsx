@@ -3,10 +3,10 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Card, notification, Empty } from "antd";
-import CashPaymentModal from "../components/CashPaymentModal";
-import DetailDrawer from "../components/DetailDrawer";
+import CashPaymentModal from "../components/paymentModel/CashPaymentModal";
+import DetailDrawer from "../components/detailDrawer/DetailDrawer";
 import SummaryCards from "../components/SummaryCard";
-import ManagementTableCard from "../components/ManagementTableCard";
+import ManagementTableCard from "../components/managementModel/ManagementTableCard";
 import {
   useGetAdminAllInvoicesQuery,
   useDownloadInvoiceMutation,
@@ -16,6 +16,7 @@ import { useGetCustomersQuery } from "../service/customerApi";
 import { useGetPaymentHistoryQuery } from "../service/paymentApi";
 import { InvoiceColumns } from "../columns/InvoiceColumn";
 import { ROUTE_PATHS } from "../enum/apiUrl";
+import { useInvoiceStateCardQuery } from "../service/invoiceApi";
 
 import "../css/InvoiceManagement.css";
 
@@ -65,6 +66,12 @@ export default function AdminInvoiceManagement() {
   const [downloadInvoice, { isLoading: downloadLoading }] =
     useDownloadInvoiceMutation();
   const [exportInvoices, { isLoading }] = useExportInvoiceMutation();
+
+  const { data: invoiceStateCardData } = useInvoiceStateCardQuery();
+
+  const invoiceStateCard = invoiceStateCardData?.data || {};
+
+  console.log("Invoice State Card Data:", invoiceStateCard);
 
   const customersList = customersData?.data?.customers || customersData || [];
 

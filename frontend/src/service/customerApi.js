@@ -1,5 +1,5 @@
 import { baseApi } from "./baseApi";
-import { TAGS, TAG_IDS } from "../enum/tagType";
+import { TAGS } from "../enum/tagType";
 import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
 import { CUSTOMER_URL } from "../enum/apiUrl";
 

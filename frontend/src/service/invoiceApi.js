@@ -1,5 +1,5 @@
 import { baseApi } from "./baseApi";
-import { TAGS, TAG_IDS } from "../enum/tagType";
+import { TAGS } from "../enum/tagType";
 import { tagById, tagList, tagListWithIds } from "../enum/tagHelper";
 import { INVOICE_URL } from "../enum/apiUrl";
 
@@ -99,6 +99,12 @@ export const invoiceApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: tagList(TAGS.INVOICE_EXPORT),
     }),
+    invoiceStateCard: builder.query({
+      query: () => ({
+        url: INVOICE_URL.INVOICE_STATE_CARD,
+      }),
+      providesTags: tagList(TAGS.INVOICE_STATS),
+    }),
   }),
 });
 
@@ -113,4 +119,5 @@ export const {
   useGetCustomerInvoicesQuery,
   useGetAdminAllInvoicesQuery,
   useExportInvoiceMutation,
+  useInvoiceStateCardQuery,
 } = invoiceApi;

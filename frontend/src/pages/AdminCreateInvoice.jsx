@@ -10,7 +10,7 @@ import {
   useCreateInvoiceMutation,
 } from "../service/invoiceApi";
 import { getSimpleItemColumns } from "../columns/ItemColumn";
-import BillInvoiceForm from "../components/BillInvoiceForm";
+import BillInvoiceForm from "../components/formField/BillInvoiceForm";
 import { ROUTE_PATHS } from "../enum/apiUrl";
 import "../css/CreateInvoice.css";
 

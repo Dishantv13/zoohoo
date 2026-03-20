@@ -37,6 +37,7 @@ export const INVOICE_URL = {
     GET_ADMIN_ALL_INVOICES: "/invoices/admin/all",
     GET_CUSTOMER_INVOICES: (customerId) => `/invoices/admin/customer/${customerId}`,
     EXPORT_INVOICE: "/invoices/export",
+    INVOICE_STATE_CARD: "/invoices/state-card",
 };
 
 export const ITEM_URL = {

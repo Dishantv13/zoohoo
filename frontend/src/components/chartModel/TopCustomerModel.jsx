@@ -10,7 +10,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 import { Row, Col, Card, Spin } from "antd";
 import { Bar } from "react-chartjs-2";
-import { useGetTopCustomersQuery } from "../service/reportApi";
+import { useGetTopCustomersQuery } from "../../service/reportApi";
 
 const TopCustomerReport = ({ dates }) => {
   const { data, isLoading } = useGetTopCustomersQuery({

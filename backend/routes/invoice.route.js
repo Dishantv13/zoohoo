@@ -10,6 +10,7 @@ import {
   getAdminAllInvoices,
   getCustomerInvoicesByAdmin,
   exportInvoice,
+  getInvoiceStateCard,
 } from "../controller/invoice.controller.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 import { exportRateLimiter } from "../middleware/rateLimit.js";
@@ -17,6 +18,7 @@ import { exportRateLimiter } from "../middleware/rateLimit.js";
 const router = Router();
 
 router.use(protect);
+router.route("/state-card").get(getInvoiceStateCard);
 router.route("/export").get(exportRateLimiter, exportInvoice);
 router.route("/").post(createInvoice);
 router.route("/").get(getInvoices);
@@ -31,6 +33,5 @@ router.route("/admin/all").get(adminOnly, getAdminAllInvoices);
 router
   .route("/admin/customer/:customerId")
   .get(adminOnly, getCustomerInvoicesByAdmin);
-
 
 export default router;

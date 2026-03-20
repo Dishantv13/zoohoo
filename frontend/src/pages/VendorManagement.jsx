@@ -3,9 +3,9 @@ import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { Form, Card, notification, Empty } from "antd";
 
-import PartyDetailDrawer from "../components/PartyDetailDrawer";
-import PartyManagementCard from "../components/PartyManagementCard";
-import PartyFormModal from "../components/PartyFormModel";
+import PartyDetailDrawer from "../components/detailDrawer/PartyDetailDrawer";
+import PartyManagementCard from "../components/managementModel/PartyManagementCard";
+import PartyFormModal from "../components/formField/PartyFormModel";
 
 import {
   useGetVendorsQuery,
