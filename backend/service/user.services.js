@@ -158,7 +158,10 @@ const loginService = async ({ email, password }) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, accountType: "user" },
+      {
+        id: user._id,
+        accountType: user.role,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
@@ -172,7 +175,7 @@ const loginService = async ({ email, password }) => {
         role: user.role,
         companyId: user.companyId?._id,
         company: user.companyId,
-        accountType: "user",
+        accountType: user.role,
       },
     };
   }

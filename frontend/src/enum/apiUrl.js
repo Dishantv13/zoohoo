@@ -82,7 +82,7 @@ export const ROUTE_PATHS = {
     HOME: "/",
     LOGIN: "/login",
     REGISTER: "/register",
-    ADMIN_DELETE_CUSTOMER: "/admin/register",
+    ADMIN_REGISTER: "/admin/register",
     CREATE_INVOICE: "/create-invoice",
     INVOICES: "/invoices",
     CUSTOMER_MANAGEMENT: "/admin/customers",

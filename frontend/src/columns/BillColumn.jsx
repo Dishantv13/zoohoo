@@ -1,4 +1,4 @@
-import { Tag, Flex, Space, Button, Popconfirm } from "antd";
+import { Tag, Flex, Space, Button, Popconfirm, Tooltip } from "antd";
 import {
   EyeOutlined,
   EditOutlined,
@@ -144,23 +144,24 @@ export const getBillColumns = ({
     title: "Actions",
     key: "actions",
     fixed: "right",
-    width: 300,
+    width: 200,
     render: (_, record) => {
       if (record.status === "PAID") {
         return (
           <Space wrap>
             <Tag color="green">✓ PAID</Tag>
 
-            <Button
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedBill(record);
-                setIsDrawerVisible(true);
-              }}
-              size="small"
-            >
-              View
-            </Button>
+            <Tooltip title="View bill details" color="blue">
+              <Button
+                icon={<EyeOutlined />}
+                style={{ color: "blue" }}
+                onClick={() => {
+                  setSelectedBill(record);
+                  setIsDrawerVisible(true);
+                }}
+                size="medium"
+              ></Button>
+            </Tooltip>
           </Space>
         );
       }
@@ -168,78 +169,82 @@ export const getBillColumns = ({
       if (record.status === "PARTIALLY_PAID") {
         return (
           <Space wrap>
-            <Button
-              icon={<CreditCardOutlined />}
-              type="primary"
-              onClick={() => handleCardPaymentClick(record)}
-              size="small"
-            >
-              Card Pay
-            </Button>
+            <Tooltip title="View bill details" color="blue">
+              <Button
+                icon={<EyeOutlined />}
+                style={{ color: "blue" }}
+                onClick={() => {
+                  setSelectedBill(record);
+                  setIsDrawerVisible(true);
+                }}
+                size="medium"
+              ></Button>
+            </Tooltip>
+            <Tooltip title="Receive card or upi payment" color="blue">
+              <Button
+                icon={<CreditCardOutlined />}
+                style={{ color: "green" }}
+                onClick={() => handleCardPaymentClick(record)}
+                size="medium"
+              ></Button>
+            </Tooltip>
 
-            <Button
-              icon={<DollarCircleOutlined />}
-              onClick={() => handleCashPaymentClick(record)}
-              size="small"
-            >
-              Cash
-            </Button>
-
-            <Button
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedBill(record);
-                setIsDrawerVisible(true);
-              }}
-              size="small"
-            >
-              View
-            </Button>
+            <Tooltip title="Receive cash payment" color="blue">
+              <Button
+                icon={<DollarCircleOutlined />}
+                style={{ color: "green" }}
+                onClick={() => handleCashPaymentClick(record)}
+                size="medium"
+              ></Button>
+            </Tooltip>
           </Space>
         );
       }
 
       return (
         <Space wrap>
-          <Button
-            icon={<EditOutlined />}
-            onClick={() =>
-              navigate(ROUTE_PATHS.ADMIN_CREATE_BILL, {
-                state: { bill: record },
-              })
-            }
-            size="small"
-          >
-            Edit
-          </Button>
+          <Tooltip title="view bill details" color="blue">
+            <Button
+              icon={<EyeOutlined />}
+              style={{ color: "blue" }}
+              onClick={() => {
+                setSelectedBill(record);
+                setIsDrawerVisible(true);
+              }}
+              size="medium"
+            ></Button>
+          </Tooltip>
 
-          <Button
-            icon={<CreditCardOutlined />}
-            type="primary"
-            onClick={() => handleCardPaymentClick(record)}
-            size="small"
-          >
-            Card Pay
-          </Button>
+          <Tooltip title="Edit bill" color="orange">
+            <Button
+              icon={<EditOutlined />}
+              style={{ color: "orange" }}
+              onClick={() =>
+                navigate(ROUTE_PATHS.ADMIN_CREATE_BILL, {
+                  state: { bill: record },
+                })
+              }
+              size="medium"
+            ></Button>
+          </Tooltip>
 
-          <Button
-            icon={<EyeOutlined />}
-            onClick={() => {
-              setSelectedBill(record);
-              setIsDrawerVisible(true);
-            }}
-            size="small"
-          >
-            View
-          </Button>
+          <Tooltip title="Receive card or upi payment" color="blue">
+            <Button
+              icon={<CreditCardOutlined />}
+              style={{ color: "green" }}
+              onClick={() => handleCardPaymentClick(record)}
+              size="medium"
+            ></Button>
+          </Tooltip>
 
-          <Button
-            icon={<DollarCircleOutlined />}
-            onClick={() => handleCashPaymentClick(record)}
-            size="small"
-          >
-            Cash
-          </Button>
+          <Tooltip title="Receive cash payment" color="blue">
+            <Button
+              icon={<DollarCircleOutlined />}
+              style={{ color: "green" }}
+              onClick={() => handleCashPaymentClick(record)}
+              size="medium"
+            ></Button>
+          </Tooltip>
 
           <Popconfirm
             title="Delete bill"
@@ -248,14 +253,15 @@ export const getBillColumns = ({
             okText="Yes"
             cancelText="No"
           >
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              loading={isDeleting}
-              size="small"
-            >
-              Delete
-            </Button>
+            <Tooltip title="Delete bill" color="red">
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                style={{ color: "red" }}
+                loading={isDeleting}
+                size="medium"
+              ></Button>
+            </Tooltip>
           </Popconfirm>
         </Space>
       );

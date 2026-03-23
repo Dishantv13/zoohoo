@@ -2,7 +2,7 @@ import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Card, notification, Empty } from "antd";
+import { Card, notification, Empty, Modal } from "antd";
 import CashPaymentModal from "../components/paymentModel/CashPaymentModal";
 import DetailDrawer from "../components/detailDrawer/DetailDrawer";
 import SummaryCards from "../components/SummaryCard";
@@ -11,6 +11,7 @@ import {
   useGetAdminAllInvoicesQuery,
   useDownloadInvoiceMutation,
   useExportInvoiceMutation,
+  useDeleteInvoiceMutation,
 } from "../service/invoiceApi";
 import { useGetCustomersQuery } from "../service/customerApi";
 import { useGetPaymentHistoryQuery } from "../service/paymentApi";
@@ -67,11 +68,14 @@ export default function AdminInvoiceManagement() {
     useDownloadInvoiceMutation();
   const [exportInvoices, { isLoading }] = useExportInvoiceMutation();
 
-  const { data: invoiceStateCardData } = useInvoiceStateCardQuery();
+  const [deleteInvoice, { isLoading: deleteLoading }] =
+    useDeleteInvoiceMutation();
 
-  const invoiceStateCard = invoiceStateCardData?.data || {};
+  //   const { data: invoiceStateCardData } = useInvoiceStateCardQuery();
 
-  console.log("Invoice State Card Data:", invoiceStateCard);
+  //   const invoiceStateCard = invoiceStateCardData?.data || {};
+
+  //   console.log("Invoice State Card Data:", invoiceStateCard);
 
   const customersList = customersData?.data?.customers || customersData || [];
 
@@ -176,6 +180,31 @@ export default function AdminInvoiceManagement() {
     refetch();
   };
 
+  const handleDelete = (invoiceId) => {
+    Modal.confirm({
+      title: "Delete Invoice?",
+      content: "This will permanently delete the invoice. Are you sure?",
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          await deleteInvoice(invoiceId).unwrap();
+
+          notification.success({
+            message: "Success",
+            description: "Invoice deleted successfully",
+          });
+        } catch (error) {
+          notification.error({
+            message: "Failed",
+            description: error?.data?.message || "Failed to delete invoice",
+          });
+        }
+      },
+    });
+  };
+
   const statusColors = {
     PAID: "green",
     PENDING: "orange",
@@ -190,6 +219,8 @@ export default function AdminInvoiceManagement() {
     handleDownload,
     downloadLoading,
     statusColors,
+    handleDelete,
+    deleteLoading
   });
 
   return (

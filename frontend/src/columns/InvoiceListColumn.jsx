@@ -1,4 +1,4 @@
-import { Tag, Flex, Space, Button, Popconfirm } from "antd";
+import { Tag, Flex, Space, Button, Popconfirm, Tooltip } from "antd";
 import {
   WarningOutlined,
   EyeOutlined,
@@ -185,13 +185,13 @@ export const InvoiceListColumn = ({
             <Tag color="green">✓ PAID</Tag>
 
             <Button
-              size="small"
+              size="medium"
               icon={<EyeOutlined />}
               onClick={() => handleViewDetails(record)}
             />
 
             <Button
-              size="small"
+              size="medium"
               icon={<DownloadOutlined />}
               onClick={() => handleDownLoad(record._id)}
               disabled={downloadLoading}
@@ -203,67 +203,88 @@ export const InvoiceListColumn = ({
       if (isCreatedByAdmin || record.status === "PARTIALLY_PAID") {
         return (
           <Space wrap>
-            <Button
-              type="primary"
-              size="small"
-              icon={<CreditCardOutlined />}
-              onClick={() => handlePaymentClick(record)}
-            >
-              Pay
-            </Button>
+            <Tooltip title="View invoice details" color="blue">
+              <Button
+                icon={<EyeOutlined />}
+                style={{ color: "blue" }}
+                onClick={() => handleViewDetails(record)}
+                size="medium"
+              ></Button>
+            </Tooltip>
 
-            <Button
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetails(record)}
-            />
+            <Tooltip title="Pay invoice" color="green">
+              <Button
+                type="primary"
+                size="medium"
+                icon={<CreditCardOutlined />}
+                onClick={() => handlePaymentClick(record)}
+              ></Button>
+            </Tooltip>
 
-            <Button
-              size="small"
-              icon={<DownloadOutlined />}
-              onClick={() => handleDownLoad(record._id)}
-              disabled={downloadLoading}
-            />
+            <Tooltip title="view invoice details" color="blue">
+              <Button
+                size="medium"
+                icon={<EyeOutlined />}
+                onClick={() => handleViewDetails(record)}
+              />
+            </Tooltip>
+
+            <Tooltip title="Download invoice" color="blue">
+              <Button
+                size="medium"
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownLoad(record._id)}
+                disabled={downloadLoading}
+              />
+            </Tooltip>
           </Space>
         );
       }
 
       return (
         <Space wrap>
-          <Button
-            type="primary"
-            size="small"
-            icon={<CreditCardOutlined />}
-            onClick={() => handlePaymentClick(record)}
-          >
-            Pay
-          </Button>
+          <Tooltip title="Pay invoice" color="green">
+            <Button
+              type="primary"
+              size="medium"
+              icon={<CreditCardOutlined />}
+              onClick={() => handlePaymentClick(record)}
+            ></Button>
+          </Tooltip>
 
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetails(record)}
-          />
+          <Tooltip title="view invoice details" color="blue">
+            <Button
+              size="medium"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetails(record)}
+            />
+          </Tooltip>
 
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
+          <Tooltip title="Edit invoice" color="orange">
+            <Button
+              size="medium"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
 
-          <Button
-            size="small"
-            icon={<DownloadOutlined />}
-            onClick={() => handleDownLoad(record._id)}
-            disabled={downloadLoading}
-          />
+          <Tooltip title="Download invoice" color="blue">
+            <Button
+              size="medium"
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownLoad(record._id)}
+              disabled={downloadLoading}
+            />
+          </Tooltip>
 
           <Popconfirm
             title="Delete this invoice?"
             disabled={deleteLoading}
             onConfirm={() => handleDelete(record._id)}
           >
-            <Button danger size="small" icon={<DeleteOutlined />} />
+            <Tooltip title="Delete invoice" color="red">
+              <Button danger size="medium" icon={<DeleteOutlined />} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       );

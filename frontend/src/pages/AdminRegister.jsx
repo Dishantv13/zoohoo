@@ -81,7 +81,7 @@ export default function AdminRegister() {
           </Form>
 
           <p style={{ textAlign: "center" }}>
-            Already have an account? <Link to="/login">Login here</Link>
+            Already have an account? <Link to={ROUTE_PATHS.LOGIN}>Login here</Link>
           </p>
         </Spin>
       </Card>

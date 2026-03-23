@@ -5,6 +5,7 @@ import {
   EditOutlined,
   WarningOutlined,
   DollarOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -15,6 +16,8 @@ export const InvoiceColumns = ({
   handleDownload,
   downloadLoading,
   statusColors,
+  handleDelete,
+  deleteLoading,
 }) => {
   return [
     {
@@ -184,7 +187,7 @@ export const InvoiceColumns = ({
       title: "Actions",
       key: "actions",
       fixed: "right",
-      width: 250,
+      width: 200,
 
       render: (_, record) => {
         const isCreatedByAdmin = record.createdBy?._id !== record.customer?._id;
@@ -192,69 +195,91 @@ export const InvoiceColumns = ({
         const canReceiveCashPayment =
           record.status === "PENDING" || record.status === "PARTIALLY_PAID";
 
+        const deleteInvoice = record.status === "PENDING";
+
         if (record.status === "PAID") {
           return (
             <Space wrap>
               <Tag color="green">✓ PAID</Tag>
 
-              <Button
-                size="small"
-                icon={<EyeOutlined />}
-                onClick={() => handleViewDetails(record)}
-              >
-                View
-              </Button>
+              <Tooltip title="View invoice details" color="blue">
+                <Button
+                  size="medium"
+                  icon={<EyeOutlined />}
+                  style={{ color: "blue" }}
+                  onClick={() => handleViewDetails(record)}
+                ></Button>
+              </Tooltip>
 
-              <Button
-                size="small"
-                icon={<FilePdfOutlined />}
-                disabled={downloadLoading}
-                onClick={() => handleDownload(record._id, record.invoiceNumber)}
-              >
-                PDF
-              </Button>
+              <Tooltip title="Download invoice PDF" color="red">
+                <Button
+                  size="medium"
+                  icon={<FilePdfOutlined />}
+                  style={{ color: "red" }}
+                  disabled={downloadLoading}
+                  onClick={() =>
+                    handleDownload(record._id, record.invoiceNumber)
+                  }
+                ></Button>
+              </Tooltip>
             </Space>
           );
         }
 
         return (
           <Space wrap>
-            <Button
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetails(record)}
-            >
-              View
-            </Button>
+            <Tooltip title="View invoice details" color="blue">
+              <Button
+                size="medium"
+                icon={<EyeOutlined />}
+                style={{ color: "blue" }}
+                onClick={() => handleViewDetails(record)}
+              ></Button>
+            </Tooltip>
 
             {isCreatedByAdmin && record.status == "PENDING" && (
-              <Button
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => handleEdit(record)}
-              >
-                Edit
-              </Button>
+              <Tooltip title="Edit invoice" color="orange">
+                <Button
+                  size="medium"
+                  icon={<EditOutlined />}
+                  style={{ color: "orange" }}
+                  onClick={() => handleEdit(record)}
+                ></Button>
+              </Tooltip>
             )}
 
             {canReceiveCashPayment && (
-              <Button
-                size="small"
-                icon={<DollarOutlined />}
-                onClick={() => handleCashPayment(record)}
-              >
-                Cash
-              </Button>
+              <Tooltip title="Record cash payment" color="green">
+                <Button
+                  size="medium"
+                  icon={<DollarOutlined />}
+                  style={{ color: "green" }}
+                  onClick={() => handleCashPayment(record)}
+                ></Button>
+              </Tooltip>
             )}
 
-            <Button
-              size="small"
-              icon={<FilePdfOutlined />}
-              disabled={downloadLoading}
-              onClick={() => handleDownload(record._id, record.invoiceNumber)}
-            >
-              PDF
-            </Button>
+            <Tooltip title="Download invoice PDF" color="red">
+              <Button
+                size="medium"
+                icon={<FilePdfOutlined />}
+                style={{ color: "red" }}
+                disabled={downloadLoading}
+                onClick={() => handleDownload(record._id, record.invoiceNumber)}
+              ></Button>
+            </Tooltip>
+
+            {deleteInvoice && (
+              <Tooltip title="Delete invoice" color="red">
+                <Button
+                  size="medium"
+                  icon={<DeleteOutlined />}
+                  style={{ color: "red" }}
+                  disabled={deleteLoading}
+                  onClick={() => handleDelete(record._id)}
+                ></Button>
+              </Tooltip>
+            )}
           </Space>
         );
       },
