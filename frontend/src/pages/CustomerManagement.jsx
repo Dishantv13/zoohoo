@@ -1,6 +1,7 @@
 import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { Form, Card, notification, Empty } from "antd";
 import PartyDetailDrawer from "../components/detailDrawer/PartyDetailDrawer";
 import PartyManagementCard from "../components/managementModel/PartyManagementCard";
@@ -29,10 +30,7 @@ export default function CustomerManagement() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [form] = Form.useForm();
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   if (!user || user.role !== "admin") {
     return (
@@ -42,11 +40,16 @@ export default function CustomerManagement() {
     );
   }
 
+  const page = parseInt(searchParams.get("page")) || 1;
+  const limit = parseInt(searchParams.get("limit")) || 10;
+  const status = searchParams.get("status") || "all";
+  const search = searchParams.get("search") || "";
+
   const { data, isLoading } = useGetCustomersQuery({
     page,
-    limit: pageSize,
-    search: searchTerm,
-    status: statusFilter,
+    limit,
+    search,
+    status,
   });
   const [updateCustomer] = useAdminUpdateCustomerMutation();
   const [deleteCustomer] = useAdminDeleteCustomerMutation();
@@ -57,7 +60,7 @@ export default function CustomerManagement() {
   const paginationData = {
     current: data?.data?.pagination?.page || 1,
     pageSize: data?.data?.pagination?.limit || 10,
-    total: data?.data?.pagination?.totalCustomers || 0,
+    total: data?.data?.pagination?.totalItems || 0,
   };
 
   const filterData = customersList.map((customer) => ({
@@ -66,8 +69,40 @@ export default function CustomerManagement() {
   }));
 
   const handleTableChange = (paginationInfo) => {
-    setPage(paginationInfo.current);
-    setPageSize(paginationInfo.pageSize);
+    updateParams({
+      page: paginationInfo.current,
+      limit: paginationInfo.pageSize,
+    });
+  };
+
+  const updateParams = (newParams) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    setSearchParams({
+      ...currentParams,
+      ...newParams,
+    });
+  };
+
+  const handleStatusFilter = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+
+    if (value === "all") {
+      params.status = "all";
+    } else {
+      params.status = value;
+    }
+    setSearchParams(params);
+  };
+
+  const handleSearch = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+    if (value) {
+      params.search = value;
+    } else {
+      delete params.search;
+    }
+    params.page = 1;
+    setSearchParams(params);
   };
 
   const handleSubmit = async (values) => {
@@ -166,10 +201,10 @@ export default function CustomerManagement() {
         type="customer"
         columns={columns}
         dataSource={filterData}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
+        searchTerm={search}
+        setSearchTerm={handleSearch}
+        statusFilter={status}
+        setStatusFilter={handleStatusFilter}
         handleCreateClick={handleCreateClick}
         handleTableChange={handleTableChange}
         isLoading={isLoading}

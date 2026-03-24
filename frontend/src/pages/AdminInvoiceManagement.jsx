@@ -1,7 +1,7 @@
 import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, notification, Empty, Modal } from "antd";
 import CashPaymentModal from "../components/paymentModel/CashPaymentModal";
 import DetailDrawer from "../components/detailDrawer/DetailDrawer";
@@ -17,30 +17,19 @@ import { useGetCustomersQuery } from "../service/customerApi";
 import { useGetPaymentHistoryQuery } from "../service/paymentApi";
 import { InvoiceColumns } from "../columns/InvoiceColumn";
 import { ROUTE_PATHS } from "../enum/apiUrl";
-import { useInvoiceStateCardQuery } from "../service/invoiceApi";
 
 import "../css/InvoiceManagement.css";
 
 export default function AdminInvoiceManagement() {
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [isCashPaymentModalVisible, setIsCashPaymentModalVisible] =
     useState(false);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [statusFilters, setStatusFilters] = useState({
-    status: null,
-  });
-
-  const handleTableChange = (paginationInfo) => {
-    setPage(paginationInfo.current);
-    setPageSize(paginationInfo.pageSize);
-  };
+  const [searchParams, setSearchParams] = useSearchParams();
 
   if (!user || user.role !== "admin") {
     return (
@@ -50,15 +39,20 @@ export default function AdminInvoiceManagement() {
     );
   }
 
+  const page = parseInt(searchParams.get("page")) || 1;
+  const limit = parseInt(searchParams.get("limit")) || 10;
+  const status = searchParams.get("status") || "";
+  const customerId = searchParams.get("customerId") || null;
+
   const { data: customersData } = useGetCustomersQuery({
     limit: 1000,
   });
 
   const { data, refetch } = useGetAdminAllInvoicesQuery({
     page,
-    limit: pageSize,
-    status: statusFilters.status,
-    customerId: selectedCustomer,
+    limit,
+    status,
+    customerId: customerId || undefined,
   });
   const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
     selectedInvoice?._id,
@@ -71,11 +65,48 @@ export default function AdminInvoiceManagement() {
   const [deleteInvoice, { isLoading: deleteLoading }] =
     useDeleteInvoiceMutation();
 
-  //   const { data: invoiceStateCardData } = useInvoiceStateCardQuery();
+  const handleTableChange = (paginationInfo) => {
+    updateparmas({
+      page: paginationInfo.current,
+      limit: paginationInfo.pageSize,
+    });
+  };
 
-  //   const invoiceStateCard = invoiceStateCardData?.data || {};
+  const updateparmas = (newParams) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    setSearchParams({
+      ...currentParams,
+      ...newParams,
+    });
+  };
 
-  //   console.log("Invoice State Card Data:", invoiceStateCard);
+  const handleStatusChange = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+
+    if (!value) {
+      delete params.status;
+    } else {
+      params.status = value;
+    }
+
+    params.page = 1;
+
+    setSearchParams(params);
+  };
+
+  const handleCustomerChange = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+
+    if (!value) {
+      delete params.customerId;
+    } else {
+      params.customerId = value;
+    }
+
+    params.page = 1;
+
+    setSearchParams(params);
+  };
 
   const customersList = customersData?.data?.customers || customersData || [];
 
@@ -127,12 +158,12 @@ export default function AdminInvoiceManagement() {
     try {
       const params = {};
 
-      if (selectedCustomer) {
-        params.customerId = selectedCustomer;
+      if (customerId) {
+        params.customerId = customerId;
       }
 
-      if (statusFilters?.status) {
-        params.status = statusFilters.status;
+      if (status) {
+        params.status = status;
       }
 
       const blob = await exportInvoices(params).unwrap();
@@ -220,7 +251,7 @@ export default function AdminInvoiceManagement() {
     downloadLoading,
     statusColors,
     handleDelete,
-    deleteLoading
+    deleteLoading,
   });
 
   return (
@@ -230,13 +261,10 @@ export default function AdminInvoiceManagement() {
       <ManagementTableCard
         type="invoice"
         list={customersList}
-        selectedItem={selectedCustomer}
-        setSelectedItem={setSelectedCustomer}
-        statusFilter={statusFilters?.status}
-        setStatusFilter={(value) =>
-          setStatusFilters({ ...statusFilters, status: value })
-        }
-        setPage={setPage}
+        selectedItem={customerId}
+        setSelectedItem={handleCustomerChange}
+        statusFilter={status}
+        setStatusFilter={handleStatusChange}
         handleExport={handleExportInvoices}
         dataSource={invoicesData}
         isLoading={isLoading}

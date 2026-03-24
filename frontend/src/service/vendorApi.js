@@ -6,9 +6,9 @@ import { VENDOR_URL } from "../enum/apiUrl";
 export const vendorApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getVendors: builder.query({
-      query: ({ page = 1, limit = 10 }) => ({
+      query: ({ page = 1, limit = 10, search }) => ({
         url: VENDOR_URL.GET_VENDORS,
-        params: { page, limit },
+        params: { page, limit, search },
       }),
 
       providesTags: (result) =>

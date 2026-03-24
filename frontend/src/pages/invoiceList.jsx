@@ -2,7 +2,7 @@ import "@ant-design/v5-patch-for-react-19";
 import { notification, Modal } from "antd";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import PaymentModal from "../components/paymentModel/PaymentModal";
 import DetailDrawer from "../components/detailDrawer/DetailDrawer";
@@ -22,21 +22,23 @@ import "../css/InvoiceManagement.css";
 
 export default function InvoiceList() {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [pageSize, setPageSize] = useState(10);
+  const [searchParams, setSearchParams] = useSearchParams();
   const currentUser = useSelector((state) => state.auth.user);
   const currentUserId = currentUser?._id || currentUser?.id || null;
+
+  const page = parseInt(searchParams.get("page")) || 1;
+  const limit = parseInt(searchParams.get("limit")) || 10;
+  const status = searchParams.get("status") || null;
 
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
     useState(null);
   const { data, isLoading, isFetching, refetch } = useGetInvoicesQuery({
     page,
-    limit: pageSize,
-    status: statusFilter,
+    limit,
+    status,
     customer: currentUserId,
   });
   const { data: paymentHistoryData } = useGetPaymentHistoryQuery(
@@ -67,6 +69,32 @@ export default function InvoiceList() {
     overdueCount: summary.overdueCount || 0,
   };
 
+  const handleTableChange = (paginationInfo) => {
+    updateparmas({
+      page: paginationInfo.current,
+      limit: paginationInfo.pageSize,
+    });
+  };
+
+  const updateparmas = (newParams) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    setSearchParams({
+      ...currentParams,
+      ...newParams,
+    });
+  };
+
+  const handleStatusFilter = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+    if (!value) {
+      delete params.status;
+    } else {
+      params.status = value;
+    }
+    params.page = 1;
+    setSearchParams(params);
+  };
+  
   const handleEdit = (invoice) => {
     navigate(ROUTE_PATHS.INVOICE_ID(invoice));
   };
@@ -142,11 +170,6 @@ export default function InvoiceList() {
     setPaymentModalVisible(false);
   };
 
-  const handleTableChange = (paginationInfo) => {
-    setPage(paginationInfo.current);
-    setPageSize(paginationInfo.pageSize);
-  };
-
   const [deleteInvoice, { isLoading: deleteLoading }] =
     useDeleteInvoiceMutation();
   const handleDelete = (invoiceId) => {
@@ -204,8 +227,8 @@ export default function InvoiceList() {
         handleTableChange={handleTableChange}
         onExport={handleExportInvoices}
         exportLoading={exportLoading}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
+        statusFilter={status}
+        setStatusFilter={handleStatusFilter}
       />
 
       <PaymentModal

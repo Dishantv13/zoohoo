@@ -267,11 +267,11 @@ const deleteProfileService = async (userId) => {
 const getCompanyCustomersService = async (adminId, options = {}) => {
   const admin = await User.findById(adminId);
 
-  const { page, limit, skip } = getPagination(
-    options.page,
-    options.limit,
-    options.skip,
-  );
+  const { page, limit, skip } = getPagination({
+    page: options.page,
+    limit: options.limit,
+    skip: options.skip,
+  });
   const search = options.search || "";
   const status = options.status || "all";
 

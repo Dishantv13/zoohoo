@@ -6,7 +6,7 @@ import { BILL_URL } from "../enum/apiUrl";
 export const billApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getBills: builder.query({
-      query: ({ vendorId, status, page = 1, limit = 10 }) => {
+      query: ({ vendorId, status = '', page = 1, limit = 10 }) => {
         const params = { page, limit };
         if (vendorId) params.vendorId = vendorId;
         if (status) params.status = status;

@@ -34,7 +34,7 @@ export default function AdminCreateInvoice() {
       </Card>
     );
   }
-  const { data: customersData, error: customersError } = useGetCustomersQuery({
+  const { data: customersData } = useGetCustomersQuery({
     limit: 1000,
   });
   const [createInvoice] = useCreateInvoiceMutation();

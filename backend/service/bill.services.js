@@ -92,7 +92,11 @@ const createBillService = async (billData, companyId) => {
 };
 
 const getBillsService = async (companyId, filters = {}) => {
-    const { page, limit, skip } = getPagination(filters.page, filters.limit, filters.skip);
+  const { page, limit, skip } = getPagination({
+    page: filters.page,
+    limit: filters.limit,
+    skip: filters.skip,
+  });
 
   const query = { companyId };
 

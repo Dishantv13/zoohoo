@@ -67,7 +67,7 @@ export const invoiceApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, id) => tagById(TAGS.INVOICE, id),
     }),
     getAdminAllInvoices: builder.query({
-      query: ({ page = 1, limit = 10, status, customerId }) => {
+      query: ({ page = 1, limit = 10, status = '', customerId }) => {
         if (customerId) {
           return {
             url: INVOICE_URL.GET_CUSTOMER_INVOICES(customerId),
@@ -117,7 +117,7 @@ export const {
   useDeleteInvoiceMutation,
   useDownloadInvoiceMutation,
   useGetCustomerInvoicesQuery,
-  useGetAdminAllInvoicesQuery,
+    useGetAdminAllInvoicesQuery,
   useExportInvoiceMutation,
   useInvoiceStateCardQuery,
 } = invoiceApi;

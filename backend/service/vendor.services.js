@@ -37,11 +37,11 @@ const createVendorService = async (vendorData, companyId) => {
 };
 
 const getVendorsService = async (companyId, options = {}) => {
-  const { page, limit, skip } = getPagination(
-    options.page,
-    options.limit,
-    options.skip,
-  );
+  const { page, limit, skip } = getPagination({
+    page: options.page,
+    limit: options.limit,
+    skip: options.skip,
+  });
 
   const vendors = await Vendor.find({ companyId })
     .select("-password")

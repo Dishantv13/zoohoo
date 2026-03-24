@@ -2,6 +2,7 @@ import "@ant-design/v5-patch-for-react-19";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { Form, Card, notification, Empty } from "antd";
+import { useSearchParams } from "react-router-dom";
 
 import PartyDetailDrawer from "../components/detailDrawer/PartyDetailDrawer";
 import PartyManagementCard from "../components/managementModel/PartyManagementCard";
@@ -30,10 +31,8 @@ export default function VendorManagement() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
   const [form] = Form.useForm();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   if (!user || user.role !== "admin") {
     return (
@@ -43,9 +42,14 @@ export default function VendorManagement() {
     );
   }
 
+  const page = parseInt(searchParams.get("page")) || 1;
+  const limit = parseInt(searchParams.get("limit")) || 10;
+  const search = searchParams.get("search") || "";
+
   const { data, isLoading } = useGetVendorsQuery({
     page,
     limit,
+    search,
   });
   const [createVendor, { isLoading: isCreating }] = useCreateVendorMutation();
   const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
@@ -57,7 +61,7 @@ export default function VendorManagement() {
 
   const vendorsList = data?.data.vendors || [];
   const filteredVendors = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = search.trim().toLowerCase();
     if (!term) return vendorsList;
 
     return vendorsList.filter((vendor) => {
@@ -65,20 +69,42 @@ export default function VendorManagement() {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term));
     });
-  }, [vendorsList, searchTerm]);
+  }, [vendorsList, search]);
 
   const pagination = data?.data?.pagination || {};
   const paginationData = {
     current: pagination.page || 1,
     pageSize: pagination.limit || 10,
-    total: pagination.totalVendors || 0,
+    total: pagination.totalItems || 0,
   };
 
   const vendorStats = statsData?.data?.statistics || {};
 
   const handleTableChange = (paginationInfo) => {
-    setPage(paginationInfo.current);
-    setLimit(paginationInfo.pageSize);
+    updateParams({
+      page: paginationInfo.current,
+      limit: paginationInfo.pageSize,
+    });
+  };
+
+  const updateParams = (newParams) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    setSearchParams({
+      ...currentParams,
+      ...newParams,
+    });
+  };
+
+  const handleSearch = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+    if (!value) {
+      delete params.search;
+    } else {
+      params.search = value;
+    }
+    params.page = 1;
+
+    setSearchParams(params);
   };
 
   const handleSubmit = async (values) => {
@@ -169,8 +195,8 @@ export default function VendorManagement() {
         type="vendor"
         columns={columns}
         dataSource={filteredVendors}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
+        searchTerm={search}
+        setSearchTerm={handleSearch}
         handleCreateClick={handleCreateClick}
         handleTableChange={handleTableChange}
         isLoading={isLoading}

@@ -1,7 +1,7 @@
 import "@ant-design/v5-patch-for-react-19";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, notification, Empty } from "antd";
 import "../css/InvoiceManagement.css";
 import {
@@ -28,15 +28,12 @@ const currencyFormatter = new Intl.NumberFormat("en-IN", {
 export default function AdminBillManagement() {
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
-  const [selectedVendor, setSelectedVendor] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [statusFilter, setStatusFilter] = useState(null);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [cashPaymentModalVisible, setCashPaymentModalVisible] = useState(false);
   const [selectedBillForPayment, setSelectedBillForPayment] = useState(null);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   if (!user || user.role !== "admin") {
     return (
@@ -45,7 +42,10 @@ export default function AdminBillManagement() {
       </Card>
     );
   }
-
+  const page = parseInt(searchParams.get("page")) || 1;
+  const limit = parseInt(searchParams.get("limit")) || 10;
+  const status = searchParams.get("status") || "";
+  const vendorId = searchParams.get("vendorId") || null;
   const { data: vendorsData } = useGetVendorsQuery({
     page: 1,
     limit: 100,
@@ -55,8 +55,8 @@ export default function AdminBillManagement() {
     isLoading,
     refetch,
   } = useGetBillsQuery({
-    vendorId: selectedVendor ? String(selectedVendor) : null,
-    status: statusFilter,
+    vendorId: vendorId ? String(vendorId) : null,
+    status: status || undefined,
     page,
     limit,
   });
@@ -73,6 +73,46 @@ export default function AdminBillManagement() {
   const bills = billsData?.data?.bills || [];
   const summaryData = billStatsData?.data?.statistics || {};
 
+  const handleTableChange = (paginationInfo) => {
+    updateParams({
+      page: paginationInfo.current,
+      limit: paginationInfo.pageSize,
+    });
+  };
+
+  const updateParams = (newParams) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    setSearchParams({
+      ...currentParams,
+      ...newParams,
+    });
+  };
+
+  const handleStatusChange = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+
+    if (!value) {
+      delete params.status;
+    } else {
+      params.status = value;
+    }
+    params.page = 1;
+
+    setSearchParams(params);
+  };
+
+  const handleVendorChange = (value) => {
+    const params = Object.fromEntries(searchParams.entries());
+    if (!value) {
+      delete params.vendorId;
+    } else {
+      params.vendorId = value;
+    }
+    params.page = 1;
+
+    setSearchParams(params);
+  };
+
   const pagination = billsData?.data?.pagination || {};
   const paginationData = {
     current: pagination.page,
@@ -87,11 +127,6 @@ export default function AdminBillManagement() {
   };
 
   const paymentHistory = paymentHistoryData?.data?.paymentHistory || [];
-
-  const handleTableChange = (paginationInfo) => {
-    setPage(paginationInfo.current);
-    setLimit(paginationInfo.pageSize);
-  };
 
   const handleDelete = async (billId) => {
     try {
@@ -160,11 +195,10 @@ export default function AdminBillManagement() {
       <ManagementTableCard
         type="bill"
         list={vendorsList}
-        selectedItem={selectedVendor}
-        setSelectedItem={setSelectedVendor}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        setPage={setPage}
+        selectedItem={vendorId}
+        setSelectedItem={handleVendorChange}
+        statusFilter={status}
+        setStatusFilter={handleStatusChange}
         navigate={navigate}
         createPath={ROUTE_PATHS.ADMIN_CREATE_BILL}
         dataSource={bills}

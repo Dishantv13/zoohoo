@@ -41,7 +41,7 @@ export const customerApi = baseApi.injectEndpoints({
     }),
 
     getCustomers: builder.query({
-      query: ({ page = 1, limit = 10, search, status }) => ({
+      query: ({ page = 1, limit = 10, search, status = '' }) => ({
         url: CUSTOMER_URL.GET_CUSTOMERS,
         params: { page, limit, search, status },
       }),

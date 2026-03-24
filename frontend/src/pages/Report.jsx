@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Spin } from "antd";
+import dayjs from "dayjs";
 import { useGetDashBoardQuery } from "../service/reportApi";
 import ReportDashboard from "../components/chartModel/ReportDashboard";
 
 const Report = () => {
-  const [date, setDate] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const startDateParam = searchParams.get("startDate");
+  const endDateParam = searchParams.get("endDate");
+  const date =
+    startDateParam && endDateParam
+      ? [dayjs(startDateParam), dayjs(endDateParam)]
+      : [];
 
   const { data, isLoading } = useGetDashBoardQuery({
     startDate:
@@ -30,11 +38,18 @@ const Report = () => {
   const todayValue = isTodayProfit ? todayProfit : todayLoss;
 
   const handleDateChange = (value) => {
-    if (!value) {
-      setDate([]);
+    const params = new URLSearchParams(searchParams);
+
+    if (!value || value.length !== 2) {
+      params.delete("startDate");
+      params.delete("endDate");
+      setSearchParams(params);
       return;
     }
-    setDate(value);
+
+    params.set("startDate", value[0].startOf("day").toISOString());
+    params.set("endDate", value[1].endOf("day").toISOString());
+    setSearchParams(params);
   };
 
   if (isLoading && !dashboardData) return <Spin size="large" />;
